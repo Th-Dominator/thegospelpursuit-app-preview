@@ -1,0 +1,455 @@
+{
+  "name": "Theological App - Core Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a7dd39b9-f288-4e89-8a79-1282703a2a3d",
+      "name": "Every Day 7am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://bible-api.com/?random=verse",
+        "options": {}
+      },
+      "id": "73c7d4c1-0896-44fe-a778-d22920b6f0ad",
+      "name": "Get Random Verse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ref",
+              "name": "reference",
+              "type": "string",
+              "value": "={{ $json.reference }}"
+            },
+            {
+              "id": "text",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $json.text.trim() }}"
+            },
+            {
+              "id": "date",
+              "name": "date",
+              "type": "string",
+              "value": "={{ $now.format('yyyy-LL-dd') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b91c637f-ad3e-4a8a-9a90-593f32b0e707",
+      "name": "Format Verse",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nstaticData.dailyVerse = {\n  reference: $input.item.json.reference,\n  text: $input.item.json.text,\n  date: $input.item.json.date\n};\nreturn [{ json: staticData.dailyVerse }];"
+      },
+      "id": "f1a1fb2a-defc-423d-a531-2cf308ad7984",
+      "name": "Save Verse (n8n storage)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "path": "daily-verse",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e91186db-36ee-468a-9d69-f8778642cb75",
+      "name": "Get Daily Verse Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        144
+      ],
+      "webhookId": "67e590be-c948-4188-a71a-f092050ea0fe"
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst verse = staticData.dailyVerse || {\n  reference: null,\n  text: 'No verse saved yet — the 7am workflow hasn\\'t run.',\n  date: null\n};\nreturn [{ json: verse }];"
+      },
+      "id": "f45a3d07-1c18-4796-b309-feea4cdf44ba",
+      "name": "Read Saved Verse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "e59522ca-98b0-4ad5-8e23-18550ff70a3f",
+      "name": "Return Daily Verse",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        448,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "search-scripture",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ac7050f1-dab7-45e4-b259-97b4e34d2c44",
+      "name": "Search Scripture Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        288
+      ],
+      "webhookId": "55e34af5-20e2-46bc-9f90-0b26c5811a79"
+    },
+    {
+      "parameters": {
+        "url": "=https://bible-api.com/{{ encodeURIComponent($json.body.query) }}",
+        "options": {}
+      },
+      "id": "5150846c-348a-4c92-9676-cd37fc8cb15a",
+      "name": "Search Bible API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"reference\": $json.reference, \"text\": $json.text, \"verses\": $json.verses } }}",
+        "options": {}
+      },
+      "id": "cb545fe7-b678-404a-96ae-c55e74c97159",
+      "name": "Return Search Results",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        448,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-devotional",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "fc4fe979-7784-4a29-b8df-90a4144a7b09",
+      "name": "Generate Devotional Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        432
+      ],
+      "webhookId": "a916f27a-51d7-4274-a35c-632cd30206a0"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"model\": \"claude-sonnet-4-6\", \"max_tokens\": 800, \"messages\": [ { \"role\": \"user\", \"content\": \"Write a short, warm, theologically grounded devotional (250-350 words) based on this topic or passage: \" + $json.body.topic + \". Include: 1) a relevant scripture reference, 2) a short reflection, 3) one practical application, 4) a closing prayer prompt.\" } ] } }}",
+        "options": {}
+      },
+      "id": "87e2c5e6-9798-4f39-954a-5d4ed3f7b603",
+      "name": "Call Claude - Devotional",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        432
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "f2TghsNriVDTNzQb",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"devotional\": $json.content[0].text } }}",
+        "options": {}
+      },
+      "id": "cfa5e976-f62d-449f-86ea-fbc390563a2e",
+      "name": "Return Devotional",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        448,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "evangelism-prep",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "bf6ebcff-daa0-451f-b8ab-0269930d3c72",
+      "name": "Evangelism Prep Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        560
+      ],
+      "webhookId": "eb50db93-15d5-41ed-b582-4db80ab9e915"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"model\": \"claude-sonnet-4-6\", \"max_tokens\": 800, \"messages\": [ { \"role\": \"user\", \"content\": \"Help someone prepare to talk about their faith with this scenario or audience: \" + $json.body.scenario + \". Give: 1) 2-3 conversation openers, 2) key scripture references to have ready, 3) how to handle a common objection related to this scenario, 4) a reminder to lead with love and listening.\" } ] } }}",
+        "options": {}
+      },
+      "id": "b9a55f8e-88e9-4702-97c3-73cb58fac964",
+      "name": "Call Claude - Evangelism Prep",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        224,
+        560
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "f2TghsNriVDTNzQb",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"prep\": $json.content[0].text } }}",
+        "options": {}
+      },
+      "id": "218415b4-8b50-4979-8a33-5ea50b1f5d62",
+      "name": "Return Evangelism Prep",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        448,
+        560
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Day 7am": {
+      "main": [
+        [
+          {
+            "node": "Get Random Verse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Random Verse": {
+      "main": [
+        [
+          {
+            "node": "Format Verse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Verse": {
+      "main": [
+        [
+          {
+            "node": "Save Verse (n8n storage)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Daily Verse Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Saved Verse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Saved Verse": {
+      "main": [
+        [
+          {
+            "node": "Return Daily Verse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Scripture Webhook": {
+      "main": [
+        [
+          {
+            "node": "Search Bible API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Bible API": {
+      "main": [
+        [
+          {
+            "node": "Return Search Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Devotional Webhook": {
+      "main": [
+        [
+          {
+            "node": "Call Claude - Devotional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude - Devotional": {
+      "main": [
+        [
+          {
+            "node": "Return Devotional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evangelism Prep Webhook": {
+      "main": [
+        [
+          {
+            "node": "Call Claude - Evangelism Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude - Evangelism Prep": {
+      "main": [
+        [
+          {
+            "node": "Return Evangelism Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "cc7cafda-6c85-4c74-8ce6-471887d32f96",
+  "meta": {
+    "instanceId": "a2c275587871a5b032ef4432efbc5916e470f76527f228d227164f00bf9d17fd"
+  },
+  "nodeGroups": [],
+  "id": "yWTiNWs07eRfMsCa",
+  "tags": []
+}
