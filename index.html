@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daybreak — scripture, devotionals, and evangelism prep</title>
+<title>The Gospel Pursuit — scripture, devotionals, and evangelism prep</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,94 +11,141 @@
 </head>
 <body>
 
-<header class="site-header">
-  <div class="wrap header-inner">
-    <span class="wordmark">Daybreak</span>
-    <nav class="nav" aria-label="Primary">
-      <button class="nav-link is-active" data-view="home">Today</button>
-      <button class="nav-link" data-view="search">Search scripture</button>
-      <button class="nav-link" data-view="devotional">Devotional</button>
-      <button class="nav-link" data-view="evangelism">Evangelism prep</button>
-    </nav>
+<!-- LOADING SCREEN -->
+<div id="loading-screen" class="loading-screen">
+
+  <div class="rays-bg" aria-hidden="true">
+    <div class="rays-spin"></div>
+    <div class="rays-glow"></div>
   </div>
-</header>
 
-<main class="wrap">
+  <p class="verse verse-en karaoke">&ldquo;I am the way and the truth and the life; no one comes to the Father except through me.&rdquo;</p>
 
-  <!-- HOME / VERSE OF THE DAY -->
-  <section id="view-home" class="view is-active">
-    <p class="eyebrow">verse of the day</p>
-    <blockquote id="verse-quote" class="verse-quote">
-      <span class="dropcap">L</span>oading today's verse&hellip;
-    </blockquote>
-    <p id="verse-ref" class="verse-ref"></p>
+  <div class="cross-stage" aria-hidden="true">
+    <div class="cross-glow"></div>
 
-    <div class="rule"></div>
+    <div class="halo"><div class="halo-ring"></div></div>
 
-    <div class="card-grid">
-      <button class="feature-card" data-view="search">
-        <span class="feature-label">Search scripture</span>
-        <span class="feature-hint">Look up any passage or reference</span>
-      </button>
-      <button class="feature-card" data-view="devotional">
-        <span class="feature-label">Generate a devotional</span>
-        <span class="feature-hint">A short reflection on any topic</span>
-      </button>
-      <button class="feature-card" data-view="evangelism">
-        <span class="feature-label">Prepare to evangelize</span>
-        <span class="feature-hint">Talking points for a real conversation</span>
-      </button>
-      <button class="feature-card" data-view="home" disabled>
-        <span class="feature-label">Reading plan</span>
-        <span class="feature-hint">Coming soon</span>
-      </button>
+    <div class="beam-wrap beam-wrap-v"><div class="beam beam-v"></div></div>
+    <div class="beam-wrap beam-wrap-h"><div class="beam beam-h"></div></div>
+
+    <div class="nail-hole hole-feet"></div>
+    <div class="blood-drip drip-feet"></div>
+    <div class="blood-drop drop-feet"></div>
+
+    <div class="nail-hole hole-left"></div>
+    <div class="blood-drip drip-left"></div>
+    <div class="blood-drop drop-left"></div>
+
+    <div class="nail-hole hole-right"></div>
+    <div class="blood-drip drip-right"></div>
+    <div class="blood-drop drop-right"></div>
+  </div>
+
+  <div class="brand">
+    <div class="brand-name">The Gospel Pursuit</div>
+    <div class="brand-tagline">Walk closer, one pursuit at a time</div>
+  </div>
+
+  <div class="brand-cta">
+    <button id="enter-app" class="btn-enter" disabled>Get Started</button>
+  </div>
+
+  <p class="verse verse-gr karaoke" lang="grc">&#7961;&gamma;&#8060; &epsilon;&#7984;&mu;&iota; &#7969; &#8001;&delta;&#8056;&sigmaf; &kappa;&alpha;&#8054; &#7969; &#7936;&lambda;&#8053;&theta;&epsilon;&iota;&alpha; &kappa;&alpha;&#8054; &#7969; &zeta;&omega;&#8053;&#183; &omicron;&#8016;&delta;&epsilon;&#8054;&sigmaf; &#7956;&rho;&chi;&epsilon;&tau;&alpha;&iota; &pi;&rho;&#8056;&sigmaf; &tau;&#8056;&nu; &pi;&alpha;&tau;&#8051;&rho;&alpha; &epsilon;&#7984; &mu;&#8052; &delta;&iota;&#8125; &#7952;&mu;&omicron;&#8166;.</p>
+</div>
+
+<!-- APP SHELL -->
+<div id="app-shell" class="app-shell" hidden>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <span class="wordmark">The Gospel Pursuit</span>
+      <nav class="nav" aria-label="Primary">
+        <button class="nav-link is-active" data-view="home">Today</button>
+        <button class="nav-link" data-view="search">Search scripture</button>
+        <button class="nav-link" data-view="devotional">Devotional</button>
+        <button class="nav-link" data-view="evangelism">Evangelism prep</button>
+      </nav>
     </div>
-  </section>
+  </header>
 
-  <!-- SEARCH SCRIPTURE -->
-  <section id="view-search" class="view">
-    <p class="eyebrow">search scripture</p>
-    <h1 class="view-title">Find a passage</h1>
-    <form id="search-form" class="tool-form">
-      <input id="search-query" type="text" placeholder="John 3:16, or Romans 8" required>
-      <button type="submit">Search</button>
-    </form>
-    <div id="search-result" class="result-card" hidden>
-      <blockquote id="search-text" class="result-quote"></blockquote>
-      <p id="search-ref" class="result-ref"></p>
-    </div>
-    <p id="search-status" class="status"></p>
-  </section>
+  <main class="wrap">
 
-  <!-- DEVOTIONAL -->
-  <section id="view-devotional" class="view">
-    <p class="eyebrow">devotional</p>
-    <h1 class="view-title">Generate a devotional</h1>
-    <form id="devotional-form" class="tool-form">
-      <input id="devotional-topic" type="text" placeholder="patience, forgiveness, Philippians 4:6" required>
-      <button type="submit">Generate</button>
-    </form>
-    <div id="devotional-result" class="result-card prose" hidden></div>
-    <p id="devotional-status" class="status"></p>
-  </section>
+    <!-- HOME / VERSE OF THE DAY -->
+    <section id="view-home" class="view is-active">
+      <p class="eyebrow">verse of the day</p>
+      <blockquote id="verse-quote" class="verse-quote">
+        <span class="dropcap">L</span>oading today's verse&hellip;
+      </blockquote>
+      <p id="verse-ref" class="verse-ref"></p>
 
-  <!-- EVANGELISM PREP -->
-  <section id="view-evangelism" class="view">
-    <p class="eyebrow">evangelism prep</p>
-    <h1 class="view-title">Prepare for a conversation</h1>
-    <form id="evangelism-form" class="tool-form">
-      <input id="evangelism-scenario" type="text" placeholder="a coworker who thinks all religions are the same" required>
-      <button type="submit">Prepare</button>
-    </form>
-    <div id="evangelism-result" class="result-card prose" hidden></div>
-    <p id="evangelism-status" class="status"></p>
-  </section>
+      <div class="rule"></div>
 
-</main>
+      <div class="card-grid">
+        <button class="feature-card" data-view="search">
+          <span class="feature-label">Search scripture</span>
+          <span class="feature-hint">Look up any passage or reference</span>
+        </button>
+        <button class="feature-card" data-view="devotional">
+          <span class="feature-label">Generate a devotional</span>
+          <span class="feature-hint">A short reflection on any topic</span>
+        </button>
+        <button class="feature-card" data-view="evangelism">
+          <span class="feature-label">Prepare to evangelize</span>
+          <span class="feature-hint">Talking points for a real conversation</span>
+        </button>
+        <button class="feature-card" data-view="home" disabled>
+          <span class="feature-label">Reading plan</span>
+          <span class="feature-hint">Coming soon</span>
+        </button>
+      </div>
+    </section>
 
-<footer class="site-footer wrap">
-  <p>Daybreak &mdash; built on n8n</p>
-</footer>
+    <!-- SEARCH SCRIPTURE -->
+    <section id="view-search" class="view">
+      <p class="eyebrow">search scripture</p>
+      <h1 class="view-title">Find a passage</h1>
+      <form id="search-form" class="tool-form">
+        <input id="search-query" type="text" placeholder="John 3:16, or Romans 8" required>
+        <button type="submit">Search</button>
+      </form>
+      <div id="search-result" class="result-card" hidden>
+        <blockquote id="search-text" class="result-quote"></blockquote>
+        <p id="search-ref" class="result-ref"></p>
+      </div>
+      <p id="search-status" class="status"></p>
+    </section>
+
+    <!-- DEVOTIONAL -->
+    <section id="view-devotional" class="view">
+      <p class="eyebrow">devotional</p>
+      <h1 class="view-title">Generate a devotional</h1>
+      <form id="devotional-form" class="tool-form">
+        <input id="devotional-topic" type="text" placeholder="patience, forgiveness, Philippians 4:6" required>
+        <button type="submit">Generate</button>
+      </form>
+      <div id="devotional-result" class="result-card prose" hidden></div>
+      <p id="devotional-status" class="status"></p>
+    </section>
+
+    <!-- EVANGELISM PREP -->
+    <section id="view-evangelism" class="view">
+      <p class="eyebrow">evangelism prep</p>
+      <h1 class="view-title">Prepare for a conversation</h1>
+      <form id="evangelism-form" class="tool-form">
+        <input id="evangelism-scenario" type="text" placeholder="a coworker who thinks all religions are the same" required>
+        <button type="submit">Prepare</button>
+      </form>
+      <div id="evangelism-result" class="result-card prose" hidden></div>
+      <p id="evangelism-status" class="status"></p>
+    </section>
+
+  </main>
+
+  <footer class="site-footer wrap">
+    <p>The Gospel Pursuit</p>
+  </footer>
+</div>
 
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
