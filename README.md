@@ -1,1 +1,1 @@
-# thegospelpursuit-app-preview
+# thegospelpursuit-app
