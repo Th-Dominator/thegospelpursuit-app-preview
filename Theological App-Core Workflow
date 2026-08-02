@@ -246,7 +246,7 @@
     },
     {
       "parameters": {
-        "url": "=https://bible-api.com/{{ encodeURIComponent($json.body.query) }}",
+        "url": "=https://bible-api.com/{{ encodeURIComponent($json.body.query) }}{{ $json.body.language === 'pt' ? '?translation=almeida' : '' }}",
         "options": {}
       },
       "id": "5150846c-348a-4c92-9676-cd37fc8cb15a",
@@ -313,7 +313,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"model\": \"claude-sonnet-4-6\", \"max_tokens\": 800, \"messages\": [ { \"role\": \"user\", \"content\": \"Write a short, warm, theologically grounded devotional (250-350 words) based on this topic or passage: \" + $json.body.topic + \". Include: 1) a relevant scripture reference, 2) a short reflection, 3) one practical application, 4) a closing prayer prompt.\" } ] } }}",
+        "jsonBody": "={{ { \"model\": \"claude-sonnet-4-6\", \"max_tokens\": 800, \"messages\": [ { \"role\": \"user\", \"content\": \"Write a short, warm, theologically grounded devotional (250-350 words) based on this topic or passage: \" + $json.body.topic + \". Include: 1) a relevant scripture reference, 2) a short reflection, 3) one practical application, 4) a closing prayer prompt. Write your entire response in \" + ($json.body.languageName || \"English\") + \", including any scripture you quote. Use wording natural to that language rather than a literal translation of English phrasing.\" } ] } }}",
         "options": {}
       },
       "id": "87e2c5e6-9798-4f39-954a-5d4ed3f7b603",
@@ -386,7 +386,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"model\": \"claude-sonnet-4-6\", \"max_tokens\": 800, \"messages\": [ { \"role\": \"user\", \"content\": \"Help someone prepare to talk about their faith with this scenario or audience: \" + $json.body.scenario + \". Give: 1) 2-3 conversation openers, 2) key scripture references to have ready, 3) how to handle a common objection related to this scenario, 4) a reminder to lead with love and listening.\" } ] } }}",
+        "jsonBody": "={{ { \"model\": \"claude-sonnet-4-6\", \"max_tokens\": 800, \"messages\": [ { \"role\": \"user\", \"content\": \"Help someone prepare to talk about their faith with this scenario or audience: \" + $json.body.scenario + \". Give: 1) 2-3 conversation openers, 2) key scripture references to have ready, 3) how to handle a common objection related to this scenario, 4) a reminder to lead with love and listening. Write your entire response in \" + ($json.body.languageName || \"English\") + \", including any scripture you quote. Use wording natural to that language rather than a literal translation of English phrasing.\" } ] } }}",
         "options": {}
       },
       "id": "b9a55f8e-88e9-4702-97c3-73cb58fac964",
