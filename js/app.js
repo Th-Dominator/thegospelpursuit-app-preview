@@ -12,7 +12,9 @@
 
   var LANG_KEY = 'tgp.language';
   var DEFAULT_LANG = 'en';
-  var currentLang = DEFAULT_LANG;
+  // resolved up front: sign-in loads before the app shell exists, and Clerk
+  // needs to know which locale to fetch
+  var currentLang = initialLanguage();
 
   function isSupported(code) {
     return LANGUAGES.some(function (lang) {
@@ -153,148 +155,85 @@
 
   enterBtn.addEventListener('click', function () {
     loadingScreen.hidden = true;
-    // someone who ticked "keep me signed in" last visit skips the form
-    if (readSession()) {
-      openApp();
-    } else {
-      authScreen.hidden = false;
-      document.getElementById('signin-email').focus();
-    }
+    // a session Clerk already restored skips the form entirely
+    if (TGPAuth.user()) openApp();
+    else showAuthScreen();
   });
 
   /* ---------- sign in ---------- */
 
-  var SESSION_KEY = 'tgp.session';
-  var signinForm = document.getElementById('signin-form');
-  var emailInput = document.getElementById('signin-email');
-  var passwordInput = document.getElementById('signin-password');
-  var rememberInput = document.getElementById('signin-remember');
-  var submitBtn = document.getElementById('signin-submit');
   var authStatus = document.getElementById('auth-status');
+  var clerkMount = document.getElementById('clerk-signin');
 
-  // localStorage is unavailable in some privacy modes; never let that throw
-  function store(persistent) {
-    try {
-      return persistent ? window.localStorage : window.sessionStorage;
-    } catch (err) {
-      return null;
-    }
-  }
+  /* Started during the intro animation so Clerk has finished loading by the time
+     anyone reaches for Get Started. The locale is fixed here because the language
+     picker lives behind sign-in — nobody can change it from this screen. */
+  var authReady = TGPAuth.init({ language: currentLang });
+  authReady.catch(function (err) {
+    if (window.console) window.console.error('[auth]', err.message);
+  });
 
-  function readSession() {
-    var sources = [store(true), store(false)];
-    for (var i = 0; i < sources.length; i++) {
-      try {
-        var raw = sources[i] && sources[i].getItem(SESSION_KEY);
-        if (raw) return JSON.parse(raw);
-      } catch (err) {
-        /* corrupt or blocked — treat as signed out */
+  function showAuthScreen(message) {
+    rays.hidden = false;
+    authScreen.hidden = false;
+    setStatus(authStatus, message || t('auth.loading'), false);
+
+    authReady.then(
+      function () {
+        if (TGPAuth.user()) {
+          openApp();
+          return;
+        }
+        setStatus(authStatus, message || '', false);
+        clerkMount.classList.remove('is-empty');
+        TGPAuth.mountSignIn(clerkMount);
+      },
+      function () {
+        clerkMount.classList.add('is-empty');
+        setStatus(
+          authStatus,
+          TGPAuth.isConfigured() ? t('auth.unavailable') : t('auth.notConfigured'),
+          true
+        );
       }
-    }
-    return null;
+    );
   }
-
-  function writeSession(session, persistent) {
-    var target = store(persistent);
-    try {
-      if (target) target.setItem(SESSION_KEY, JSON.stringify(session));
-    } catch (err) {
-      /* signing in still works for this page view */
-    }
-  }
-
-  function clearSession() {
-    [store(true), store(false)].forEach(function (target) {
-      try {
-        if (target) target.removeItem(SESSION_KEY);
-      } catch (err) {
-        /* nothing to clear */
-      }
-    });
-  }
-
-  function markInvalid(input, invalid) {
-    if (invalid) {
-      input.setAttribute('aria-invalid', 'true');
-    } else {
-      input.removeAttribute('aria-invalid');
-    }
-  }
-
-  function validate() {
-    var email = emailInput.value.trim();
-    var password = passwordInput.value;
-    // deliberately loose: enough to catch typos, not to police addresses
-    var looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-
-    markInvalid(emailInput, !looksLikeEmail);
-    markInvalid(passwordInput, password.length < 8);
-
-    if (!looksLikeEmail) return t('auth.invalidEmail');
-    if (password.length < 8) return t('auth.shortPassword');
-    return null;
-  }
-
-  signinForm.addEventListener('submit', function (event) {
-    event.preventDefault();
-
-    var problem = validate();
-    if (problem) {
-      setStatus(authStatus, problem, true);
-      (emailInput.getAttribute('aria-invalid') ? emailInput : passwordInput).focus();
-      return;
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = t('auth.submitting');
-    setStatus(authStatus, '', false);
-
-    // no auth backend yet — this accepts any well-formed credentials and
-    // just remembers who you said you were
-    window.setTimeout(function () {
-      writeSession(
-        { email: emailInput.value.trim(), signedInAt: new Date().toISOString() },
-        rememberInput.checked
-      );
-      passwordInput.value = '';
-      submitBtn.disabled = false;
-      submitBtn.textContent = t('auth.submit');
-      authScreen.hidden = true;
-      openApp();
-    }, 450);
-  });
-
-  [emailInput, passwordInput].forEach(function (input) {
-    input.addEventListener('input', function () {
-      markInvalid(input, false);
-      setStatus(authStatus, '', false);
-    });
-  });
-
-  document.querySelectorAll('[data-soon]').forEach(function (button) {
-    button.addEventListener('click', function () {
-      setStatus(authStatus, t(button.dataset.soon), false);
-    });
-  });
 
   /* ---------- entering and leaving the app ---------- */
 
+  var appOpen = false;
+
   function openApp() {
-    var session = readSession();
-    document.getElementById('account-email').textContent = session ? session.email : '';
+    var account = TGPAuth.user();
+    document.getElementById('account-email').textContent = account ? account.email : '';
+    if (appOpen) return;
+
+    appOpen = true;
+    TGPAuth.unmountSignIn();
+    authScreen.hidden = true;
     rays.hidden = true;
     appShell.hidden = false;
     loadDailyVerse();
   }
 
-  document.getElementById('sign-out').addEventListener('click', function () {
-    clearSession();
+  function closeApp() {
+    if (!appOpen) return;
+    appOpen = false;
     closeSidebar();
+    clearResults();
     appShell.hidden = true;
-    rays.hidden = false;
-    authScreen.hidden = false;
-    setStatus(authStatus, t('auth.signedOut'), false);
-    emailInput.focus();
+    showAuthScreen(t('auth.signedOut'));
+  }
+
+  /* Clerk signs people in out of band too — an OAuth or email-link round trip
+     lands back here with a live session and no form submission to react to. */
+  TGPAuth.onChange(function (account) {
+    if (account && !authScreen.hidden) openApp();
+    else if (!account) closeApp();
+  });
+
+  document.getElementById('sign-out').addEventListener('click', function () {
+    TGPAuth.signOut().then(closeApp, closeApp);
   });
 
   /* ---------- view routing ---------- */
@@ -520,6 +459,5 @@
   /* ---------- start ---------- */
 
   // runs last so applyTranslations() can reach every wired form and control
-  currentLang = initialLanguage();
   applyTranslations();
 })();

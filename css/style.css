@@ -750,50 +750,17 @@ html[lang="ko"] .dropcap {
   margin: 4px 0 28px;
 }
 
-.auth-form { display: flex; flex-direction: column; gap: 16px; }
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field-label {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-.field input {
-  font-family: var(--font-body);
-  font-size: 15px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
-  width: 100%;
-}
-.field input:focus {
-  outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px #A9814C22;
-}
-.field input[aria-invalid="true"] { border-color: #A3352A; }
-.field input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px #A3352A22; }
-
-.auth-row {
+/* Clerk renders the form itself and is themed from js/clerk-auth.js. All this
+   does is give it the full width of the card and hold the card's height steady
+   while the SDK is still loading, so nothing jumps when the form appears. */
+.clerk-mount {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: -2px;
+  justify-content: center;
+  min-height: 300px;
 }
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.checkbox input { accent-color: var(--gold-dark); margin: 0; }
+.clerk-mount > * { width: 100%; }
+/* nothing is ever going to mount here, so don't hold space for it */
+.clerk-mount.is-empty { min-height: 0; }
 
 .link-btn {
   font-family: var(--font-body);
@@ -809,11 +776,10 @@ html[lang="ko"] .dropcap {
 }
 .link-btn:hover { color: var(--ink); }
 
-.btn-block { width: 100%; min-width: 0; margin-top: 4px; }
 .btn-enter:disabled { opacity: 0.6; }
 
-/* pulled up so an empty status line doesn't leave a hole under the button */
-.auth-form .status { text-align: center; margin: -8px 0 0; min-height: 16px; }
+/* pulled up so an empty status line doesn't leave a hole under the form */
+.auth-card .status { text-align: center; margin: -4px 0 0; min-height: 16px; }
 
 @media (max-width: 560px) {
   .auth-card { padding: 28px 22px 22px; }
