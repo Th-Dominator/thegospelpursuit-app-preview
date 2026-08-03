@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Gospel Pursuit — scripture, devotionals, and evangelism prep</title>
+<title>The Gospel Pursuit — scripture, devotionals, and apologetics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -90,6 +90,10 @@
         <span class="nav-icon" aria-hidden="true">✦</span>
         <span class="nav-text" data-i18n="nav.home">Today</span>
       </button>
+      <button class="nav-link" data-view="bible">
+        <span class="nav-icon" aria-hidden="true">✝</span>
+        <span class="nav-text" data-i18n="nav.bible">The Bible</span>
+      </button>
       <button class="nav-link" data-view="search">
         <span class="nav-icon" aria-hidden="true">⌕</span>
         <span class="nav-text" data-i18n="nav.search">Search scripture</span>
@@ -98,20 +102,28 @@
         <span class="nav-icon" aria-hidden="true">❧</span>
         <span class="nav-text" data-i18n="nav.devotional">Devotional</span>
       </button>
-      <button class="nav-link" data-view="evangelism">
-        <span class="nav-icon" aria-hidden="true">☩</span>
-        <span class="nav-text" data-i18n="nav.evangelism">Evangelism prep</span>
+      <button class="nav-link" data-view="plans">
+        <span class="nav-icon" aria-hidden="true">❖</span>
+        <span class="nav-text" data-i18n="nav.plans">Bible plans</span>
       </button>
-      <button class="nav-link" data-view="language">
-        <span class="nav-icon" aria-hidden="true">⌘</span>
-        <span class="nav-text" data-i18n="nav.language">Language</span>
-        <span id="nav-language-code" class="nav-badge">EN</span>
+      <button class="nav-link" data-view="apologetics">
+        <span class="nav-icon" aria-hidden="true">☩</span>
+        <span class="nav-text" data-i18n="nav.apologetics">The Road to Apologetics</span>
       </button>
     </nav>
 
-    <div class="sidebar-account">
-      <span id="account-email" class="account-email"></span>
-      <button id="sign-out" class="link-btn" data-i18n="app.signOut">Sign out</button>
+    <!-- settings sits at the foot of the rail, directly above the account block -->
+    <div class="sidebar-foot">
+      <button class="nav-link" data-view="settings">
+        <span class="nav-icon" aria-hidden="true">⚙</span>
+        <span class="nav-text" data-i18n="nav.settings">Settings</span>
+        <span id="nav-language-code" class="nav-badge">EN</span>
+      </button>
+
+      <div class="sidebar-account">
+        <span id="account-email" class="account-email"></span>
+        <button id="sign-out" class="link-btn" data-i18n="app.signOut">Sign out</button>
+      </div>
     </div>
   </aside>
 
@@ -129,6 +141,10 @@
       <div class="rule"></div>
 
       <div class="card-grid">
+        <button class="feature-card" data-view="bible">
+          <span class="feature-label" data-i18n="home.bibleLabel">The Bible</span>
+          <span class="feature-hint" data-i18n="home.bibleHint">Read any book, chapter by chapter</span>
+        </button>
         <button class="feature-card" data-view="search">
           <span class="feature-label" data-i18n="home.searchLabel">Search scripture</span>
           <span class="feature-hint" data-i18n="home.searchHint">Look up any passage or reference</span>
@@ -137,15 +153,31 @@
           <span class="feature-label" data-i18n="home.devotionalLabel">Generate a devotional</span>
           <span class="feature-hint" data-i18n="home.devotionalHint">A short reflection on any topic</span>
         </button>
-        <button class="feature-card" data-view="evangelism">
-          <span class="feature-label" data-i18n="home.evangelismLabel">Prepare to evangelize</span>
-          <span class="feature-hint" data-i18n="home.evangelismHint">Talking points for a real conversation</span>
+        <button class="feature-card" data-view="plans">
+          <span class="feature-label" data-i18n="home.plansLabel">Bible plans</span>
+          <span class="feature-hint" data-i18n="home.plansHint">Read through scripture, a day at a time</span>
         </button>
-        <button class="feature-card" data-view="home" disabled>
-          <span class="feature-label" data-i18n="home.planLabel">Reading plan</span>
-          <span class="feature-hint" data-i18n="home.comingSoon">Coming soon</span>
+        <button class="feature-card" data-view="apologetics">
+          <span class="feature-label" data-i18n="home.apologeticsLabel">The Road to Apologetics</span>
+          <span class="feature-hint" data-i18n="home.apologeticsHint">Reasoned answers to hard questions</span>
         </button>
       </div>
+    </section>
+
+    <!-- THE BIBLE -->
+    <section id="view-bible" class="view">
+      <p class="eyebrow" data-i18n="bible.eyebrow">the bible</p>
+      <h1 class="view-title" data-i18n="bible.title">Read the Bible</h1>
+      <p class="view-lede" data-i18n="bible.lede">Choose a book and chapter. The text appears in your chosen language wherever a translation exists.</p>
+
+      <form id="bible-form" class="tool-form tool-form-split">
+        <select id="bible-book" data-i18n-aria="bible.book" aria-label="Book"></select>
+        <input id="bible-chapter" type="number" min="1" value="1" data-i18n-aria="bible.chapter" aria-label="Chapter">
+        <button type="submit">Open</button>
+      </form>
+
+      <div id="bible-result" class="result-card prose" hidden></div>
+      <p id="bible-status" class="status" role="status" aria-live="polite"></p>
     </section>
 
     <!-- SEARCH SCRIPTURE -->
@@ -175,26 +207,110 @@
       <p id="devotional-status" class="status"></p>
     </section>
 
-    <!-- EVANGELISM PREP -->
-    <section id="view-evangelism" class="view">
-      <p class="eyebrow" data-i18n="evangelism.eyebrow">evangelism prep</p>
-      <h1 class="view-title" data-i18n="evangelism.title">Prepare for a conversation</h1>
-      <form id="evangelism-form" class="tool-form">
-        <input id="evangelism-scenario" type="text" data-i18n-placeholder="evangelism.placeholder" placeholder="a coworker who thinks all religions are the same" required>
-        <button type="submit">Prepare</button>
-      </form>
-      <div id="evangelism-result" class="result-card prose" hidden></div>
-      <p id="evangelism-status" class="status"></p>
+    <!-- BIBLE PLANS -->
+    <section id="view-plans" class="view">
+      <p class="eyebrow" data-i18n="plans.eyebrow">bible plans</p>
+      <h1 class="view-title" data-i18n="plans.title">Read through scripture</h1>
+      <p class="view-lede" data-i18n="plans.lede">Pick a plan and work through it a day at a time. Your place is kept as you go.</p>
+
+      <div id="plans-grid" class="card-grid"></div>
+      <p id="plans-status" class="status" role="status" aria-live="polite"></p>
     </section>
 
-    <!-- LANGUAGE -->
-    <section id="view-language" class="view">
-      <p class="eyebrow" data-i18n="language.eyebrow">language</p>
-      <h1 class="view-title" data-i18n="language.title">Choose your language</h1>
-      <p class="view-lede" data-i18n="language.description">The app — and everything it writes for you, from devotionals to talking points — will use this language.</p>
+    <!-- THE ROAD TO APOLOGETICS -->
+    <section id="view-apologetics" class="view">
+      <p class="eyebrow" data-i18n="apologetics.eyebrow">the road to apologetics</p>
+      <h1 class="view-title" data-i18n="apologetics.title">Answer the hard question</h1>
+      <p class="view-lede" data-i18n="apologetics.lede">Describe the objection or question you're facing. You'll get the reasoning, the scripture behind it, and how to say it plainly.</p>
+      <form id="apologetics-form" class="tool-form">
+        <input id="apologetics-scenario" type="text" data-i18n-placeholder="apologetics.placeholder" placeholder="if God is good, why is there suffering?" required>
+        <button type="submit">Prepare</button>
+      </form>
+      <div id="apologetics-result" class="result-card prose" hidden></div>
+      <p id="apologetics-status" class="status"></p>
+    </section>
 
-      <div id="language-grid" class="language-grid" role="radiogroup" data-i18n-aria="language.title" aria-label="Choose your language"></div>
-      <p id="language-status" class="status" role="status" aria-live="polite"></p>
+    <!-- SETTINGS -->
+    <section id="view-settings" class="view">
+      <p class="eyebrow" data-i18n="settings.eyebrow">settings</p>
+      <h1 class="view-title" data-i18n="settings.title">Settings</h1>
+      <p class="view-lede" data-i18n="settings.lede">Set your language once, then tune how each part of the app works for you.</p>
+
+      <!-- language -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.languageHeading">Language</h2>
+        <p class="settings-hint" data-i18n="settings.languageHint">The app — and everything it writes for you, from devotionals to apologetics — will use this language.</p>
+        <div id="language-grid" class="language-grid" role="radiogroup" data-i18n-aria="settings.languageHeading" aria-label="Language"></div>
+        <p id="language-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- the bible -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.bibleHeading">The Bible</h2>
+        <p class="settings-hint" data-i18n="settings.bibleHint">Which translation to read and search when more than one exists in your language.</p>
+        <label class="settings-field">
+          <span class="settings-label" data-i18n="settings.translationLabel">Preferred translation</span>
+          <select id="setting-translation"></select>
+        </label>
+      </section>
+
+      <!-- search scripture -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.searchHeading">Search scripture</h2>
+        <p class="settings-hint" data-i18n="settings.searchHint">How much surrounding text to show with a result.</p>
+        <label class="settings-field">
+          <span class="settings-label" data-i18n="settings.contextLabel">Context around a verse</span>
+          <select id="setting-search-context">
+            <option value="verse" data-i18n="settings.contextVerse">Just the verse</option>
+            <option value="paragraph" data-i18n="settings.contextParagraph">The whole paragraph</option>
+            <option value="chapter" data-i18n="settings.contextChapter">The whole chapter</option>
+          </select>
+        </label>
+      </section>
+
+      <!-- devotional -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.devotionalHeading">Devotional</h2>
+        <p class="settings-hint" data-i18n="settings.devotionalHint">How long a devotional should run when you generate one.</p>
+        <label class="settings-field">
+          <span class="settings-label" data-i18n="settings.lengthLabel">Length</span>
+          <select id="setting-devotional-length">
+            <option value="short" data-i18n="settings.lengthShort">Short — a few sentences</option>
+            <option value="medium" data-i18n="settings.lengthMedium">Medium — a few paragraphs</option>
+            <option value="long" data-i18n="settings.lengthLong">Long — a full study</option>
+          </select>
+        </label>
+      </section>
+
+      <!-- bible plans -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.plansHeading">Bible plans</h2>
+        <p class="settings-hint" data-i18n="settings.plansHint">How much to read each day when you start a plan.</p>
+        <label class="settings-field">
+          <span class="settings-label" data-i18n="settings.paceLabel">Daily pace</span>
+          <select id="setting-plan-pace">
+            <option value="light" data-i18n="settings.paceLight">Light — one chapter</option>
+            <option value="steady" data-i18n="settings.paceSteady">Steady — two or three chapters</option>
+            <option value="full" data-i18n="settings.paceFull">Full — read the Bible in a year</option>
+          </select>
+        </label>
+      </section>
+
+      <!-- the road to apologetics -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.apologeticsHeading">The Road to Apologetics</h2>
+        <p class="settings-hint" data-i18n="settings.apologeticsHint">The register your answers are written in.</p>
+        <label class="settings-field">
+          <span class="settings-label" data-i18n="settings.toneLabel">Tone</span>
+          <select id="setting-apologetics-tone">
+            <option value="gentle" data-i18n="settings.toneGentle">Gentle — for a friend who is asking</option>
+            <option value="direct" data-i18n="settings.toneDirect">Direct — for a real debate</option>
+            <option value="academic" data-i18n="settings.toneAcademic">Academic — sources and citations</option>
+          </select>
+        </label>
+      </section>
+
+      <p id="settings-status" class="status" role="status" aria-live="polite"></p>
     </section>
 
   </main>

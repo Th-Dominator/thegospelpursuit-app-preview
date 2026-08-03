@@ -126,9 +126,14 @@ body {
 }
 .nav-link.is-active .nav-badge { background: var(--surface); }
 
-/* pinned to the bottom of the rail */
-.sidebar-account {
+/* settings + account, pinned together to the bottom of the rail */
+.sidebar-foot {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sidebar-account {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -330,6 +335,59 @@ body {
   color: var(--gold-dark);
 }
 
+/* settings */
+.settings-group {
+  padding: 28px 0;
+  border-top: 1px solid var(--border);
+}
+.settings-group:first-of-type { border-top: none; padding-top: 8px; }
+
+.settings-heading {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.settings-hint {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 420px;
+}
+.settings-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+/* one look for every dropdown, including the book picker in the reader */
+.settings-field select,
+.tool-form select {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  cursor: pointer;
+}
+.settings-field select:focus,
+.tool-form select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px #A9814C22;
+}
+
+/* the reader's book + chapter + button row */
+.tool-form-split select { flex: 1; min-width: 0; }
+.tool-form-split input { flex: 0 0 92px; }
+
 .site-footer {
   padding: 32px 24px 48px;
   font-size: 13px;
@@ -337,9 +395,46 @@ body {
   border-top: 1px solid var(--border);
 }
 
+/* ---------- right-to-left (Arabic, Urdu, Persian, Hebrew) ---------- */
+
+[dir="rtl"] .sidebar {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+[dir="rtl"] .sidebar::after { right: auto; left: -1px; }
+[dir="rtl"] .nav-link {
+  text-align: right;
+  border-left: none;
+  border-right: 2px solid transparent;
+}
+[dir="rtl"] .nav-link.is-active { border-right-color: var(--gold); }
+[dir="rtl"] .language-option,
+[dir="rtl"] .feature-card { text-align: right; }
+
+/* the drawer slides in from the right once the page reads that way */
+@media (max-width: 860px) {
+  [dir="rtl"] .sidebar { left: auto; right: 0; transform: translateX(100%); }
+  [dir="rtl"] .sidebar.is-open { transform: translateX(0); }
+}
+
+/* these scripts have tall ascenders and descenders that 1.6 crowds */
+html[lang="hi"] body, html[lang="bn"] body, html[lang="pa"] body,
+html[lang="gu"] body, html[lang="ta"] body, html[lang="te"] body,
+html[lang="ne"] body, html[lang="th"] body, html[lang="km"] body,
+html[lang="lo"] body, html[lang="my"] body, html[lang="am"] body {
+  line-height: 1.85;
+}
+
 /* CJK reads badly as a floated drop cap — set it flush with the quote instead */
 html[lang="zh"] .dropcap,
-html[lang="ko"] .dropcap {
+html[lang="zh-TW"] .dropcap,
+html[lang="ja"] .dropcap,
+html[lang="ko"] .dropcap,
+html[lang="th"] .dropcap,
+html[lang="km"] .dropcap,
+html[lang="lo"] .dropcap,
+html[lang="my"] .dropcap,
+[dir="rtl"] .dropcap {
   float: none;
   font-size: inherit;
   line-height: inherit;

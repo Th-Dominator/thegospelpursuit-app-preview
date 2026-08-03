@@ -1,20 +1,66 @@
-/* Interface languages. `native` is what the picker shows first — people
-   recognise their own language faster than its English name. */
+/* The forty languages most spoken in US homes that this app can actually serve
+   end to end — the interface, the scripture, and everything Claude writes.
+   `native` is what the picker shows first: people recognise their own language
+   faster than its English name. `dir` is only set where it isn't 'ltr'. */
 var LANGUAGES = [
-  { code: 'en', native: 'English',    english: 'English' },
-  { code: 'es', native: 'Español',    english: 'Spanish' },
-  { code: 'fr', native: 'Français',   english: 'French' },
-  { code: 'de', native: 'Deutsch',    english: 'German' },
-  { code: 'it', native: 'Italiano',   english: 'Italian' },
-  { code: 'pt', native: 'Português',  english: 'Portuguese' },
-  { code: 'ko', native: '한국어',      english: 'Korean' },
-  { code: 'zh', native: '中文（简体）', english: 'Chinese (Simplified)' }
+  { code: 'en',    native: 'English',          english: 'English' },
+  { code: 'es',    native: 'Español',          english: 'Spanish' },
+  { code: 'zh',    native: '中文（简体）',       english: 'Chinese (Simplified)' },
+  { code: 'zh-TW', native: '中文（繁體）',       english: 'Chinese (Traditional)' },
+  { code: 'tl',    native: 'Tagalog',          english: 'Tagalog' },
+  { code: 'vi',    native: 'Tiếng Việt',       english: 'Vietnamese' },
+  { code: 'ar',    native: 'العربية',           english: 'Arabic', dir: 'rtl' },
+  { code: 'fr',    native: 'Français',         english: 'French' },
+  { code: 'ko',    native: '한국어',            english: 'Korean' },
+  { code: 'ru',    native: 'Русский',          english: 'Russian' },
+  { code: 'ht',    native: 'Kreyòl Ayisyen',   english: 'Haitian Creole' },
+  { code: 'de',    native: 'Deutsch',          english: 'German' },
+  { code: 'hi',    native: 'हिन्दी',              english: 'Hindi' },
+  { code: 'pt',    native: 'Português',        english: 'Portuguese' },
+  { code: 'it',    native: 'Italiano',         english: 'Italian' },
+  { code: 'pl',    native: 'Polski',           english: 'Polish' },
+  { code: 'ur',    native: 'اردو',              english: 'Urdu', dir: 'rtl' },
+  { code: 'ja',    native: '日本語',            english: 'Japanese' },
+  { code: 'fa',    native: 'فارسی',             english: 'Persian' },
+  { code: 'gu',    native: 'ગુજરાતી',            english: 'Gujarati' },
+  { code: 'te',    native: 'తెలుగు',             english: 'Telugu' },
+  { code: 'bn',    native: 'বাংলা',              english: 'Bengali' },
+  { code: 'ta',    native: 'தமிழ்',              english: 'Tamil' },
+  { code: 'pa',    native: 'ਪੰਜਾਬੀ',              english: 'Punjabi' },
+  { code: 'el',    native: 'Ελληνικά',         english: 'Greek' },
+  { code: 'hy',    native: 'Հայերեն',          english: 'Armenian' },
+  { code: 'he',    native: 'עברית',             english: 'Hebrew', dir: 'rtl' },
+  { code: 'th',    native: 'ไทย',               english: 'Thai' },
+  { code: 'km',    native: 'ភាសាខ្មែរ',           english: 'Khmer' },
+  { code: 'lo',    native: 'ລາວ',               english: 'Lao' },
+  { code: 'hmn',   native: 'Hmoob',            english: 'Hmong' },
+  { code: 'am',    native: 'አማርኛ',            english: 'Amharic' },
+  { code: 'so',    native: 'Soomaali',         english: 'Somali' },
+  { code: 'ne',    native: 'नेपाली',             english: 'Nepali' },
+  { code: 'my',    native: 'မြန်မာ',             english: 'Burmese' },
+  { code: 'uk',    native: 'Українська',       english: 'Ukrainian' },
+  { code: 'ro',    native: 'Română',           english: 'Romanian' },
+  { code: 'nl',    native: 'Nederlands',       english: 'Dutch' },
+  { code: 'tr',    native: 'Türkçe',           english: 'Turkish' },
+  { code: 'id',    native: 'Bahasa Indonesia', english: 'Indonesian' }
 ];
+
+/* Persian is written right to left, but the `dir` above was left off the entry
+   by hand once already — deriving it from one list keeps the two in step. */
+var RTL_CODES = ['ar', 'ur', 'fa', 'he'];
+LANGUAGES.forEach(function (lang) {
+  if (RTL_CODES.indexOf(lang.code) !== -1) lang.dir = 'rtl';
+});
+
+/* Per-language tables land here, one file each under js/lang/. English is the
+   only one bundled up front: it backs every key, so a missing or half-finished
+   translation degrades to English rather than to blank UI. */
+var TGP_LANG = {};
 
 /* The brand name stays "The Gospel Pursuit" everywhere, so it isn't a key. */
 var TRANSLATIONS = {
   en: {
-    'app.title': 'The Gospel Pursuit — scripture, devotionals, and evangelism prep',
+    'app.title': 'The Gospel Pursuit — scripture, devotionals, and apologetics',
     'brand.tagline': 'Walk closer, one pursuit at a time',
     'loading.cta': 'Get Started',
 
@@ -26,24 +72,39 @@ var TRANSLATIONS = {
 
     'nav.label': 'Primary',
     'nav.home': 'Today',
+    'nav.bible': 'The Bible',
     'nav.search': 'Search scripture',
     'nav.devotional': 'Devotional',
-    'nav.evangelism': 'Evangelism prep',
-    'nav.language': 'Language',
+    'nav.plans': 'Bible plans',
+    'nav.apologetics': 'The Road to Apologetics',
+    'nav.settings': 'Settings',
     'app.menu': 'Menu',
     'app.signOut': 'Sign out',
 
     'home.eyebrow': 'verse of the day',
     'home.verseLoading': 'Loading today’s verse…',
     'home.verseUnavailable': 'Today’s verse isn’t available right now.',
+    'home.bibleLabel': 'The Bible',
+    'home.bibleHint': 'Read any book, chapter by chapter',
     'home.searchLabel': 'Search scripture',
     'home.searchHint': 'Look up any passage or reference',
     'home.devotionalLabel': 'Generate a devotional',
     'home.devotionalHint': 'A short reflection on any topic',
-    'home.evangelismLabel': 'Prepare to evangelize',
-    'home.evangelismHint': 'Talking points for a real conversation',
-    'home.planLabel': 'Reading plan',
+    'home.plansLabel': 'Bible plans',
+    'home.plansHint': 'Read through scripture, a day at a time',
+    'home.apologeticsLabel': 'The Road to Apologetics',
+    'home.apologeticsHint': 'Reasoned answers to hard questions',
     'home.comingSoon': 'Coming soon',
+
+    'bible.eyebrow': 'the bible',
+    'bible.title': 'Read the Bible',
+    'bible.lede': 'Choose a book and chapter. The text appears in your chosen language wherever a translation exists.',
+    'bible.book': 'Book',
+    'bible.chapter': 'Chapter',
+    'bible.submit': 'Open',
+    'bible.busy': 'Opening…',
+    'bible.busyStatus': 'Loading that chapter…',
+    'bible.unavailable': 'The Bible reader isn’t connected yet.',
 
     'search.eyebrow': 'search scripture',
     'search.title': 'Find a passage',
@@ -59,461 +120,88 @@ var TRANSLATIONS = {
     'devotional.busy': 'Writing…',
     'devotional.busyStatus': 'Writing your devotional…',
 
-    'evangelism.eyebrow': 'evangelism prep',
-    'evangelism.title': 'Prepare for a conversation',
-    'evangelism.placeholder': 'a coworker who thinks all religions are the same',
-    'evangelism.submit': 'Prepare',
-    'evangelism.busy': 'Preparing…',
-    'evangelism.busyStatus': 'Preparing your talking points…',
+    'plans.eyebrow': 'bible plans',
+    'plans.title': 'Read through scripture',
+    'plans.lede': 'Pick a plan and work through it a day at a time. Your place is kept as you go.',
+    'plans.unavailable': 'Bible plans aren’t connected yet.',
 
-    'language.eyebrow': 'language',
-    'language.title': 'Choose your language',
-    'language.description': 'The app — and everything it writes for you, from devotionals to talking points — will use this language.',
+    'apologetics.eyebrow': 'the road to apologetics',
+    'apologetics.title': 'Answer the hard question',
+    'apologetics.lede': 'Describe the objection or question you’re facing. You’ll get the reasoning, the scripture behind it, and how to say it plainly.',
+    'apologetics.placeholder': 'if God is good, why is there suffering?',
+    'apologetics.submit': 'Prepare',
+    'apologetics.busy': 'Preparing…',
+    'apologetics.busyStatus': 'Working through the answer…',
+
+    'settings.eyebrow': 'settings',
+    'settings.title': 'Settings',
+    'settings.lede': 'Set your language once, then tune how each part of the app works for you.',
+    'settings.languageHeading': 'Language',
+    'settings.languageHint': 'The app — and everything it writes for you, from devotionals to apologetics — will use this language.',
+    'settings.bibleHeading': 'The Bible',
+    'settings.bibleHint': 'Which translation to read and search when more than one exists in your language.',
+    'settings.translationLabel': 'Preferred translation',
+    'settings.translationDefault': 'Recommended for your language',
+    'settings.searchHeading': 'Search scripture',
+    'settings.searchHint': 'How much surrounding text to show with a result.',
+    'settings.contextLabel': 'Context around a verse',
+    'settings.contextVerse': 'Just the verse',
+    'settings.contextParagraph': 'The whole paragraph',
+    'settings.contextChapter': 'The whole chapter',
+    'settings.devotionalHeading': 'Devotional',
+    'settings.devotionalHint': 'How long a devotional should run when you generate one.',
+    'settings.lengthLabel': 'Length',
+    'settings.lengthShort': 'Short — a few sentences',
+    'settings.lengthMedium': 'Medium — a few paragraphs',
+    'settings.lengthLong': 'Long — a full study',
+    'settings.plansHeading': 'Bible plans',
+    'settings.plansHint': 'How much to read each day when you start a plan.',
+    'settings.paceLabel': 'Daily pace',
+    'settings.paceLight': 'Light — one chapter',
+    'settings.paceSteady': 'Steady — two or three chapters',
+    'settings.paceFull': 'Full — read the Bible in a year',
+    'settings.apologeticsHeading': 'The Road to Apologetics',
+    'settings.apologeticsHint': 'The register your answers are written in.',
+    'settings.toneLabel': 'Tone',
+    'settings.toneGentle': 'Gentle — for a friend who is asking',
+    'settings.toneDirect': 'Direct — for a real debate',
+    'settings.toneAcademic': 'Academic — sources and citations',
+    'settings.saved': 'Saved.',
+
     'language.current': 'Current',
     'language.saved': 'Language set to {name}.',
+    'language.loading': 'Switching language…',
 
     'error.server': 'Couldn’t reach the server. Check your connection and try again.',
     'error.serverStatus': 'Couldn’t reach the server ({status}). Please try again.'
-  },
-
-  es: {
-    'app.title': 'The Gospel Pursuit — escrituras, devocionales y preparación evangelística',
-    'brand.tagline': 'Camina más cerca, una búsqueda a la vez',
-    'loading.cta': 'Comenzar',
-
-    'auth.tagline': 'Inicia sesión para continuar tu búsqueda',
-    'auth.loading': 'Preparando el inicio de sesión…',
-    'auth.unavailable': 'El inicio de sesión no está disponible en este momento. Actualiza la página e inténtalo de nuevo.',
-    'auth.notConfigured': 'El inicio de sesión aún no está configurado en esta aplicación.',
-    'auth.signedOut': 'Has cerrado sesión.',
-
-    'nav.label': 'Principal',
-    'nav.home': 'Hoy',
-    'nav.search': 'Buscar escrituras',
-    'nav.devotional': 'Devocional',
-    'nav.evangelism': 'Preparación evangelística',
-    'nav.language': 'Idioma',
-    'app.menu': 'Menú',
-    'app.signOut': 'Cerrar sesión',
-
-    'home.eyebrow': 'versículo del día',
-    'home.verseLoading': 'Cargando el versículo de hoy…',
-    'home.verseUnavailable': 'El versículo de hoy no está disponible en este momento.',
-    'home.searchLabel': 'Buscar escrituras',
-    'home.searchHint': 'Consulta cualquier pasaje o referencia',
-    'home.devotionalLabel': 'Generar un devocional',
-    'home.devotionalHint': 'Una breve reflexión sobre cualquier tema',
-    'home.evangelismLabel': 'Prepararte para evangelizar',
-    'home.evangelismHint': 'Puntos clave para una conversación real',
-    'home.planLabel': 'Plan de lectura',
-    'home.comingSoon': 'Próximamente',
-
-    'search.eyebrow': 'buscar escrituras',
-    'search.title': 'Encuentra un pasaje',
-    'search.placeholder': 'Juan 3:16, o Romanos 8',
-    'search.submit': 'Buscar',
-    'search.busy': 'Buscando…',
-    'search.busyStatus': 'Consultando ese pasaje…',
-
-    'devotional.eyebrow': 'devocional',
-    'devotional.title': 'Generar un devocional',
-    'devotional.placeholder': 'paciencia, perdón, Filipenses 4:6',
-    'devotional.submit': 'Generar',
-    'devotional.busy': 'Escribiendo…',
-    'devotional.busyStatus': 'Escribiendo tu devocional…',
-
-    'evangelism.eyebrow': 'preparación evangelística',
-    'evangelism.title': 'Prepárate para una conversación',
-    'evangelism.placeholder': 'un compañero de trabajo que cree que todas las religiones son iguales',
-    'evangelism.submit': 'Preparar',
-    'evangelism.busy': 'Preparando…',
-    'evangelism.busyStatus': 'Preparando tus puntos clave…',
-
-    'language.eyebrow': 'idioma',
-    'language.title': 'Elige tu idioma',
-    'language.description': 'La aplicación — y todo lo que escriba para ti, desde devocionales hasta puntos clave — usará este idioma.',
-    'language.current': 'Actual',
-    'language.saved': 'Idioma establecido en {name}.',
-
-    'error.server': 'No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.',
-    'error.serverStatus': 'No se pudo conectar con el servidor ({status}). Inténtalo de nuevo.'
-  },
-
-  fr: {
-    'app.title': 'The Gospel Pursuit — Écritures, méditations et préparation à l’évangélisation',
-    'brand.tagline': 'Avance plus près, une recherche à la fois',
-    'loading.cta': 'Commencer',
-
-    'auth.tagline': 'Connectez-vous pour poursuivre votre marche',
-    'auth.loading': 'Préparation de la connexion…',
-    'auth.unavailable': 'La connexion n’est pas disponible pour le moment. Actualisez la page et réessayez.',
-    'auth.notConfigured': 'La connexion n’est pas encore configurée pour cette application.',
-    'auth.signedOut': 'Vous êtes déconnecté.',
-
-    'nav.label': 'Principale',
-    'nav.home': 'Aujourd’hui',
-    'nav.search': 'Rechercher les Écritures',
-    'nav.devotional': 'Méditation',
-    'nav.evangelism': 'Préparation à l’évangélisation',
-    'nav.language': 'Langue',
-    'app.menu': 'Menu',
-    'app.signOut': 'Se déconnecter',
-
-    'home.eyebrow': 'verset du jour',
-    'home.verseLoading': 'Chargement du verset du jour…',
-    'home.verseUnavailable': 'Le verset du jour n’est pas disponible pour le moment.',
-    'home.searchLabel': 'Rechercher les Écritures',
-    'home.searchHint': 'Consultez n’importe quel passage ou référence',
-    'home.devotionalLabel': 'Générer une méditation',
-    'home.devotionalHint': 'Une courte réflexion sur n’importe quel sujet',
-    'home.evangelismLabel': 'Se préparer à évangéliser',
-    'home.evangelismHint': 'Des points clés pour une vraie conversation',
-    'home.planLabel': 'Plan de lecture',
-    'home.comingSoon': 'Bientôt disponible',
-
-    'search.eyebrow': 'rechercher les écritures',
-    'search.title': 'Trouver un passage',
-    'search.placeholder': 'Jean 3:16, ou Romains 8',
-    'search.submit': 'Rechercher',
-    'search.busy': 'Recherche…',
-    'search.busyStatus': 'Recherche de ce passage…',
-
-    'devotional.eyebrow': 'méditation',
-    'devotional.title': 'Générer une méditation',
-    'devotional.placeholder': 'patience, pardon, Philippiens 4:6',
-    'devotional.submit': 'Générer',
-    'devotional.busy': 'Rédaction…',
-    'devotional.busyStatus': 'Rédaction de votre méditation…',
-
-    'evangelism.eyebrow': 'préparation à l’évangélisation',
-    'evangelism.title': 'Préparez une conversation',
-    'evangelism.placeholder': 'un collègue qui pense que toutes les religions se valent',
-    'evangelism.submit': 'Préparer',
-    'evangelism.busy': 'Préparation…',
-    'evangelism.busyStatus': 'Préparation de vos points clés…',
-
-    'language.eyebrow': 'langue',
-    'language.title': 'Choisissez votre langue',
-    'language.description': 'L’application — et tout ce qu’elle rédige pour vous, des méditations aux points clés — utilisera cette langue.',
-    'language.current': 'Actuelle',
-    'language.saved': 'Langue définie sur {name}.',
-
-    'error.server': 'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.',
-    'error.serverStatus': 'Impossible de joindre le serveur ({status}). Veuillez réessayer.'
-  },
-
-  de: {
-    'app.title': 'The Gospel Pursuit — Bibeltexte, Andachten und Evangelisations-Vorbereitung',
-    'brand.tagline': 'Komm näher, Schritt für Schritt',
-    'loading.cta': 'Loslegen',
-
-    'auth.tagline': 'Melde dich an, um deinen Weg fortzusetzen',
-    'auth.loading': 'Anmeldung wird vorbereitet…',
-    'auth.unavailable': 'Die Anmeldung ist gerade nicht verfügbar. Lade die Seite neu und versuche es erneut.',
-    'auth.notConfigured': 'Die Anmeldung ist für diese App noch nicht eingerichtet.',
-    'auth.signedOut': 'Du bist abgemeldet.',
-
-    'nav.label': 'Hauptnavigation',
-    'nav.home': 'Heute',
-    'nav.search': 'Bibel durchsuchen',
-    'nav.devotional': 'Andacht',
-    'nav.evangelism': 'Evangelisation',
-    'nav.language': 'Sprache',
-    'app.menu': 'Menü',
-    'app.signOut': 'Abmelden',
-
-    'home.eyebrow': 'vers des tages',
-    'home.verseLoading': 'Vers des Tages wird geladen…',
-    'home.verseUnavailable': 'Der Vers des Tages ist gerade nicht verfügbar.',
-    'home.searchLabel': 'Bibel durchsuchen',
-    'home.searchHint': 'Schlage jede Stelle oder Referenz nach',
-    'home.devotionalLabel': 'Andacht erstellen',
-    'home.devotionalHint': 'Eine kurze Betrachtung zu jedem Thema',
-    'home.evangelismLabel': 'Auf Evangelisation vorbereiten',
-    'home.evangelismHint': 'Gesprächspunkte für ein echtes Gespräch',
-    'home.planLabel': 'Leseplan',
-    'home.comingSoon': 'Demnächst',
-
-    'search.eyebrow': 'bibel durchsuchen',
-    'search.title': 'Eine Stelle finden',
-    'search.placeholder': 'Johannes 3,16 oder Römer 8',
-    'search.submit': 'Suchen',
-    'search.busy': 'Suche…',
-    'search.busyStatus': 'Diese Stelle wird nachgeschlagen…',
-
-    'devotional.eyebrow': 'andacht',
-    'devotional.title': 'Andacht erstellen',
-    'devotional.placeholder': 'Geduld, Vergebung, Philipper 4,6',
-    'devotional.submit': 'Erstellen',
-    'devotional.busy': 'Schreibe…',
-    'devotional.busyStatus': 'Deine Andacht wird geschrieben…',
-
-    'evangelism.eyebrow': 'evangelisation',
-    'evangelism.title': 'Bereite ein Gespräch vor',
-    'evangelism.placeholder': 'ein Kollege, der denkt, alle Religionen seien gleich',
-    'evangelism.submit': 'Vorbereiten',
-    'evangelism.busy': 'Vorbereitung…',
-    'evangelism.busyStatus': 'Deine Gesprächspunkte werden vorbereitet…',
-
-    'language.eyebrow': 'sprache',
-    'language.title': 'Wähle deine Sprache',
-    'language.description': 'Die App — und alles, was sie für dich schreibt, von Andachten bis zu Gesprächspunkten — verwendet diese Sprache.',
-    'language.current': 'Aktuell',
-    'language.saved': 'Sprache auf {name} gesetzt.',
-
-    'error.server': 'Der Server ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.',
-    'error.serverStatus': 'Der Server ist nicht erreichbar ({status}). Bitte versuche es erneut.'
-  },
-
-  it: {
-    'app.title': 'The Gospel Pursuit — Scritture, meditazioni e preparazione all’evangelizzazione',
-    'brand.tagline': 'Avvicinati, un passo alla volta',
-    'loading.cta': 'Inizia',
-
-    'auth.tagline': 'Accedi per continuare il tuo cammino',
-    'auth.loading': 'Preparazione dell’accesso…',
-    'auth.unavailable': 'L’accesso non è disponibile in questo momento. Aggiorna la pagina e riprova.',
-    'auth.notConfigured': 'L’accesso non è ancora configurato per questa app.',
-    'auth.signedOut': 'Hai effettuato la disconnessione.',
-
-    'nav.label': 'Principale',
-    'nav.home': 'Oggi',
-    'nav.search': 'Cerca nelle Scritture',
-    'nav.devotional': 'Meditazione',
-    'nav.evangelism': 'Preparazione all’evangelizzazione',
-    'nav.language': 'Lingua',
-    'app.menu': 'Menu',
-    'app.signOut': 'Esci',
-
-    'home.eyebrow': 'versetto del giorno',
-    'home.verseLoading': 'Caricamento del versetto di oggi…',
-    'home.verseUnavailable': 'Il versetto di oggi non è disponibile al momento.',
-    'home.searchLabel': 'Cerca nelle Scritture',
-    'home.searchHint': 'Consulta qualsiasi passo o riferimento',
-    'home.devotionalLabel': 'Genera una meditazione',
-    'home.devotionalHint': 'Una breve riflessione su qualsiasi tema',
-    'home.evangelismLabel': 'Preparati a evangelizzare',
-    'home.evangelismHint': 'Spunti per una conversazione reale',
-    'home.planLabel': 'Piano di lettura',
-    'home.comingSoon': 'Prossimamente',
-
-    'search.eyebrow': 'cerca nelle scritture',
-    'search.title': 'Trova un passo',
-    'search.placeholder': 'Giovanni 3:16, o Romani 8',
-    'search.submit': 'Cerca',
-    'search.busy': 'Ricerca…',
-    'search.busyStatus': 'Sto cercando quel passo…',
-
-    'devotional.eyebrow': 'meditazione',
-    'devotional.title': 'Genera una meditazione',
-    'devotional.placeholder': 'pazienza, perdono, Filippesi 4:6',
-    'devotional.submit': 'Genera',
-    'devotional.busy': 'Scrittura…',
-    'devotional.busyStatus': 'Sto scrivendo la tua meditazione…',
-
-    'evangelism.eyebrow': 'preparazione all’evangelizzazione',
-    'evangelism.title': 'Prepara una conversazione',
-    'evangelism.placeholder': 'un collega che pensa che tutte le religioni siano uguali',
-    'evangelism.submit': 'Prepara',
-    'evangelism.busy': 'Preparazione…',
-    'evangelism.busyStatus': 'Sto preparando i tuoi spunti…',
-
-    'language.eyebrow': 'lingua',
-    'language.title': 'Scegli la tua lingua',
-    'language.description': 'L’app — e tutto ciò che scrive per te, dalle meditazioni agli spunti di conversazione — userà questa lingua.',
-    'language.current': 'Attuale',
-    'language.saved': 'Lingua impostata su {name}.',
-
-    'error.server': 'Impossibile raggiungere il server. Controlla la connessione e riprova.',
-    'error.serverStatus': 'Impossibile raggiungere il server ({status}). Riprova.'
-  },
-
-  pt: {
-    'app.title': 'The Gospel Pursuit — Escrituras, devocionais e preparação para evangelizar',
-    'brand.tagline': 'Caminhe mais perto, um passo de cada vez',
-    'loading.cta': 'Começar',
-
-    'auth.tagline': 'Entre para continuar a sua caminhada',
-    'auth.loading': 'Preparando a entrada…',
-    'auth.unavailable': 'A entrada não está disponível neste momento. Atualize a página e tente novamente.',
-    'auth.notConfigured': 'A entrada ainda não está configurada neste aplicativo.',
-    'auth.signedOut': 'Você saiu da conta.',
-
-    'nav.label': 'Principal',
-    'nav.home': 'Hoje',
-    'nav.search': 'Buscar nas Escrituras',
-    'nav.devotional': 'Devocional',
-    'nav.evangelism': 'Preparação para evangelizar',
-    'nav.language': 'Idioma',
-    'app.menu': 'Menu',
-    'app.signOut': 'Sair',
-
-    'home.eyebrow': 'versículo do dia',
-    'home.verseLoading': 'Carregando o versículo de hoje…',
-    'home.verseUnavailable': 'O versículo de hoje não está disponível no momento.',
-    'home.searchLabel': 'Buscar nas Escrituras',
-    'home.searchHint': 'Consulte qualquer passagem ou referência',
-    'home.devotionalLabel': 'Gerar um devocional',
-    'home.devotionalHint': 'Uma breve reflexão sobre qualquer tema',
-    'home.evangelismLabel': 'Preparar-se para evangelizar',
-    'home.evangelismHint': 'Pontos para uma conversa real',
-    'home.planLabel': 'Plano de leitura',
-    'home.comingSoon': 'Em breve',
-
-    'search.eyebrow': 'buscar nas escrituras',
-    'search.title': 'Encontre uma passagem',
-    'search.placeholder': 'João 3:16, ou Romanos 8',
-    'search.submit': 'Buscar',
-    'search.busy': 'Buscando…',
-    'search.busyStatus': 'Procurando essa passagem…',
-
-    'devotional.eyebrow': 'devocional',
-    'devotional.title': 'Gerar um devocional',
-    'devotional.placeholder': 'paciência, perdão, Filipenses 4:6',
-    'devotional.submit': 'Gerar',
-    'devotional.busy': 'Escrevendo…',
-    'devotional.busyStatus': 'Escrevendo o seu devocional…',
-
-    'evangelism.eyebrow': 'preparação para evangelizar',
-    'evangelism.title': 'Prepare-se para uma conversa',
-    'evangelism.placeholder': 'um colega que acha que todas as religiões são iguais',
-    'evangelism.submit': 'Preparar',
-    'evangelism.busy': 'Preparando…',
-    'evangelism.busyStatus': 'Preparando os seus pontos…',
-
-    'language.eyebrow': 'idioma',
-    'language.title': 'Escolha o seu idioma',
-    'language.description': 'O aplicativo — e tudo o que ele escrever para você, de devocionais a pontos de conversa — usará este idioma.',
-    'language.current': 'Atual',
-    'language.saved': 'Idioma definido como {name}.',
-
-    'error.server': 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.',
-    'error.serverStatus': 'Não foi possível conectar ao servidor ({status}). Tente novamente.'
-  },
-
-  ko: {
-    'app.title': 'The Gospel Pursuit — 성경, 묵상, 전도 준비',
-    'brand.tagline': '한 걸음씩 더 가까이',
-    'loading.cta': '시작하기',
-
-    'auth.tagline': '로그인하고 여정을 이어가세요',
-    'auth.loading': '로그인을 준비하고 있습니다…',
-    'auth.unavailable': '지금은 로그인할 수 없습니다. 페이지를 새로 고친 뒤 다시 시도해 주세요.',
-    'auth.notConfigured': '이 앱에는 아직 로그인이 설정되지 않았습니다.',
-    'auth.signedOut': '로그아웃되었습니다.',
-
-    'nav.label': '주요 메뉴',
-    'nav.home': '오늘',
-    'nav.search': '성경 검색',
-    'nav.devotional': '묵상',
-    'nav.evangelism': '전도 준비',
-    'nav.language': '언어',
-    'app.menu': '메뉴',
-    'app.signOut': '로그아웃',
-
-    'home.eyebrow': '오늘의 말씀',
-    'home.verseLoading': '오늘의 말씀을 불러오는 중…',
-    'home.verseUnavailable': '오늘의 말씀을 지금은 불러올 수 없습니다.',
-    'home.searchLabel': '성경 검색',
-    'home.searchHint': '어떤 본문이나 장절이든 찾아보세요',
-    'home.devotionalLabel': '묵상 만들기',
-    'home.devotionalHint': '어떤 주제든 짧은 묵상으로',
-    'home.evangelismLabel': '전도 준비하기',
-    'home.evangelismHint': '실제 대화를 위한 이야기 포인트',
-    'home.planLabel': '성경 읽기표',
-    'home.comingSoon': '준비 중',
-
-    'search.eyebrow': '성경 검색',
-    'search.title': '본문 찾기',
-    'search.placeholder': '요한복음 3:16 또는 로마서 8장',
-    'search.submit': '검색',
-    'search.busy': '검색 중…',
-    'search.busyStatus': '해당 본문을 찾는 중…',
-
-    'devotional.eyebrow': '묵상',
-    'devotional.title': '묵상 만들기',
-    'devotional.placeholder': '인내, 용서, 빌립보서 4:6',
-    'devotional.submit': '만들기',
-    'devotional.busy': '작성 중…',
-    'devotional.busyStatus': '묵상을 작성하는 중…',
-
-    'evangelism.eyebrow': '전도 준비',
-    'evangelism.title': '대화를 준비하세요',
-    'evangelism.placeholder': '모든 종교가 같다고 생각하는 직장 동료',
-    'evangelism.submit': '준비하기',
-    'evangelism.busy': '준비 중…',
-    'evangelism.busyStatus': '이야기 포인트를 준비하는 중…',
-
-    'language.eyebrow': '언어',
-    'language.title': '언어를 선택하세요',
-    'language.description': '앱과 앱이 작성하는 모든 내용 — 묵상부터 대화 포인트까지 — 이 언어로 표시됩니다.',
-    'language.current': '현재',
-    'language.saved': '언어가 {name}(으)로 설정되었습니다.',
-
-    'error.server': '서버에 연결할 수 없습니다. 연결 상태를 확인한 뒤 다시 시도하세요.',
-    'error.serverStatus': '서버에 연결할 수 없습니다 ({status}). 다시 시도해 주세요.'
-  },
-
-  zh: {
-    'app.title': 'The Gospel Pursuit — 经文、灵修与传福音准备',
-    'brand.tagline': '一步一步，靠得更近',
-    'loading.cta': '开始',
-
-    'auth.tagline': '登录以继续你的追寻',
-    'auth.loading': '正在准备登录…',
-    'auth.unavailable': '目前无法登录。请刷新页面后重试。',
-    'auth.notConfigured': '此应用尚未设置登录功能。',
-    'auth.signedOut': '你已退出登录。',
-
-    'nav.label': '主导航',
-    'nav.home': '今日',
-    'nav.search': '查经',
-    'nav.devotional': '灵修',
-    'nav.evangelism': '传福音准备',
-    'nav.language': '语言',
-    'app.menu': '菜单',
-    'app.signOut': '退出登录',
-
-    'home.eyebrow': '每日经文',
-    'home.verseLoading': '正在加载今日经文…',
-    'home.verseUnavailable': '今日经文暂时无法加载。',
-    'home.searchLabel': '查经',
-    'home.searchHint': '查找任意经文或章节',
-    'home.devotionalLabel': '生成灵修',
-    'home.devotionalHint': '就任意主题写一段简短的反思',
-    'home.evangelismLabel': '准备传福音',
-    'home.evangelismHint': '为真实对话预备的谈话要点',
-    'home.planLabel': '读经计划',
-    'home.comingSoon': '敬请期待',
-
-    'search.eyebrow': '查经',
-    'search.title': '查找经文',
-    'search.placeholder': '约翰福音 3:16，或罗马书 8',
-    'search.submit': '查找',
-    'search.busy': '查找中…',
-    'search.busyStatus': '正在查找该段经文…',
-
-    'devotional.eyebrow': '灵修',
-    'devotional.title': '生成灵修',
-    'devotional.placeholder': '忍耐、饶恕、腓立比书 4:6',
-    'devotional.submit': '生成',
-    'devotional.busy': '撰写中…',
-    'devotional.busyStatus': '正在为你撰写灵修…',
-
-    'evangelism.eyebrow': '传福音准备',
-    'evangelism.title': '预备一场对话',
-    'evangelism.placeholder': '一位认为所有宗教都一样的同事',
-    'evangelism.submit': '准备',
-    'evangelism.busy': '准备中…',
-    'evangelism.busyStatus': '正在准备你的谈话要点…',
-
-    'language.eyebrow': '语言',
-    'language.title': '选择你的语言',
-    'language.description': '应用界面，以及它为你撰写的一切——从灵修到谈话要点——都将使用这种语言。',
-    'language.current': '当前',
-    'language.saved': '语言已设置为 {name}。',
-
-    'error.server': '无法连接服务器。请检查网络后重试。',
-    'error.serverStatus': '无法连接服务器（{status}）。请重试。'
   }
 };
+
+/* Fetches js/lang/<code>.js on first use and folds it into TRANSLATIONS.
+   A language that fails to load resolves anyway: t() already falls through to
+   English per key, so the app stays usable instead of stalling on a 404. */
+var TGPi18n = (function () {
+  var pending = {};
+
+  function load(code) {
+    if (TRANSLATIONS[code]) return Promise.resolve(code);
+    if (pending[code]) return pending[code];
+
+    pending[code] = new Promise(function (resolve) {
+      var script = document.createElement('script');
+      script.src = 'js/lang/' + code + '.js';
+      script.async = true;
+      script.onload = function () {
+        if (TGP_LANG[code]) TRANSLATIONS[code] = TGP_LANG[code];
+        resolve(code);
+      };
+      script.onerror = function () {
+        resolve(code);
+      };
+      document.head.appendChild(script);
+    });
+    return pending[code];
+  }
+
+  return { load: load };
+})();
