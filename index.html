@@ -11,7 +11,7 @@
 </head>
 <body>
 
-<!-- FULL-PAGE RAYS: sits behind the loading and sign-in screens -->
+<!-- FULL-PAGE RAYS: sits behind the loading screen -->
 <div id="rays" class="rays-bg" aria-hidden="true">
   <div class="rays-spin"></div>
   <div class="rays-glow"></div>
@@ -53,20 +53,6 @@
   </div>
 
   <p class="verse verse-gr karaoke" lang="grc">&#7961;&gamma;&#8060; &epsilon;&#7984;&mu;&iota; &#7969; &#8001;&delta;&#8056;&sigmaf; &kappa;&alpha;&#8054; &#7969; &#7936;&lambda;&#8053;&theta;&epsilon;&iota;&alpha; &kappa;&alpha;&#8054; &#7969; &zeta;&omega;&#8053;&#183; &omicron;&#8016;&delta;&epsilon;&#8054;&sigmaf; &#7956;&rho;&chi;&epsilon;&tau;&alpha;&iota; &pi;&rho;&#8056;&sigmaf; &tau;&#8056;&nu; &pi;&alpha;&tau;&#8051;&rho;&alpha; &epsilon;&#7984; &mu;&#8052; &delta;&iota;&#8125; &#7952;&mu;&omicron;&#8166;.</p>
-</div>
-
-<!-- SIGN IN -->
-<div id="auth-screen" class="auth-screen" hidden>
-  <div class="auth-card">
-    <div class="auth-brand">The Gospel Pursuit</div>
-    <p class="auth-tagline" data-i18n="auth.tagline">Sign in to continue your pursuit</p>
-
-    <!-- Clerk renders the whole sign-in flow in here -->
-    <div id="clerk-signin" class="clerk-mount"></div>
-
-    <!-- no data-i18n: this line carries live status, which a re-translation would wipe -->
-    <p id="auth-status" class="status" role="status" aria-live="polite"></p>
-  </div>
 </div>
 
 <!-- APP SHELL -->
@@ -112,18 +98,13 @@
       </button>
     </nav>
 
-    <!-- settings sits at the foot of the rail, directly above the account block -->
+    <!-- settings sits at the foot of the rail -->
     <div class="sidebar-foot">
       <button class="nav-link" data-view="settings">
         <span class="nav-icon" aria-hidden="true">⚙</span>
         <span class="nav-text" data-i18n="nav.settings">Settings</span>
         <span id="nav-language-code" class="nav-badge">EN</span>
       </button>
-
-      <div class="sidebar-account">
-        <span id="account-email" class="account-email"></span>
-        <button id="sign-out" class="link-btn" data-i18n="app.signOut">Sign out</button>
-      </div>
     </div>
   </aside>
 
@@ -323,7 +304,6 @@
 
 <script src="js/config.js"></script>
 <script src="js/i18n.js"></script>
-<script src="js/clerk-auth.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

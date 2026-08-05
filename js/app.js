@@ -3,7 +3,6 @@
 
   var rays = document.getElementById('rays');
   var loadingScreen = document.getElementById('loading-screen');
-  var authScreen = document.getElementById('auth-screen');
   var appShell = document.getElementById('app-shell');
   var enterBtn = document.getElementById('enter-app');
   var cta = enterBtn.closest('.brand-cta');
@@ -12,8 +11,7 @@
 
   var LANG_KEY = 'tgp.language';
   var DEFAULT_LANG = 'en';
-  // resolved up front: sign-in loads before the app shell exists, and Clerk
-  // needs to know which locale to fetch
+  // resolved up front: the loading screen is translated before the app shell exists
   var currentLang = initialLanguage();
 
   function isSupported(code) {
@@ -230,88 +228,21 @@
     enterBtn.disabled = false;
   });
 
-  enterBtn.addEventListener('click', function () {
-    loadingScreen.hidden = true;
-    // a session Clerk already restored skips the form entirely
-    if (TGPAuth.user()) openApp();
-    else showAuthScreen();
-  });
+  enterBtn.addEventListener('click', openApp);
 
-  /* ---------- sign in ---------- */
-
-  var authStatus = document.getElementById('auth-status');
-  var clerkMount = document.getElementById('clerk-signin');
-
-  /* Started during the intro animation so Clerk has finished loading by the time
-     anyone reaches for Get Started. The locale is fixed here because the language
-     picker lives behind sign-in — nobody can change it from this screen. */
-  var authReady = TGPAuth.init({ language: currentLang });
-  authReady.catch(function (err) {
-    if (window.console) window.console.error('[auth]', err.message);
-  });
-
-  function showAuthScreen(message) {
-    rays.hidden = false;
-    authScreen.hidden = false;
-    setStatus(authStatus, message || t('auth.loading'), false);
-
-    authReady.then(
-      function () {
-        if (TGPAuth.user()) {
-          openApp();
-          return;
-        }
-        setStatus(authStatus, message || '', false);
-        clerkMount.classList.remove('is-empty');
-        TGPAuth.mountSignIn(clerkMount);
-      },
-      function () {
-        clerkMount.classList.add('is-empty');
-        setStatus(
-          authStatus,
-          TGPAuth.isConfigured() ? t('auth.unavailable') : t('auth.notConfigured'),
-          true
-        );
-      }
-    );
-  }
-
-  /* ---------- entering and leaving the app ---------- */
+  /* ---------- entering the app ---------- */
 
   var appOpen = false;
 
   function openApp() {
-    var account = TGPAuth.user();
-    document.getElementById('account-email').textContent = account ? account.email : '';
     if (appOpen) return;
-
     appOpen = true;
-    TGPAuth.unmountSignIn();
-    authScreen.hidden = true;
+
+    loadingScreen.hidden = true;
     rays.hidden = true;
     appShell.hidden = false;
     loadDailyVerse();
   }
-
-  function closeApp() {
-    if (!appOpen) return;
-    appOpen = false;
-    closeSidebar();
-    clearResults();
-    appShell.hidden = true;
-    showAuthScreen(t('auth.signedOut'));
-  }
-
-  /* Clerk signs people in out of band too — an OAuth or email-link round trip
-     lands back here with a live session and no form submission to react to. */
-  TGPAuth.onChange(function (account) {
-    if (account && !authScreen.hidden) openApp();
-    else if (!account) closeApp();
-  });
-
-  document.getElementById('sign-out').addEventListener('click', function () {
-    TGPAuth.signOut().then(closeApp, closeApp);
-  });
 
   /* ---------- view routing ---------- */
 

@@ -126,29 +126,12 @@ body {
 }
 .nav-link.is-active .nav-badge { background: var(--surface); }
 
-/* settings + account, pinned together to the bottom of the rail */
+/* settings, pinned to the bottom of the rail */
 .sidebar-foot {
   margin-top: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-.sidebar-account {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 16px 12px 0;
-  border-top: 1px solid var(--border);
-  font-size: 13px;
-}
-.account-email {
-  color: var(--ink-muted);
-  font-size: 12px;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* mobile top bar + drawer scrim — hidden on desktop */
@@ -803,82 +786,7 @@ html[lang="my"] .dropcap,
 .btn-enter:hover:not(:disabled) { background: var(--gold-dark); }
 .btn-enter:disabled { cursor: default; }
 
-/* ============================================================
-   SIGN IN
-   ============================================================ */
-
-.auth-screen {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  animation: appFadeIn 0.5s ease-out both;
-}
-.auth-screen[hidden] { display: none; }
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(2px);
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--gold);
-  border-radius: var(--radius);
-  padding: 36px 32px 32px;
-  box-shadow: 0 18px 50px rgba(35, 43, 54, 0.14);
-  animation: fadeUp 0.6s ease-out both;
-}
-.auth-brand {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 25px;
-  text-align: center;
-  letter-spacing: 0.01em;
-}
-.auth-tagline {
-  font-size: 14px;
-  color: var(--ink-soft);
-  text-align: center;
-  margin: 4px 0 28px;
-}
-
-/* Clerk renders the form itself and is themed from js/clerk-auth.js. All this
-   does is give it the full width of the card and hold the card's height steady
-   while the SDK is still loading, so nothing jumps when the form appears. */
-.clerk-mount {
-  display: flex;
-  justify-content: center;
-  min-height: 300px;
-}
-.clerk-mount > * { width: 100%; }
-/* nothing is ever going to mount here, so don't hold space for it */
-.clerk-mount.is-empty { min-height: 0; }
-
-.link-btn {
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--gold-dark);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.link-btn:hover { color: var(--ink); }
-
 .btn-enter:disabled { opacity: 0.6; }
-
-/* pulled up so an empty status line doesn't leave a hole under the form */
-.auth-card .status { text-align: center; margin: -4px 0 0; min-height: 16px; }
-
-@media (max-width: 560px) {
-  .auth-card { padding: 28px 22px 22px; }
-}
 
 /* app shell reveal */
 .app-shell {
@@ -893,8 +801,6 @@ html[lang="my"] .dropcap,
   .rays-bg,
   .rays-bg *,
   .loading-screen *,
-  .auth-screen,
-  .auth-screen *,
   .app-shell {
     animation-duration: 0.01ms !important;
     animation-delay: 0s !important;
