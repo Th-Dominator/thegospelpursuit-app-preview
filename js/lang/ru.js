@@ -39,6 +39,8 @@ TGP_LANG['ru'] = {
   'bible.title': 'Читать Библию',
   'bible.lede': 'Выберите книгу и главу. Текст появится на вашем языке везде, где есть перевод.',
   'bible.book': 'Книга',
+  'bible.oldTestament': 'Ветхий Завет',
+  'bible.newTestament': 'Новый Завет',
   'bible.chapter': 'Глава',
   'bible.submit': 'Открыть',
   'bible.busy': 'Открываем…',

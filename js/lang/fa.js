@@ -39,6 +39,8 @@ TGP_LANG['fa'] = {
   'bible.title': 'کتاب‌مقدس را بخوانید',
   'bible.lede': 'کتابی و بابی برگزینید. هرجا ترجمه‌ای موجود باشد، متن به زبان انتخابی شما نمایان می‌شود.',
   'bible.book': 'کتاب',
+  'bible.oldTestament': 'عهد عتیق',
+  'bible.newTestament': 'عهد جدید',
   'bible.chapter': 'باب',
   'bible.submit': 'باز کن',
   'bible.busy': 'در حال باز شدن…',

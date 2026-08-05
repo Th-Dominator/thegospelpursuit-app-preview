@@ -39,6 +39,8 @@ TGP_LANG['id'] = {
   'bible.title': 'Baca Alkitab',
   'bible.lede': 'Pilih kitab dan pasal. Teksnya muncul dalam bahasa pilihanmu di mana pun terjemahan tersedia.',
   'bible.book': 'Kitab',
+  'bible.oldTestament': 'Perjanjian Lama',
+  'bible.newTestament': 'Perjanjian Baru',
   'bible.chapter': 'Pasal',
   'bible.submit': 'Buka',
   'bible.busy': 'Membuka…',

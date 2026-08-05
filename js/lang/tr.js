@@ -39,6 +39,8 @@ TGP_LANG['tr'] = {
   'bible.title': 'Kutsal Kitap’ı oku',
   'bible.lede': 'Bir kitap ve bölüm seçin. Çevirinin bulunduğu her yerde metin sizin dilinizde görünür.',
   'bible.book': 'Kitap',
+  'bible.oldTestament': 'Eski Ahit',
+  'bible.newTestament': 'Yeni Ahit',
   'bible.chapter': 'Bölüm',
   'bible.submit': 'Aç',
   'bible.busy': 'Açılıyor…',

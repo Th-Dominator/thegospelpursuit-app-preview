@@ -39,6 +39,8 @@ TGP_LANG['uk'] = {
   'bible.title': 'Читати Біблію',
   'bible.lede': 'Оберіть книгу та розділ. Текст з’явиться вашою мовою всюди, де є переклад.',
   'bible.book': 'Книга',
+  'bible.oldTestament': 'Старий Заповіт',
+  'bible.newTestament': 'Новий Заповіт',
   'bible.chapter': 'Розділ',
   'bible.submit': 'Відкрити',
   'bible.busy': 'Відкриваємо…',

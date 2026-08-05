@@ -39,6 +39,8 @@ TGP_LANG['so'] = {
   'bible.title': 'Akhri Kitaabka Quduuska ah',
   'bible.lede': 'Dooro kitaab iyo cutub. Qoraalku wuxuu ku soo baxayaa luqaddaada meel kasta oo turjumaad laga helo.',
   'bible.book': 'Kitaab',
+  'bible.oldTestament': 'Axdiga Hore',
+  'bible.newTestament': 'Axdiga Cusub',
   'bible.chapter': 'Cutub',
   'bible.submit': 'Fur',
   'bible.busy': 'Waa la furayaa…',

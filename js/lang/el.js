@@ -39,6 +39,8 @@ TGP_LANG['el'] = {
   'bible.title': 'Διάβασε τη Βίβλο',
   'bible.lede': 'Διάλεξε βιβλίο και κεφάλαιο. Το κείμενο εμφανίζεται στη γλώσσα σου όπου υπάρχει μετάφραση.',
   'bible.book': 'Βιβλίο',
+  'bible.oldTestament': 'Παλαιά Διαθήκη',
+  'bible.newTestament': 'Καινή Διαθήκη',
   'bible.chapter': 'Κεφάλαιο',
   'bible.submit': 'Άνοιγμα',
   'bible.busy': 'Ανοίγει…',

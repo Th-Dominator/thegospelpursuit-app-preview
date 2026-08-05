@@ -39,6 +39,8 @@ TGP_LANG['he'] = {
   'bible.title': 'קרא בכתבי הקודש',
   'bible.lede': 'בחר ספר ופרק. הטקסט יופיע בשפה שבחרת בכל מקום שיש בו תרגום.',
   'bible.book': 'ספר',
+  'bible.oldTestament': 'הברית הישנה',
+  'bible.newTestament': 'הברית החדשה',
   'bible.chapter': 'פרק',
   'bible.submit': 'פתח',
   'bible.busy': 'פותח…',

@@ -39,6 +39,8 @@ TGP_LANG['am'] = {
   'bible.title': 'መጽሐፍ ቅዱስ አንብብ',
   'bible.lede': 'መጽሐፍና ምዕራፍ ምረጥ። ትርጉም ባለበት ሁሉ ጽሑፉ በመረጥከው ቋንቋ ይታያል።',
   'bible.book': 'መጽሐፍ',
+  'bible.oldTestament': 'ብሉይ ኪዳን',
+  'bible.newTestament': 'አዲስ ኪዳን',
   'bible.chapter': 'ምዕራፍ',
   'bible.submit': 'ክፈት',
   'bible.busy': 'በመክፈት ላይ…',

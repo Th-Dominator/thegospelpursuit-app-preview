@@ -80,6 +80,7 @@
 
     document.getElementById('nav-language-code').textContent = currentLang.toUpperCase();
     renderLanguageOptions();
+    renderBibleBooks();
     renderPlans();
     retranslateForms();
   }
@@ -370,7 +371,7 @@
      which is why nothing here is a translation key. */
   var BIBLE_BOOKS = [
     {
-      testament: 'Old Testament',
+      testamentKey: 'bible.oldTestament',
       books: [
         'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth',
         '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
@@ -381,7 +382,7 @@
       ]
     },
     {
-      testament: 'New Testament',
+      testamentKey: 'bible.newTestament',
       books: [
         'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians',
         '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians',
@@ -394,10 +395,11 @@
 
   function renderBibleBooks() {
     var select = document.getElementById('bible-book');
+    var previous = select.value;
     select.textContent = '';
     BIBLE_BOOKS.forEach(function (group) {
       var optgroup = document.createElement('optgroup');
-      optgroup.label = group.testament;
+      optgroup.label = t(group.testamentKey);
       group.books.forEach(function (book) {
         var option = document.createElement('option');
         option.value = book;
@@ -406,6 +408,7 @@
       });
       select.appendChild(optgroup);
     });
+    if (previous) select.value = previous;
   }
 
   /* ---------- bible plans ---------- */

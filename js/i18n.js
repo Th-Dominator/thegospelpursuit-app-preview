@@ -100,6 +100,8 @@ var TRANSLATIONS = {
     'bible.title': 'Read the Bible',
     'bible.lede': 'Choose a book and chapter. The text appears in your chosen language wherever a translation exists.',
     'bible.book': 'Book',
+    'bible.oldTestament': 'Old Testament',
+    'bible.newTestament': 'New Testament',
     'bible.chapter': 'Chapter',
     'bible.submit': 'Open',
     'bible.busy': 'Opening…',

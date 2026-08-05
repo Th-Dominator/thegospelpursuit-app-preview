@@ -39,6 +39,8 @@ TGP_LANG['fr'] = {
   'bible.title': 'Lire la Bible',
   'bible.lede': 'Choisissez un livre et un chapitre. Le texte s’affiche dans votre langue partout où une traduction existe.',
   'bible.book': 'Livre',
+  'bible.oldTestament': 'Ancien Testament',
+  'bible.newTestament': 'Nouveau Testament',
   'bible.chapter': 'Chapitre',
   'bible.submit': 'Ouvrir',
   'bible.busy': 'Ouverture…',

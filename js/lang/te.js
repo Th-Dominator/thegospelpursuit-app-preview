@@ -39,6 +39,8 @@ TGP_LANG['te'] = {
   'bible.title': 'బైబిల్ చదవండి',
   'bible.lede': 'ఒక గ్రంథాన్ని, అధ్యాయాన్ని ఎంచుకోండి. అనువాదం ఉన్న చోట మీరు ఎంచుకున్న భాషలో పాఠం కనిపిస్తుంది.',
   'bible.book': 'గ్రంథం',
+  'bible.oldTestament': 'పాత నిబంధన',
+  'bible.newTestament': 'క్రొత్త నిబంధన',
   'bible.chapter': 'అధ్యాయం',
   'bible.submit': 'తెరవండి',
   'bible.busy': 'తెరుస్తోంది…',

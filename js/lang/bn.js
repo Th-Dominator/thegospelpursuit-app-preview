@@ -39,6 +39,8 @@ TGP_LANG['bn'] = {
   'bible.title': 'বাইবেল পড়ুন',
   'bible.lede': 'একটি পুস্তক ও অধ্যায় বেছে নিন। যেখানে অনুবাদ রয়েছে, সেখানে পাঠ আপনার ভাষায় দেখাবে।',
   'bible.book': 'পুস্তক',
+  'bible.oldTestament': 'পুরাতন নিয়ম',
+  'bible.newTestament': 'নতুন নিয়ম',
   'bible.chapter': 'অধ্যায়',
   'bible.submit': 'খুলুন',
   'bible.busy': 'খোলা হচ্ছে…',

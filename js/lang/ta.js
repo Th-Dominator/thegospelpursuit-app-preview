@@ -39,6 +39,8 @@ TGP_LANG['ta'] = {
   'bible.title': 'பைபிள் வாசியுங்கள்',
   'bible.lede': 'ஒரு நூலையும் அதிகாரத்தையும் தேர்ந்தெடுங்கள். மொழிபெயர்ப்பு உள்ள இடங்களில் உரை உங்கள் மொழியில் தோன்றும்.',
   'bible.book': 'நூல்',
+  'bible.oldTestament': 'பழைய ஏற்பாடு',
+  'bible.newTestament': 'புதிய ஏற்பாடு',
   'bible.chapter': 'அதிகாரம்',
   'bible.submit': 'திற',
   'bible.busy': 'திறக்கிறது…',

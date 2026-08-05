@@ -39,6 +39,8 @@ TGP_LANG['ro'] = {
   'bible.title': 'Citește Biblia',
   'bible.lede': 'Alege o carte și un capitol. Textul apare în limba ta oriunde există o traducere.',
   'bible.book': 'Carte',
+  'bible.oldTestament': 'Vechiul Testament',
+  'bible.newTestament': 'Noul Testament',
   'bible.chapter': 'Capitol',
   'bible.submit': 'Deschide',
   'bible.busy': 'Se deschide…',

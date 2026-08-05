@@ -39,6 +39,8 @@ TGP_LANG['hy'] = {
   'bible.title': 'Կարդալ Աստվածաշունչը',
   'bible.lede': 'Ընտրիր գիրք և գլուխ։ Տեքստը կհայտնվի քո լեզվով ամենուր, որտեղ թարգմանություն կա։',
   'bible.book': 'Գիրք',
+  'bible.oldTestament': 'Հին Կտակարան',
+  'bible.newTestament': 'Նոր Կտակարան',
   'bible.chapter': 'Գլուխ',
   'bible.submit': 'Բացել',
   'bible.busy': 'Բացվում է…',

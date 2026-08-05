@@ -39,6 +39,8 @@ TGP_LANG['lo'] = {
   'bible.title': 'ອ່ານພຣະຄຳພີ',
   'bible.lede': 'ເລືອກໜັງສືແລະບົດ. ຂໍ້ຄວາມຈະປາກົດເປັນພາສາທີ່ທ່ານເລືອກ ທຸກບ່ອນທີ່ມີການແປ.',
   'bible.book': 'ໜັງສື',
+  'bible.oldTestament': 'ພຣະຄຳພີເດີມ',
+  'bible.newTestament': 'ພຣະຄຳພີໃໝ່',
   'bible.chapter': 'ບົດ',
   'bible.submit': 'ເປີດ',
   'bible.busy': 'ກຳລັງເປີດ…',

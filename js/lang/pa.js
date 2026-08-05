@@ -39,6 +39,8 @@ TGP_LANG['pa'] = {
   'bible.title': 'ਬਾਈਬਲ ਪੜ੍ਹੋ',
   'bible.lede': 'ਇੱਕ ਪੁਸਤਕ ਅਤੇ ਕਾਂਡ ਚੁਣੋ। ਜਿੱਥੇ ਅਨੁਵਾਦ ਮੌਜੂਦ ਹੈ, ਉੱਥੇ ਲਿਖਤ ਤੁਹਾਡੀ ਭਾਸ਼ਾ ਵਿੱਚ ਦਿਖੇਗੀ।',
   'bible.book': 'ਪੁਸਤਕ',
+  'bible.oldTestament': 'ਪੁਰਾਣਾ ਨੇਮ',
+  'bible.newTestament': 'ਨਵਾਂ ਨੇਮ',
   'bible.chapter': 'ਕਾਂਡ',
   'bible.submit': 'ਖੋਲ੍ਹੋ',
   'bible.busy': 'ਖੋਲ੍ਹਿਆ ਜਾ ਰਿਹਾ ਹੈ…',

@@ -39,6 +39,8 @@ TGP_LANG['vi'] = {
   'bible.title': 'Đọc Kinh Thánh',
   'bible.lede': 'Chọn một sách và một chương. Bản văn hiện ra bằng ngôn ngữ bạn chọn ở những nơi có bản dịch.',
   'bible.book': 'Sách',
+  'bible.oldTestament': 'Cựu Ước',
+  'bible.newTestament': 'Tân Ước',
   'bible.chapter': 'Chương',
   'bible.submit': 'Mở',
   'bible.busy': 'Đang mở…',

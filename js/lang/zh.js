@@ -39,6 +39,8 @@ TGP_LANG['zh'] = {
   'bible.title': '阅读圣经',
   'bible.lede': '选择书卷与章数。凡有译本的语言，经文都会以你选择的语言呈现。',
   'bible.book': '书卷',
+  'bible.oldTestament': '旧约',
+  'bible.newTestament': '新约',
   'bible.chapter': '章',
   'bible.submit': '打开',
   'bible.busy': '正在打开…',

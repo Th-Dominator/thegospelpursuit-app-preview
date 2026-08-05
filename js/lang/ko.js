@@ -39,6 +39,8 @@ TGP_LANG['ko'] = {
   'bible.title': '성경 읽기',
   'bible.lede': '책과 장을 선택하세요. 번역이 있는 언어라면 선택한 언어로 본문이 표시됩니다.',
   'bible.book': '책',
+  'bible.oldTestament': '구약',
+  'bible.newTestament': '신약',
   'bible.chapter': '장',
   'bible.submit': '열기',
   'bible.busy': '여는 중…',

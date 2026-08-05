@@ -39,6 +39,8 @@ TGP_LANG['ne'] = {
   'bible.title': 'बाइबल पढ्नुहोस्',
   'bible.lede': 'एउटा पुस्तक र अध्याय छान्नुहोस्। अनुवाद भएको ठाउँमा पाठ तपाईंको भाषामा देखिनेछ।',
   'bible.book': 'पुस्तक',
+  'bible.oldTestament': 'पुरानो नियम',
+  'bible.newTestament': 'नयाँ नियम',
   'bible.chapter': 'अध्याय',
   'bible.submit': 'खोल्नुहोस्',
   'bible.busy': 'खुल्दै…',

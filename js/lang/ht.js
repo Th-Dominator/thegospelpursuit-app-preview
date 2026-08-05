@@ -39,6 +39,8 @@ TGP_LANG['ht'] = {
   'bible.title': 'Li Bib la',
   'bible.lede': 'Chwazi yon liv ak yon chapit. Tèks la parèt nan lang ou chwazi a toupatou kote gen yon tradiksyon.',
   'bible.book': 'Liv',
+  'bible.oldTestament': 'Ansyen Testaman',
+  'bible.newTestament': 'Nouvo Testaman',
   'bible.chapter': 'Chapit',
   'bible.submit': 'Louvri',
   'bible.busy': 'N ap louvri…',

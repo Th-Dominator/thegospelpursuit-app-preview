@@ -39,6 +39,8 @@ TGP_LANG['km'] = {
   'bible.title': 'អានព្រះគម្ពីរ',
   'bible.lede': 'ជ្រើសរើសសៀវភៅ និងជំពូក។ អត្ថបទនឹងបង្ហាញជាភាសាដែលអ្នកជ្រើស នៅគ្រប់កន្លែងដែលមានការបកប្រែ។',
   'bible.book': 'សៀវភៅ',
+  'bible.oldTestament': 'គម្ពីរសញ្ញាចាស់',
+  'bible.newTestament': 'គម្ពីរសញ្ញាថ្មី',
   'bible.chapter': 'ជំពូក',
   'bible.submit': 'បើក',
   'bible.busy': 'កំពុងបើក…',

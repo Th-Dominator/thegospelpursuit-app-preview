@@ -39,6 +39,8 @@ TGP_LANG['ar'] = {
   'bible.title': 'اقرأ الكتاب المقدس',
   'bible.lede': 'اختر سفرًا وأصحاحًا. يظهر النص بلغتك حيثما توفّرت ترجمة.',
   'bible.book': 'السفر',
+  'bible.oldTestament': 'العهد القديم',
+  'bible.newTestament': 'العهد الجديد',
   'bible.chapter': 'الأصحاح',
   'bible.submit': 'افتح',
   'bible.busy': 'جارٍ الفتح…',

@@ -39,6 +39,8 @@ TGP_LANG['tl'] = {
   'bible.title': 'Basahin ang Bibliya',
   'bible.lede': 'Pumili ng aklat at kabanata. Lalabas ang teksto sa wikang pinili mo kung saan may salin.',
   'bible.book': 'Aklat',
+  'bible.oldTestament': 'Lumang Tipan',
+  'bible.newTestament': 'Bagong Tipan',
   'bible.chapter': 'Kabanata',
   'bible.submit': 'Buksan',
   'bible.busy': 'Binubuksan…',

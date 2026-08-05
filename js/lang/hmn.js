@@ -39,6 +39,8 @@ TGP_LANG['hmn'] = {
   'bible.title': 'Nyeem Phau Vajluskub',
   'bible.lede': 'Xaiv ib phau thiab ib tshooj. Cov ntawv yuav tshwm ua koj hom lus qhov twg uas muaj kev txhais.',
   'bible.book': 'Phau',
+  'bible.oldTestament': 'Phau Qub',
+  'bible.newTestament': 'Phau Tshiab',
   'bible.chapter': 'Tshooj',
   'bible.submit': 'Qhib',
   'bible.busy': 'Tab tom qhib…',

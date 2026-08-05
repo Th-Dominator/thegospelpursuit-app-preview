@@ -39,6 +39,8 @@ TGP_LANG['nl'] = {
   'bible.title': 'Lees de Bijbel',
   'bible.lede': 'Kies een boek en een hoofdstuk. De tekst verschijnt in jouw taal overal waar een vertaling bestaat.',
   'bible.book': 'Boek',
+  'bible.oldTestament': 'Oude Testament',
+  'bible.newTestament': 'Nieuwe Testament',
   'bible.chapter': 'Hoofdstuk',
   'bible.submit': 'Openen',
   'bible.busy': 'Openen…',

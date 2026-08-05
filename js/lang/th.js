@@ -39,6 +39,8 @@ TGP_LANG['th'] = {
   'bible.title': 'อ่านพระคัมภีร์',
   'bible.lede': 'เลือกหนังสือและบท ข้อความจะปรากฏในภาษาที่คุณเลือกทุกที่ที่มีคำแปล',
   'bible.book': 'หนังสือ',
+  'bible.oldTestament': 'พันธสัญญาเดิม',
+  'bible.newTestament': 'พันธสัญญาใหม่',
   'bible.chapter': 'บท',
   'bible.submit': 'เปิด',
   'bible.busy': 'กำลังเปิด…',

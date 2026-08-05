@@ -39,6 +39,8 @@ TGP_LANG['ja'] = {
   'bible.title': '聖書を読む',
   'bible.lede': '書と章を選んでください。訳がある言語では、選んだ言語で本文が表示されます。',
   'bible.book': '書',
+  'bible.oldTestament': '旧約聖書',
+  'bible.newTestament': '新約聖書',
   'bible.chapter': '章',
   'bible.submit': '開く',
   'bible.busy': '開いています…',
