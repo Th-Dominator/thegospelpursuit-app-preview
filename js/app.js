@@ -560,9 +560,9 @@
      id means "let the server pick what's best for the language". */
   var BIBLE_VERSIONS = [
     { id: '', labelKey: 'settings.translationDefault' },
-    { id: 'KJV', label: 'King James Version (KJV)' },
-    { id: 'ASV', label: 'American Standard Version (ASV)' },
-    { id: 'WEB', label: 'World English Bible (WEB)' }
+    { id: 'kjv', label: 'King James Version (KJV)' },
+    { id: 'web', label: 'World English Bible (WEB)' },
+    { id: 'bbe', label: 'Bible in Basic English (BBE)' }
   ];
 
   function currentVersion() {
