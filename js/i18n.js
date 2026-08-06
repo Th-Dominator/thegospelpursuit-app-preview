@@ -121,7 +121,6 @@ var TRANSLATIONS = {
     'bible.hard': 'Hard',
     'bible.loading': 'Loading…',
     'bible.sectionUnavailable': 'Not connected yet.',
-    'bible.showAnswer': 'Show answer',
     'bible.submit': 'Open',
     'bible.busy': 'Opening…',
     'bible.busyStatus': 'Loading that chapter…',
