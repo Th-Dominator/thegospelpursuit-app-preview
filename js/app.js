@@ -170,12 +170,21 @@
      server can honour them; they live on the device, not the account, so
      nothing here needs a database. */
   var SETTINGS_KEY = 'tgp.settings';
+  // dropdown preferences (string-valued)
   var SETTING_FIELDS = {
-    'setting-translation': { name: 'translation', fallback: '' },
+    'setting-version': { name: 'version', fallback: '' },
+    'setting-font-size': { name: 'fontSize', fallback: 'medium' },
     'setting-search-context': { name: 'searchContext', fallback: 'verse' },
     'setting-devotional-length': { name: 'devotionalLength', fallback: 'medium' },
     'setting-plan-pace': { name: 'planPace', fallback: 'steady' },
     'setting-apologetics-tone': { name: 'apologeticsTone', fallback: 'gentle' }
+  };
+
+  // on/off preferences (boolean-valued)
+  var TOGGLE_FIELDS = {
+    'setting-red-letters': { name: 'redLetters', fallback: false },
+    'setting-verse-picker': { name: 'showVersePicker', fallback: true },
+    'setting-progress-bar': { name: 'showProgressBar', fallback: true }
   };
 
   var settings = loadSettings();
@@ -191,10 +200,24 @@
       var field = SETTING_FIELDS[id];
       if (typeof stored[field.name] !== 'string') stored[field.name] = field.fallback;
     });
+    Object.keys(TOGGLE_FIELDS).forEach(function (id) {
+      var field = TOGGLE_FIELDS[id];
+      if (typeof stored[field.name] !== 'boolean') stored[field.name] = field.fallback;
+    });
     return stored;
   }
 
+  function persistSettings() {
+    try {
+      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch (err) {
+      /* the choice still holds for this page view */
+    }
+  }
+
   function wireSettings() {
+    var status = document.getElementById('settings-status');
+
     Object.keys(SETTING_FIELDS).forEach(function (id) {
       var select = document.getElementById(id);
       var field = SETTING_FIELDS[id];
@@ -203,25 +226,57 @@
 
       select.addEventListener('change', function () {
         settings[field.name] = select.value;
-        try {
-          window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-        } catch (err) {
-          /* the choice still holds for this page view */
-        }
-        setStatus(document.getElementById('settings-status'), t('settings.saved'), false);
+        persistSettings();
+        onSettingChanged(field.name);
+        setStatus(status, t('settings.saved'), false);
+      });
+    });
+
+    Object.keys(TOGGLE_FIELDS).forEach(function (id) {
+      var box = document.getElementById(id);
+      var field = TOGGLE_FIELDS[id];
+
+      box.checked = Boolean(settings[field.name]);
+
+      box.addEventListener('change', function () {
+        settings[field.name] = box.checked;
+        persistSettings();
+        onSettingChanged(field.name);
+        setStatus(status, t('settings.saved'), false);
       });
     });
   }
 
-  /* Translation choices come from the backend once a language is picked. Until
-     that endpoint exists there is one entry: whatever the server thinks best. */
-  function renderTranslationOptions() {
-    var select = document.getElementById('setting-translation');
-    select.textContent = '';
-    var option = document.createElement('option');
-    option.value = '';
-    option.textContent = t('settings.translationDefault');
-    select.appendChild(option);
+  // a preference changed: repaint the reader, and refetch if the version moved
+  function onSettingChanged(name) {
+    applyReadingPrefs();
+    if (name === 'version') {
+      renderVersionOptions();
+      if (bibleState.screen === 'reader') loadChapter();
+    }
+  }
+
+  /* Font size, red-letter, verse-picker and progress-bar preferences all show up
+     in the reader; this keeps its DOM in step with the saved choices. */
+  function applyReadingPrefs() {
+    var verses = document.getElementById('bible-verses');
+    if (verses) {
+      ['small', 'medium', 'large', 'xlarge'].forEach(function (size) {
+        verses.classList.toggle('reader-font-' + size, (settings.fontSize || 'medium') === size);
+      });
+      verses.classList.toggle('red-letters', Boolean(settings.redLetters));
+    }
+    var jump = document.getElementById('bible-verse-jump');
+    if (jump) jump.hidden = !settings.showVersePicker;
+
+    var progress = document.getElementById('bible-progress');
+    if (progress) {
+      var showBar = settings.showProgressBar &&
+        bibleState.screen === 'reader' &&
+        document.getElementById('view-bible').classList.contains('is-active');
+      progress.hidden = !showBar;
+    }
+    updateReadingProgress();
   }
 
   /* ---------- loading screen ---------- */
@@ -258,6 +313,8 @@
     });
     // entering the Bible always starts back at the two testaments
     if (name === 'bible') resetBibleBrowser();
+    // keep the fixed progress bar from lingering over other views
+    applyReadingPrefs();
     closeSidebar();
     window.scrollTo(0, 0);
   }
@@ -440,6 +497,7 @@
     // the testaments screen is the root, so it carries no back button
     document.getElementById('bible-crumbs').hidden = name === 'testaments';
     updateBibleCrumbs();
+    applyReadingPrefs();
   }
 
   function resetBibleBrowser() {
@@ -569,8 +627,8 @@
     return (settings && settings.version) || '';
   }
 
-  function renderVersionOptions() {
-    var select = document.getElementById('bible-version');
+  function fillVersionSelect(select) {
+    if (!select) return;
     select.textContent = '';
     BIBLE_VERSIONS.forEach(function (v) {
       var option = document.createElement('option');
@@ -581,15 +639,47 @@
     select.value = currentVersion();
   }
 
+  // the reader's picker and the Settings "main version" select show the same list
+  function renderVersionOptions() {
+    fillVersionSelect(document.getElementById('bible-version'));
+    fillVersionSelect(document.getElementById('setting-version'));
+  }
+
   document.getElementById('bible-version').addEventListener('change', function () {
     settings.version = this.value;
-    try {
-      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    } catch (err) {
-      /* the choice still holds for this page view */
-    }
+    persistSettings();
+    var setting = document.getElementById('setting-version');
+    if (setting) setting.value = this.value;
     loadChapter();
   });
+
+  // jumping to a verse from the picker scrolls its card into view
+  document.getElementById('bible-verse-select').addEventListener('change', function () {
+    var card = document.querySelector('.verse-card[data-verse="' + this.value + '"]');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // the progress bar fills as the reader scrolls through the chapter
+  var progressPending = false;
+  function updateReadingProgress() {
+    var fill = document.getElementById('bible-progress-fill');
+    var verses = document.getElementById('bible-verses');
+    if (!fill || !verses) return;
+    if (!settings.showProgressBar || bibleState.screen !== 'reader') return;
+    var denom = verses.scrollHeight - window.innerHeight;
+    var p = denom > 0 ? (-verses.getBoundingClientRect().top) / denom : 1;
+    p = Math.max(0, Math.min(1, p));
+    fill.style.width = (p * 100).toFixed(1) + '%';
+  }
+  window.addEventListener('scroll', function () {
+    if (progressPending) return;
+    progressPending = true;
+    (window.requestAnimationFrame || function (f) { f(); })(function () {
+      progressPending = false;
+      updateReadingProgress();
+    });
+  }, { passive: true });
+  window.addEventListener('resize', updateReadingProgress);
 
   /* Posted videos live on the device, keyed by book|chapter|verse, so they
      stay put across reloads without an account behind them. */
@@ -692,10 +782,27 @@
     verses.forEach(function (verse) {
       list.appendChild(buildVerseCard(verse));
     });
+    populateVersePicker(verses);
+    applyReadingPrefs();
+    // let the new cards lay out before the progress bar measures them
+    if (window.requestAnimationFrame) window.requestAnimationFrame(updateReadingProgress);
+  }
+
+  function populateVersePicker(verses) {
+    var select = document.getElementById('bible-verse-select');
+    if (!select) return;
+    select.textContent = '';
+    verses.forEach(function (verse) {
+      var option = document.createElement('option');
+      option.value = verse.number;
+      option.textContent = verse.number;
+      select.appendChild(option);
+    });
   }
 
   function buildVerseCard(verse) {
     var card = el('article', 'verse-card');
+    card.setAttribute('data-verse', verse.number);
 
     var head = el('div', 'verse-head');
     head.appendChild(txt('span', 'verse-num', verse.number));
@@ -1102,15 +1209,16 @@
   /* ---------- start ---------- */
 
   resetBibleBrowser();
-  renderTranslationOptions();
+  renderVersionOptions();
   wireSettings();
+  applyReadingPrefs();
 
   /* A saved non-English choice needs its table fetched before the first paint,
      so translate once with what's bundled and again once the table lands. */
   applyTranslations();
   if (currentLang !== DEFAULT_LANG) {
     TGPi18n.load(currentLang).then(function () {
-      renderTranslationOptions();
+      renderVersionOptions();
       applyTranslations();
     });
   }

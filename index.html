@@ -168,14 +168,21 @@
 
       <!-- screen 4: read the chapter, verse by verse -->
       <div id="bible-screen-reader" class="bible-screen" hidden>
+        <div id="bible-progress" class="bible-progress" hidden aria-hidden="true">
+          <div id="bible-progress-fill" class="bible-progress-fill"></div>
+        </div>
         <div class="bible-reader-head">
-          <label class="bible-version">
-            <span class="bible-version-label" data-i18n="bible.version">Version</span>
+          <label class="bible-control bible-verse-jump" id="bible-verse-jump">
+            <span class="bible-control-label" data-i18n="bible.goToVerse">Verse</span>
+            <select id="bible-verse-select"></select>
+          </label>
+          <label class="bible-control bible-version">
+            <span class="bible-control-label" data-i18n="bible.version">Version</span>
             <select id="bible-version"></select>
           </label>
         </div>
         <p id="bible-status" class="status" role="status" aria-live="polite"></p>
-        <div id="bible-verses" class="bible-verses"></div>
+        <div id="bible-verses" class="bible-verses reader-font-medium"></div>
         <div class="bible-reader-nav">
           <button type="button" id="bible-prev" class="bible-step" data-i18n="bible.prevChapter">Previous</button>
           <button type="button" id="bible-next" class="bible-step" data-i18n="bible.nextChapter">Next</button>
@@ -252,8 +259,39 @@
         <h2 class="settings-heading" data-i18n="settings.bibleHeading">The Bible</h2>
         <p class="settings-hint" data-i18n="settings.bibleHint">Which translation to read and search when more than one exists in your language.</p>
         <label class="settings-field">
-          <span class="settings-label" data-i18n="settings.translationLabel">Preferred translation</span>
-          <select id="setting-translation"></select>
+          <span class="settings-label" data-i18n="settings.mainVersion">My main Bible version</span>
+          <select id="setting-version"></select>
+        </label>
+      </section>
+
+      <!-- reading -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.readingHeading">Reading</h2>
+        <p class="settings-hint" data-i18n="settings.readingHint">How the chapter reader looks and what it shows alongside each verse.</p>
+
+        <label class="settings-field">
+          <span class="settings-label" data-i18n="settings.fontSizeLabel">Font size</span>
+          <select id="setting-font-size">
+            <option value="small" data-i18n="settings.fontSmall">Small</option>
+            <option value="medium" data-i18n="settings.fontMedium">Medium</option>
+            <option value="large" data-i18n="settings.fontLarge">Large</option>
+            <option value="xlarge" data-i18n="settings.fontXLarge">Extra large</option>
+          </select>
+        </label>
+
+        <label class="settings-toggle">
+          <input type="checkbox" id="setting-red-letters">
+          <span class="settings-toggle-text" data-i18n="settings.redLettersLabel">Show the words of Jesus in red</span>
+        </label>
+
+        <label class="settings-toggle">
+          <input type="checkbox" id="setting-verse-picker">
+          <span class="settings-toggle-text" data-i18n="settings.versePickerLabel">Show the verse picker in the reader</span>
+        </label>
+
+        <label class="settings-toggle">
+          <input type="checkbox" id="setting-progress-bar">
+          <span class="settings-toggle-text" data-i18n="settings.progressBarLabel">Show the reading progress bar</span>
         </label>
       </section>
 

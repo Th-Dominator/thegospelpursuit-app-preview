@@ -348,6 +348,27 @@ body {
   color: var(--ink-soft);
 }
 
+/* on/off preference rows */
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  max-width: 420px;
+  cursor: pointer;
+}
+.settings-toggle input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.settings-toggle-text {
+  font-size: 14px;
+  color: var(--ink);
+}
+
 /* one look for every dropdown */
 .settings-field select,
 .tool-form select {
@@ -456,20 +477,23 @@ body {
 
 .bible-reader-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 14px;
   margin-bottom: 20px;
 }
-.bible-version {
+.bible-control {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.bible-version-label {
+.bible-control[hidden] { display: none; }
+.bible-control-label {
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-soft);
 }
-#bible-version {
+.bible-control select {
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--ink);
@@ -479,11 +503,41 @@ body {
   padding: 8px 12px;
   cursor: pointer;
 }
-#bible-version:focus {
+.bible-control select:focus {
   outline: none;
   border-color: var(--gold);
   box-shadow: 0 0 0 3px #A9814C22;
 }
+
+/* reading progress bar, pinned to the very top of the screen */
+.bible-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--gold-tint);
+  z-index: 50;
+}
+.bible-progress[hidden] { display: none; }
+.bible-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--gold);
+  transition: width 0.1s linear;
+}
+
+/* font-size preference applied to the verse text */
+.reader-font-small .verse-body { font-size: 16px; }
+.reader-font-medium .verse-body { font-size: 18px; }
+.reader-font-large .verse-body { font-size: 21px; }
+.reader-font-xlarge .verse-body { font-size: 24px; }
+
+/* words of Christ in red — shows wherever the verse text carries .woc markup */
+.bible-verses.red-letters .woc { color: #B2372B; }
+
+/* leave room under the fixed bar/topbar when the verse picker jumps to a verse */
+.verse-card { scroll-margin-top: 72px; }
 
 .bible-verses {
   display: flex;
