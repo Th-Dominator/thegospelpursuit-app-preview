@@ -155,9 +155,10 @@
   }
 
   function clearResults() {
-    ['bible-result', 'search-result', 'devotional-result', 'apologetics-result'].forEach(function (id) {
+    ['search-result', 'devotional-result', 'apologetics-result'].forEach(function (id) {
       document.getElementById(id).hidden = true;
     });
+    document.getElementById('bible-verses').textContent = '';
     ['bible-status', 'search-status', 'devotional-status', 'apologetics-status'].forEach(function (id) {
       setStatus(document.getElementById(id), '', false);
     });
@@ -540,32 +541,382 @@
       !bibleState.book || bibleState.chapter >= bibleState.book.chapters;
   }
 
+  /* ---------- the reader: versions, video, and per-verse tools ---------- */
+
+  // small DOM helpers keep the card building below readable
+  function el(tag, cls) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    return node;
+  }
+  function txt(tag, cls, text) {
+    var node = el(tag, cls);
+    node.textContent = text;
+    return node;
+  }
+
+  /* Public-domain versions ship now so English reads today; the backend will
+     extend this list (NIV, ESV, …) once GET /bible-versions lands. The empty
+     id means "let the server pick what's best for the language". */
+  var BIBLE_VERSIONS = [
+    { id: '', labelKey: 'settings.translationDefault' },
+    { id: 'KJV', label: 'King James Version (KJV)' },
+    { id: 'ASV', label: 'American Standard Version (ASV)' },
+    { id: 'WEB', label: 'World English Bible (WEB)' }
+  ];
+
+  function currentVersion() {
+    return (settings && settings.version) || '';
+  }
+
+  function renderVersionOptions() {
+    var select = document.getElementById('bible-version');
+    select.textContent = '';
+    BIBLE_VERSIONS.forEach(function (v) {
+      var option = document.createElement('option');
+      option.value = v.id;
+      option.textContent = v.labelKey ? t(v.labelKey) : v.label;
+      select.appendChild(option);
+    });
+    select.value = currentVersion();
+  }
+
+  document.getElementById('bible-version').addEventListener('change', function () {
+    settings.version = this.value;
+    try {
+      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    } catch (err) {
+      /* the choice still holds for this page view */
+    }
+    loadChapter();
+  });
+
+  /* Posted videos live on the device, keyed by book|chapter|verse, so they
+     stay put across reloads without an account behind them. */
+  var VIDEO_KEY = 'tgp.verseVideos';
+  function loadVideos() {
+    try { return JSON.parse(window.localStorage.getItem(VIDEO_KEY)) || {}; }
+    catch (err) { return {}; }
+  }
+  function saveVideos(map) {
+    try { window.localStorage.setItem(VIDEO_KEY, JSON.stringify(map)); }
+    catch (err) { /* posting won't persist, but works for this view */ }
+  }
+  function verseKey(number) {
+    return bibleState.book.name + '|' + bibleState.chapter + '|' + number;
+  }
+
+  // turn a pasted link into an embed; null means "not something we can play"
+  function videoEmbed(url) {
+    var yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{11})/);
+    if (yt) return videoFrame('https://www.youtube.com/embed/' + yt[1]);
+    var vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (vimeo) return videoFrame('https://player.vimeo.com/video/' + vimeo[1]);
+    if (/^https?:\/\/\S+\.(mp4|webm|ogg)(\?\S*)?$/i.test(url)) {
+      var video = el('video', 'verse-embed-media');
+      video.src = url;
+      video.controls = true;
+      return wrapEmbed(video);
+    }
+    return null;
+  }
+  function videoFrame(src) {
+    var frame = el('iframe', 'verse-embed-media');
+    frame.src = src;
+    frame.setAttribute('allowfullscreen', '');
+    frame.setAttribute('loading', 'lazy');
+    frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    return wrapEmbed(frame);
+  }
+  function wrapEmbed(node) {
+    var wrap = el('div', 'verse-embed');
+    wrap.appendChild(node);
+    return wrap;
+  }
+
+  /* Accepts either a verses array or the older single text blob, splitting the
+     blob on leading verse numbers so the reader works with whatever shape the
+     backend sends. */
+  function extractVerses(data) {
+    if (data && Array.isArray(data.verses) && data.verses.length) {
+      return data.verses
+        .map(function (v, i) {
+          return { number: v.number || v.verse || i + 1, text: (v.text || '').trim() };
+        })
+        .filter(function (v) { return v.text; });
+    }
+    var blob = ((data && data.text) || '').trim();
+    if (!blob) return [];
+    var re = /(\d+)\s+([\s\S]*?)(?=\s+\d+\s+|$)/g;
+    var out = [];
+    var m;
+    while ((m = re.exec(blob))) out.push({ number: parseInt(m[1], 10), text: m[2].trim() });
+    return out.length > 1 ? out : [{ number: 1, text: blob }];
+  }
+
   function loadChapter() {
     if (!bibleState.book) return;
-    var result = document.getElementById('bible-result');
     var status = document.getElementById('bible-status');
+    var list = document.getElementById('bible-verses');
 
-    result.hidden = true;
+    list.textContent = '';
     setStatus(status, t('bible.busyStatus'), false);
     updateBibleCrumbs();
     updatePrevNext();
+    renderVersionOptions();
 
-    request('bible-chapter', { book: bibleState.book.name, chapter: bibleState.chapter })
+    request('bible-chapter', {
+      book: bibleState.book.name,
+      chapter: bibleState.chapter,
+      version: currentVersion()
+    })
       .then(function (data) {
-        var text = ((data && data.text) || '').trim();
-        if (text) {
-          result.textContent = text;
-          result.hidden = false;
+        var verses = extractVerses(data);
+        if (verses.length) {
+          renderVerses(verses);
           setStatus(status, '', false);
         } else {
           // an empty 200 means the reader endpoint isn't wired yet
-          result.hidden = true;
           setStatus(status, t('bible.unavailable'), false);
         }
       })
       .catch(function (err) {
-        result.hidden = true;
+        list.textContent = '';
         setStatus(status, err.message, true);
+      });
+  }
+
+  function renderVerses(verses) {
+    var list = document.getElementById('bible-verses');
+    list.textContent = '';
+    verses.forEach(function (verse) {
+      list.appendChild(buildVerseCard(verse));
+    });
+  }
+
+  function buildVerseCard(verse) {
+    var card = el('article', 'verse-card');
+
+    var head = el('div', 'verse-head');
+    head.appendChild(txt('span', 'verse-num', verse.number));
+    head.appendChild(txt('p', 'verse-body', verse.text));
+    card.appendChild(head);
+
+    var actions = el('div', 'verse-actions');
+    var panel = el('div', 'verse-panel');
+    panel.hidden = true;
+
+    var open = null; // which tool is showing, so a second click closes it
+    var buttons = {};
+
+    function choose(name, fill) {
+      if (open === name) {
+        panel.hidden = true;
+        open = null;
+      } else {
+        open = name;
+        panel.hidden = false;
+        panel.textContent = '';
+        fill(panel, verse);
+      }
+      Object.keys(buttons).forEach(function (key) {
+        buttons[key].classList.toggle('is-open', key === open);
+      });
+    }
+
+    [
+      { name: 'video', key: 'bible.video', fill: fillVideoPanel },
+      { name: 'context', key: 'bible.context', fill: fillContextPanel },
+      { name: 'resources', key: 'bible.resources', fill: fillResourcesPanel },
+      { name: 'check', key: 'bible.knowledgeCheck', fill: fillCheckPanel }
+    ].forEach(function (action) {
+      var btn = txt('button', 'verse-action', t(action.key));
+      btn.type = 'button';
+      btn.addEventListener('click', function () { choose(action.name, action.fill); });
+      buttons[action.name] = btn;
+      actions.appendChild(btn);
+    });
+
+    card.appendChild(actions);
+    card.appendChild(panel);
+    return card;
+  }
+
+  // --- video: paste a link, embed it, keep it on the device ---
+  function fillVideoPanel(panel, verse) {
+    var map = loadVideos();
+    var saved = map[verseKey(verse.number)];
+
+    if (saved) {
+      var embed = videoEmbed(saved);
+      if (embed) {
+        panel.appendChild(embed);
+      } else {
+        var link = txt('a', 'verse-video-link', saved);
+        link.href = saved;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        panel.appendChild(link);
+      }
+      var remove = txt('button', 'verse-panel-btn', t('bible.videoRemove'));
+      remove.type = 'button';
+      remove.addEventListener('click', function () {
+        var m = loadVideos();
+        delete m[verseKey(verse.number)];
+        saveVideos(m);
+        panel.textContent = '';
+        fillVideoPanel(panel, verse);
+      });
+      panel.appendChild(remove);
+      return;
+    }
+
+    var form = el('div', 'verse-video-form');
+    var input = el('input', 'verse-video-input');
+    input.type = 'url';
+    input.placeholder = t('bible.videoHint');
+    var post = txt('button', 'verse-panel-btn', t('bible.videoPost'));
+    post.type = 'button';
+    var note = el('p', 'verse-panel-note');
+
+    post.addEventListener('click', function () {
+      var url = input.value.trim();
+      if (!url) return;
+      // accept any http(s) link; only warn on something that clearly isn't one
+      if (!/^https?:\/\//i.test(url)) {
+        note.textContent = t('bible.videoInvalid');
+        return;
+      }
+      var m = loadVideos();
+      m[verseKey(verse.number)] = url;
+      saveVideos(m);
+      panel.textContent = '';
+      fillVideoPanel(panel, verse);
+    });
+
+    form.appendChild(input);
+    form.appendChild(post);
+    panel.appendChild(form);
+    panel.appendChild(note);
+  }
+
+  // --- context & resources: generated per verse by the backend ---
+  function fillContextPanel(panel, verse) {
+    fetchInto(panel, 'verse-context', verse, {}, function (data) {
+      var text = ((data && (data.context || data.text)) || '').trim();
+      return text ? txt('p', 'verse-prose', text) : null;
+    });
+  }
+
+  function fillResourcesPanel(panel, verse) {
+    fetchInto(panel, 'verse-resources', verse, {}, function (data) {
+      var items = (data && data.resources) || [];
+      if (!items.length) return null;
+      var ul = el('ul', 'verse-resource-list');
+      items.forEach(function (item) {
+        var li = el('li');
+        if (item && item.url) {
+          var a = txt('a', null, item.title || item.url);
+          a.href = item.url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          li.appendChild(a);
+        } else {
+          li.textContent = (item && item.title) || String(item);
+        }
+        ul.appendChild(li);
+      });
+      return ul;
+    });
+  }
+
+  // --- knowledge check: easy / medium / hard, each a generated quiz ---
+  function fillCheckPanel(panel, verse) {
+    var diffs = el('div', 'quiz-diffs');
+    var quiz = el('div', 'quiz-area');
+    var buttons = {};
+
+    [
+      { id: 'easy', key: 'bible.easy' },
+      { id: 'medium', key: 'bible.medium' },
+      { id: 'hard', key: 'bible.hard' }
+    ].forEach(function (level) {
+      var btn = txt('button', 'quiz-diff', t(level.key));
+      btn.type = 'button';
+      btn.addEventListener('click', function () {
+        Object.keys(buttons).forEach(function (id) {
+          buttons[id].classList.toggle('is-active', id === level.id);
+        });
+        loadQuiz(quiz, verse, level.id);
+      });
+      buttons[level.id] = btn;
+      diffs.appendChild(btn);
+    });
+
+    panel.appendChild(diffs);
+    panel.appendChild(quiz);
+  }
+
+  function loadQuiz(area, verse, difficulty) {
+    fetchInto(area, 'verse-quiz', verse, { difficulty: difficulty }, function (data) {
+      return data && data.question ? buildQuiz(data) : null;
+    });
+  }
+
+  function buildQuiz(data) {
+    var wrap = el('div', 'quiz');
+    wrap.appendChild(txt('p', 'quiz-question', data.question));
+
+    var options = data.options || [];
+    var answer = typeof data.answer === 'number' ? data.answer : -1;
+    var explain = el('p', 'quiz-explain');
+    explain.hidden = true;
+
+    options.forEach(function (option, index) {
+      var btn = txt('button', 'quiz-option', option);
+      btn.type = 'button';
+      btn.addEventListener('click', function () {
+        var picks = wrap.querySelectorAll('.quiz-option');
+        for (var i = 0; i < picks.length; i++) {
+          picks[i].disabled = true;
+          if (i === answer) picks[i].classList.add('is-correct');
+        }
+        if (index !== answer) btn.classList.add('is-wrong');
+        if (data.explanation) {
+          explain.textContent = data.explanation;
+          explain.hidden = false;
+        }
+      });
+      wrap.appendChild(btn);
+    });
+
+    wrap.appendChild(explain);
+    return wrap;
+  }
+
+  /* One shape for every backend-fed panel: show a loading line, then either the
+     built content or the "not connected yet" notice when the endpoint is empty. */
+  function fetchInto(container, path, verse, extra, build) {
+    container.textContent = '';
+    container.appendChild(txt('p', 'verse-panel-note', t('bible.loading')));
+
+    var body = {
+      book: bibleState.book.name,
+      chapter: bibleState.chapter,
+      verse: verse.number,
+      version: currentVersion()
+    };
+    Object.keys(extra).forEach(function (k) { body[k] = extra[k]; });
+
+    request(path, body)
+      .then(function (data) {
+        var node = build(data);
+        container.textContent = '';
+        container.appendChild(node || txt('p', 'verse-panel-note', t('bible.sectionUnavailable')));
+      })
+      .catch(function (err) {
+        container.textContent = '';
+        container.appendChild(txt('p', 'verse-panel-note is-error', err.message));
       });
   }
 
@@ -597,6 +948,7 @@
   // rebuilt on a language change so the labels and breadcrumb follow the UI
   function renderBibleBrowser() {
     renderTestamentCards();
+    renderVersionOptions();
     if (bibleState.screen === 'books') renderBookGrid();
     else if (bibleState.screen === 'chapters') renderChapterGrid();
     updateBibleCrumbs();

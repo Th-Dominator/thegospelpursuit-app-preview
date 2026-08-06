@@ -452,6 +452,247 @@ body {
 /* the back arrow points the other way once the page reads right to left */
 [dir="rtl"] .bible-back::before { content: '\2192\00a0'; }
 
+/* ---------- the reader: version picker + per-verse cards ---------- */
+
+.bible-reader-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+.bible-version {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bible-version-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+#bible-version {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  cursor: pointer;
+}
+#bible-version:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px #A9814C22;
+}
+
+.bible-verses {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.verse-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+.verse-head {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+.verse-num {
+  flex: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--gold);
+  min-width: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.verse-body {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink);
+  /* scripture sets its own direction so a verse reads correctly whatever the UI */
+  unicode-bidi: plaintext;
+}
+
+.verse-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.verse-action {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.verse-action:hover { border-color: var(--gold); color: var(--ink); }
+.verse-action.is-open {
+  color: var(--gold-dark);
+  background: var(--gold-tint);
+  border-color: var(--gold);
+}
+
+.verse-panel {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.verse-panel[hidden] { display: none; }
+.verse-panel-note {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin: 0;
+}
+.verse-panel-note.is-error { color: #A3352A; }
+.verse-prose {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+/* a small dark action button used inside panels (post / remove) */
+.verse-panel-btn {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--ink);
+  border: none;
+  border-radius: var(--radius);
+  padding: 9px 16px;
+  cursor: pointer;
+}
+.verse-panel-btn:hover { background: var(--gold-dark); }
+
+/* video: paste-a-link form + the embed it produces */
+.verse-video-form {
+  display: flex;
+  gap: 8px;
+}
+.verse-video-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+.verse-video-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px #A9814C22;
+}
+.verse-embed {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  margin-bottom: 12px;
+}
+.verse-embed-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.verse-video-link {
+  display: block;
+  font-size: 14px;
+  color: var(--gold-dark);
+  word-break: break-all;
+  margin-bottom: 12px;
+}
+
+.verse-resource-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.verse-resource-list a { color: var(--gold-dark); }
+
+/* knowledge check: difficulty row + the quiz it loads */
+.quiz-diffs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.quiz-diff {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.quiz-diff:hover { border-color: var(--gold); color: var(--ink); }
+.quiz-diff.is-active {
+  color: #fff;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.quiz-area:not(:empty) { margin-top: 14px; }
+.quiz-question {
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+.quiz-option {
+  display: block;
+  width: 100%;
+  text-align: start;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.quiz-option:hover:not(:disabled) { border-color: var(--gold); }
+.quiz-option:disabled { cursor: default; }
+.quiz-option.is-correct {
+  border-color: #2E7D57;
+  background: #EAF5EE;
+  color: #1E5C3E;
+}
+.quiz-option.is-wrong {
+  border-color: #A3352A;
+  background: #F8ECEA;
+  color: #8A2C22;
+}
+.quiz-explain {
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin: 10px 0 0;
+}
+
 .site-footer {
   padding: 32px 24px 48px;
   font-size: 13px;

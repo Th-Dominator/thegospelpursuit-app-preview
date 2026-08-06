@@ -166,10 +166,16 @@
       <!-- screen 3: pick a chapter -->
       <div id="bible-screen-chapters" class="bible-grid bible-grid-num bible-screen" hidden></div>
 
-      <!-- screen 4: read the chapter -->
+      <!-- screen 4: read the chapter, verse by verse -->
       <div id="bible-screen-reader" class="bible-screen" hidden>
-        <div id="bible-result" class="result-card prose" hidden></div>
+        <div class="bible-reader-head">
+          <label class="bible-version">
+            <span class="bible-version-label" data-i18n="bible.version">Version</span>
+            <select id="bible-version"></select>
+          </label>
+        </div>
         <p id="bible-status" class="status" role="status" aria-live="polite"></p>
+        <div id="bible-verses" class="bible-verses"></div>
         <div class="bible-reader-nav">
           <button type="button" id="bible-prev" class="bible-step" data-i18n="bible.prevChapter">Previous</button>
           <button type="button" id="bible-next" class="bible-step" data-i18n="bible.nextChapter">Next</button>
