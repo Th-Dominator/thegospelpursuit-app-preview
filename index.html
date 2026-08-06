@@ -149,16 +149,32 @@
     <section id="view-bible" class="view">
       <p class="eyebrow" data-i18n="bible.eyebrow">the bible</p>
       <h1 class="view-title" data-i18n="bible.title">Read the Bible</h1>
-      <p class="view-lede" data-i18n="bible.lede">Choose a book and chapter. The text appears in your chosen language wherever a translation exists.</p>
+      <p class="view-lede" data-i18n="bible.lede">Choose a testament, then a book and chapter. The text appears in your chosen language wherever a translation exists.</p>
 
-      <form id="bible-form" class="tool-form tool-form-split">
-        <select id="bible-book" data-i18n-aria="bible.book" aria-label="Book"></select>
-        <input id="bible-chapter" type="number" min="1" value="1" data-i18n-aria="bible.chapter" aria-label="Chapter">
-        <button type="submit">Open</button>
-      </form>
+      <!-- back button + breadcrumb: shown on every screen past the testaments -->
+      <div id="bible-crumbs" class="bible-crumbs" hidden>
+        <button type="button" id="bible-back" class="bible-back" data-i18n="bible.back">Back</button>
+        <span id="bible-path" class="bible-path"></span>
+      </div>
 
-      <div id="bible-result" class="result-card prose" hidden></div>
-      <p id="bible-status" class="status" role="status" aria-live="polite"></p>
+      <!-- screen 1: pick a testament -->
+      <div id="bible-screen-testaments" class="card-grid bible-screen"></div>
+
+      <!-- screen 2: pick a book -->
+      <div id="bible-screen-books" class="bible-grid bible-screen" hidden></div>
+
+      <!-- screen 3: pick a chapter -->
+      <div id="bible-screen-chapters" class="bible-grid bible-grid-num bible-screen" hidden></div>
+
+      <!-- screen 4: read the chapter -->
+      <div id="bible-screen-reader" class="bible-screen" hidden>
+        <div id="bible-result" class="result-card prose" hidden></div>
+        <p id="bible-status" class="status" role="status" aria-live="polite"></p>
+        <div class="bible-reader-nav">
+          <button type="button" id="bible-prev" class="bible-step" data-i18n="bible.prevChapter">Previous</button>
+          <button type="button" id="bible-next" class="bible-step" data-i18n="bible.nextChapter">Next</button>
+        </div>
+      </div>
     </section>
 
     <!-- SEARCH SCRIPTURE -->

@@ -80,7 +80,7 @@
 
     document.getElementById('nav-language-code').textContent = currentLang.toUpperCase();
     renderLanguageOptions();
-    renderBibleBooks();
+    renderBibleBrowser();
     renderPlans();
     retranslateForms();
   }
@@ -149,6 +149,7 @@
       if (changed && !appShell.hidden) {
         clearResults();
         loadDailyVerse();
+        if (bibleState.screen === 'reader') loadChapter();
       }
     });
   }
@@ -254,6 +255,8 @@
     document.querySelectorAll('.nav-link').forEach(function (link) {
       link.classList.toggle('is-active', link.dataset.view === name);
     });
+    // entering the Bible always starts back at the two testaments
+    if (name === 'bible') resetBibleBrowser();
     closeSidebar();
     window.scrollTo(0, 0);
   }
@@ -366,49 +369,238 @@
 
   /* ---------- the bible ---------- */
 
-  /* Placeholder until GET /bible-books lands: the canon in English, so the
-     reader is usable now. The endpoint will return these already localised,
-     which is why nothing here is a translation key. */
+  /* Placeholder until GET /bible-books lands: the canon with a chapter count
+     per book, so the browser (testament -> book -> chapter) works offline.
+     The endpoint will return this same shape already localised; only the
+     testament labels are keys, because the book names arrive translated too.
+     The chapter *text* still comes from the backend, per chapter opened. */
   var BIBLE_BOOKS = [
     {
       testamentKey: 'bible.oldTestament',
       books: [
-        'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth',
-        '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
-        'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon',
-        'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
-        'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah',
-        'Malachi'
+        { name: 'Genesis', chapters: 50 }, { name: 'Exodus', chapters: 40 },
+        { name: 'Leviticus', chapters: 27 }, { name: 'Numbers', chapters: 36 },
+        { name: 'Deuteronomy', chapters: 34 }, { name: 'Joshua', chapters: 24 },
+        { name: 'Judges', chapters: 21 }, { name: 'Ruth', chapters: 4 },
+        { name: '1 Samuel', chapters: 31 }, { name: '2 Samuel', chapters: 24 },
+        { name: '1 Kings', chapters: 22 }, { name: '2 Kings', chapters: 25 },
+        { name: '1 Chronicles', chapters: 29 }, { name: '2 Chronicles', chapters: 36 },
+        { name: 'Ezra', chapters: 10 }, { name: 'Nehemiah', chapters: 13 },
+        { name: 'Esther', chapters: 10 }, { name: 'Job', chapters: 42 },
+        { name: 'Psalms', chapters: 150 }, { name: 'Proverbs', chapters: 31 },
+        { name: 'Ecclesiastes', chapters: 12 }, { name: 'Song of Solomon', chapters: 8 },
+        { name: 'Isaiah', chapters: 66 }, { name: 'Jeremiah', chapters: 52 },
+        { name: 'Lamentations', chapters: 5 }, { name: 'Ezekiel', chapters: 48 },
+        { name: 'Daniel', chapters: 12 }, { name: 'Hosea', chapters: 14 },
+        { name: 'Joel', chapters: 3 }, { name: 'Amos', chapters: 9 },
+        { name: 'Obadiah', chapters: 1 }, { name: 'Jonah', chapters: 4 },
+        { name: 'Micah', chapters: 7 }, { name: 'Nahum', chapters: 3 },
+        { name: 'Habakkuk', chapters: 3 }, { name: 'Zephaniah', chapters: 3 },
+        { name: 'Haggai', chapters: 2 }, { name: 'Zechariah', chapters: 14 },
+        { name: 'Malachi', chapters: 4 }
       ]
     },
     {
       testamentKey: 'bible.newTestament',
       books: [
-        'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians',
-        '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians',
-        '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon',
-        'Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude',
-        'Revelation'
+        { name: 'Matthew', chapters: 28 }, { name: 'Mark', chapters: 16 },
+        { name: 'Luke', chapters: 24 }, { name: 'John', chapters: 21 },
+        { name: 'Acts', chapters: 28 }, { name: 'Romans', chapters: 16 },
+        { name: '1 Corinthians', chapters: 16 }, { name: '2 Corinthians', chapters: 13 },
+        { name: 'Galatians', chapters: 6 }, { name: 'Ephesians', chapters: 6 },
+        { name: 'Philippians', chapters: 4 }, { name: 'Colossians', chapters: 4 },
+        { name: '1 Thessalonians', chapters: 5 }, { name: '2 Thessalonians', chapters: 3 },
+        { name: '1 Timothy', chapters: 6 }, { name: '2 Timothy', chapters: 4 },
+        { name: 'Titus', chapters: 3 }, { name: 'Philemon', chapters: 1 },
+        { name: 'Hebrews', chapters: 13 }, { name: 'James', chapters: 5 },
+        { name: '1 Peter', chapters: 5 }, { name: '2 Peter', chapters: 3 },
+        { name: '1 John', chapters: 5 }, { name: '2 John', chapters: 1 },
+        { name: '3 John', chapters: 1 }, { name: 'Jude', chapters: 1 },
+        { name: 'Revelation', chapters: 22 }
       ]
     }
   ];
 
-  function renderBibleBooks() {
-    var select = document.getElementById('bible-book');
-    var previous = select.value;
-    select.textContent = '';
-    BIBLE_BOOKS.forEach(function (group) {
-      var optgroup = document.createElement('optgroup');
-      optgroup.label = t(group.testamentKey);
-      group.books.forEach(function (book) {
-        var option = document.createElement('option');
-        option.value = book;
-        option.textContent = book;
-        optgroup.appendChild(option);
-      });
-      select.appendChild(optgroup);
+  /* Which screen of the browser is showing, and the path taken to it. */
+  var bibleState = { screen: 'testaments', testament: 0, book: null, chapter: 1 };
+
+  var bibleScreens = {
+    testaments: document.getElementById('bible-screen-testaments'),
+    books: document.getElementById('bible-screen-books'),
+    chapters: document.getElementById('bible-screen-chapters'),
+    reader: document.getElementById('bible-screen-reader')
+  };
+
+  function showBibleScreen(name) {
+    bibleState.screen = name;
+    Object.keys(bibleScreens).forEach(function (key) {
+      bibleScreens[key].hidden = key !== name;
     });
-    if (previous) select.value = previous;
+    // the testaments screen is the root, so it carries no back button
+    document.getElementById('bible-crumbs').hidden = name === 'testaments';
+    updateBibleCrumbs();
+  }
+
+  function resetBibleBrowser() {
+    bibleState.book = null;
+    bibleState.chapter = 1;
+    showBibleScreen('testaments');
+  }
+
+  // the chevron points back the way the script reads
+  function bibleSeparator() {
+    return document.documentElement.dir === 'rtl' ? ' ‹ ' : ' › ';
+  }
+
+  function updateBibleCrumbs() {
+    var parts = [];
+    if (bibleState.screen !== 'testaments') {
+      parts.push(t(BIBLE_BOOKS[bibleState.testament].testamentKey));
+    }
+    if (bibleState.book && bibleState.screen !== 'books') {
+      parts.push(bibleState.book.name);
+    }
+    if (bibleState.screen === 'reader') {
+      parts.push(t('bible.chapter') + ' ' + bibleState.chapter);
+    }
+    document.getElementById('bible-path').textContent = parts.join(bibleSeparator());
+  }
+
+  function renderTestamentCards() {
+    var grid = bibleScreens.testaments;
+    grid.textContent = '';
+    BIBLE_BOOKS.forEach(function (group, index) {
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'feature-card';
+
+      var label = document.createElement('span');
+      label.className = 'feature-label';
+      label.textContent = t(group.testamentKey);
+      card.appendChild(label);
+
+      var hint = document.createElement('span');
+      hint.className = 'feature-hint';
+      hint.textContent = t('bible.bookCount', { count: group.books.length });
+      card.appendChild(hint);
+
+      card.addEventListener('click', function () {
+        bibleState.testament = index;
+        renderBookGrid();
+        showBibleScreen('books');
+        window.scrollTo(0, 0);
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function renderBookGrid() {
+    var grid = bibleScreens.books;
+    grid.textContent = '';
+    BIBLE_BOOKS[bibleState.testament].books.forEach(function (book) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bible-item';
+      btn.textContent = book.name;
+      btn.addEventListener('click', function () {
+        bibleState.book = book;
+        bibleState.chapter = 1;
+        renderChapterGrid();
+        showBibleScreen('chapters');
+        window.scrollTo(0, 0);
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  function renderChapterGrid() {
+    var grid = bibleScreens.chapters;
+    grid.textContent = '';
+    if (!bibleState.book) return;
+    for (var n = 1; n <= bibleState.book.chapters; n++) {
+      (function (chapter) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'bible-item';
+        btn.textContent = chapter;
+        btn.addEventListener('click', function () {
+          bibleState.chapter = chapter;
+          showBibleScreen('reader');
+          window.scrollTo(0, 0);
+          loadChapter();
+        });
+        grid.appendChild(btn);
+      })(n);
+    }
+  }
+
+  function updatePrevNext() {
+    document.getElementById('bible-prev').disabled = bibleState.chapter <= 1;
+    document.getElementById('bible-next').disabled =
+      !bibleState.book || bibleState.chapter >= bibleState.book.chapters;
+  }
+
+  function loadChapter() {
+    if (!bibleState.book) return;
+    var result = document.getElementById('bible-result');
+    var status = document.getElementById('bible-status');
+
+    result.hidden = true;
+    setStatus(status, t('bible.busyStatus'), false);
+    updateBibleCrumbs();
+    updatePrevNext();
+
+    request('bible-chapter', { book: bibleState.book.name, chapter: bibleState.chapter })
+      .then(function (data) {
+        var text = ((data && data.text) || '').trim();
+        if (text) {
+          result.textContent = text;
+          result.hidden = false;
+          setStatus(status, '', false);
+        } else {
+          // an empty 200 means the reader endpoint isn't wired yet
+          result.hidden = true;
+          setStatus(status, t('bible.unavailable'), false);
+        }
+      })
+      .catch(function (err) {
+        result.hidden = true;
+        setStatus(status, err.message, true);
+      });
+  }
+
+  function stepChapter(delta) {
+    if (!bibleState.book) return;
+    var next = bibleState.chapter + delta;
+    if (next < 1 || next > bibleState.book.chapters) return;
+    bibleState.chapter = next;
+    window.scrollTo(0, 0);
+    loadChapter();
+  }
+
+  document.getElementById('bible-back').addEventListener('click', function () {
+    if (bibleState.screen === 'reader') {
+      renderChapterGrid();
+      showBibleScreen('chapters');
+    } else if (bibleState.screen === 'chapters') {
+      renderBookGrid();
+      showBibleScreen('books');
+    } else if (bibleState.screen === 'books') {
+      showBibleScreen('testaments');
+    }
+    window.scrollTo(0, 0);
+  });
+
+  document.getElementById('bible-prev').addEventListener('click', function () { stepChapter(-1); });
+  document.getElementById('bible-next').addEventListener('click', function () { stepChapter(1); });
+
+  // rebuilt on a language change so the labels and breadcrumb follow the UI
+  function renderBibleBrowser() {
+    renderTestamentCards();
+    if (bibleState.screen === 'books') renderBookGrid();
+    else if (bibleState.screen === 'chapters') renderChapterGrid();
+    updateBibleCrumbs();
+    updatePrevNext();
   }
 
   /* ---------- bible plans ---------- */
@@ -512,24 +704,6 @@
   }
 
   wireForm({
-    formId: 'bible-form',
-    resultId: 'bible-result',
-    statusId: 'bible-status',
-    path: 'bible-chapter',
-    submitKey: 'bible.submit',
-    busyKey: 'bible.busy',
-    busyStatusKey: 'bible.busyStatus',
-    collect: function () {
-      var chapter = parseInt(document.getElementById('bible-chapter').value, 10);
-      if (!chapter || chapter < 1) return null;
-      return { book: document.getElementById('bible-book').value, chapter: chapter };
-    },
-    render: function (data, result) {
-      result.textContent = (data.text || '').trim();
-    }
-  });
-
-  wireForm({
     formId: 'search-form',
     resultId: 'search-result',
     statusId: 'search-status',
@@ -575,7 +749,7 @@
 
   /* ---------- start ---------- */
 
-  renderBibleBooks();
+  resetBibleBrowser();
   renderTranslationOptions();
   wireSettings();
 
