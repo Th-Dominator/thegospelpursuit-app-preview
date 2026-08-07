@@ -82,6 +82,10 @@
     renderLanguageOptions();
     renderBibleBrowser();
     renderPlans();
+    // keep an open plan's day list and labels in step with the language
+    if (currentPlan && !document.getElementById('plan-detail').hidden) openPlan(currentPlan);
+    renderApologetics();
+    renderTips();
     retranslateForms();
   }
 
@@ -313,6 +317,8 @@
     });
     // entering the Bible always starts back at the two testaments
     if (name === 'bible') resetBibleBrowser();
+    // entering Bible plans always starts at the plan chooser
+    if (name === 'plans') showPlansScreen('grid');
     // keep the fixed progress bar from lingering over other views
     applyReadingPrefs();
     closeSidebar();
@@ -760,6 +766,7 @@
 
     list.textContent = '';
     setCopyright('');
+    resetChapterGuide();
     setStatus(status, t('bible.busyStatus'), false);
     updateBibleCrumbs();
     updatePrevNext();
@@ -1074,41 +1081,472 @@
     updatePrevNext();
   }
 
+  /* ---------- chapter guide: overview, how it points to Jesus, background ---------- */
+
+  /* Which book|chapter the guide currently holds, so opening it twice on the same
+     chapter doesn't refetch, but moving to a new chapter does. */
+  var chapterGuideKey = null;
+
+  function resetChapterGuide() {
+    var guide = document.getElementById('chapter-guide');
+    var body = document.getElementById('chapter-guide-body');
+    if (!guide || !body) return;
+    guide.open = false;
+    body.textContent = '';
+    chapterGuideKey = null;
+  }
+
+  function loadChapterGuide() {
+    var body = document.getElementById('chapter-guide-body');
+    if (!body || !bibleState.book) return;
+    var key = bibleState.book.name + '|' + bibleState.chapter;
+    if (chapterGuideKey === key) return;
+    chapterGuideKey = key;
+
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('bible.guideBusy')));
+
+    request('chapter-insight', { book: bibleState.book.name, chapter: bibleState.chapter })
+      .then(function (data) {
+        // a late reply for a chapter we've since left shouldn't overwrite the new one
+        if (chapterGuideKey !== key) return;
+        body.textContent = '';
+        var sections = [
+          { key: 'bible.overview', text: data && data.overview },
+          { key: 'bible.pointsToChrist', text: data && data.christ },
+          { key: 'bible.background', text: data && data.history }
+        ];
+        var any = false;
+        sections.forEach(function (s) {
+          var text = (s.text || '').trim();
+          if (!text) return;
+          any = true;
+          body.appendChild(txt('h4', 'chapter-guide-heading', t(s.key)));
+          body.appendChild(txt('p', 'chapter-guide-text', text));
+        });
+        if (!any) body.appendChild(txt('p', 'verse-panel-note', t('bible.guideUnavailable')));
+      })
+      .catch(function (err) {
+        chapterGuideKey = null; // allow a retry on the next open
+        body.textContent = '';
+        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+      });
+  }
+
+  document.getElementById('chapter-guide').addEventListener('toggle', function () {
+    if (this.open) loadChapterGuide();
+  });
+
+  /* ---------- jumping into the reader from anywhere (plans) ---------- */
+
+  function findBook(name) {
+    for (var g = 0; g < BIBLE_BOOKS.length; g++) {
+      var books = BIBLE_BOOKS[g].books;
+      for (var i = 0; i < books.length; i++) {
+        if (books[i].name === name) return { testament: g, book: books[i] };
+      }
+    }
+    return null;
+  }
+
+  function openReaderAt(name, chapter) {
+    var found = findBook(name);
+    if (!found) return;
+    showView('bible'); // resets the browser to the testaments; we then jump past it
+    bibleState.testament = found.testament;
+    bibleState.book = found.book;
+    bibleState.chapter = Math.max(1, Math.min(chapter || 1, found.book.chapters));
+    renderChapterGrid();
+    showBibleScreen('reader');
+    window.scrollTo(0, 0);
+    loadChapter();
+  }
+
   /* ---------- bible plans ---------- */
 
-  /* Also a placeholder: GET /plans will serve these with real day counts, and
-     progress needs the account behind it, so nothing is clickable yet. */
-  var PLANS = [
-    { id: 'gospels', label: 'The Gospels', hint: '40 days' },
-    { id: 'psalms', label: 'Psalms and Proverbs', hint: '60 days' },
-    { id: 'nt', label: 'The New Testament', hint: '90 days' },
-    { id: 'year', label: 'The Whole Bible', hint: '365 days' }
+  /* A flat, chapter-by-chapter reading order (both testaments in canonical
+     order), built once from the book list the browser already uses. */
+  var canonCache = null;
+  function canonList() {
+    if (canonCache) return canonCache;
+    canonCache = [];
+    BIBLE_BOOKS.forEach(function (group) {
+      group.books.forEach(function (book) {
+        for (var c = 1; c <= book.chapters; c++) canonCache.push({ book: book.name, chapter: c });
+      });
+    });
+    return canonCache;
+  }
+
+  /* A roughly chronological book order — the order events happened, rather than
+     the order the books are bound. Chapter-level, which is the granularity a
+     day-by-day plan needs. */
+  var CHRONO_ORDER = [
+    'Genesis', 'Job', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+    'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Chronicles',
+    'Psalms', '2 Chronicles', 'Proverbs', 'Ecclesiastes', 'Song of Solomon',
+    '1 Kings', '2 Kings', 'Obadiah', 'Joel', 'Jonah', 'Amos', 'Hosea',
+    'Isaiah', 'Micah', 'Nahum', 'Zephaniah', 'Habakkuk', 'Jeremiah',
+    'Lamentations', 'Ezekiel', 'Daniel', 'Ezra', 'Nehemiah', 'Esther',
+    'Haggai', 'Zechariah', 'Malachi',
+    'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'James', 'Galatians',
+    '1 Thessalonians', '2 Thessalonians', '1 Corinthians', '2 Corinthians',
+    'Romans', 'Ephesians', 'Philippians', 'Colossians', 'Philemon',
+    '1 Timothy', 'Titus', '2 Timothy', '1 Peter', '2 Peter', 'Hebrews',
+    'Jude', '1 John', '2 John', '3 John', 'Revelation'
   ];
+
+  function orderedList(order) {
+    var byName = {};
+    BIBLE_BOOKS.forEach(function (g) { g.books.forEach(function (b) { byName[b.name] = b; }); });
+    var out = [];
+    order.forEach(function (name) {
+      var b = byName[name];
+      if (!b) return;
+      for (var c = 1; c <= b.chapters; c++) out.push({ book: name, chapter: c });
+    });
+    return out;
+  }
+
+  // split a flat reading list into as-even-as-possible daily portions
+  function chunkInto(list, days) {
+    var out = [];
+    var per = list.length / days;
+    for (var d = 0; d < days; d++) {
+      var slice = list.slice(Math.round(d * per), Math.round((d + 1) * per));
+      if (slice.length) out.push(slice);
+    }
+    return out;
+  }
+
+  var PLANS = [
+    { id: 'year', labelKey: 'plans.year', hintKey: 'plans.yearHint',
+      build: function () { return chunkInto(canonList(), 365); } },
+    { id: 'chrono', labelKey: 'plans.chrono', hintKey: 'plans.chronoHint',
+      build: function () { return chunkInto(orderedList(CHRONO_ORDER), 365); } },
+    { id: 'book', labelKey: 'plans.book', hintKey: 'plans.bookHint', book: true }
+  ];
+
+  var PLANS_KEY = 'tgp.plans';
+  function loadPlanProgress() {
+    try { return JSON.parse(window.localStorage.getItem(PLANS_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function savePlanProgress(p) {
+    try { window.localStorage.setItem(PLANS_KEY, JSON.stringify(p)); } catch (e) { /* view-only */ }
+  }
+
+  var currentPlan = null;
+
+  function showPlansScreen(name) {
+    document.getElementById('plans-grid').hidden = name !== 'grid';
+    document.getElementById('plan-detail').hidden = name !== 'detail';
+  }
 
   function renderPlans() {
     var grid = document.getElementById('plans-grid');
+    if (!grid) return;
     grid.textContent = '';
 
     PLANS.forEach(function (plan) {
       var card = document.createElement('button');
       card.type = 'button';
       card.className = 'feature-card';
-      card.disabled = true;
+      card.appendChild(txt('span', 'feature-label', t(plan.labelKey)));
 
-      var label = document.createElement('span');
-      label.className = 'feature-label';
-      label.textContent = plan.label;
-      card.appendChild(label);
+      var hint = t(plan.hintKey);
+      if (!plan.book) hint += ' · ' + t('plans.dayCount', { n: plan.build().length });
+      card.appendChild(txt('span', 'feature-hint', hint));
 
-      var hint = document.createElement('span');
-      hint.className = 'feature-hint';
-      hint.textContent = plan.hint + ' · ' + t('home.comingSoon');
-      card.appendChild(hint);
-
+      card.addEventListener('click', function () { openPlan(plan); });
       grid.appendChild(card);
     });
 
-    setStatus(document.getElementById('plans-status'), t('plans.unavailable'), false);
+    setStatus(document.getElementById('plans-status'), '', false);
+  }
+
+  function fillPlanBookSelect() {
+    var sel = document.getElementById('plan-book-select');
+    sel.textContent = '';
+    BIBLE_BOOKS.forEach(function (g) {
+      g.books.forEach(function (b) {
+        var o = document.createElement('option');
+        o.value = b.name;
+        o.textContent = b.name;
+        sel.appendChild(o);
+      });
+    });
+    var prog = loadPlanProgress();
+    sel.value = (prog.bookPlan && prog.bookPlan.lastBook) || 'John';
+  }
+
+  function openPlan(plan) {
+    currentPlan = plan;
+    showPlansScreen('detail');
+    document.getElementById('plan-detail-title').textContent = t(plan.labelKey);
+    document.getElementById('plan-book-field').hidden = !plan.book;
+    if (plan.book) fillPlanBookSelect();
+    renderPlanDays();
+    window.scrollTo(0, 0);
+  }
+
+  // the day list for the active plan, plus the storage key its progress lives under
+  function planDaysFor(plan) {
+    if (plan.book) {
+      var name = document.getElementById('plan-book-select').value;
+      var found = findBook(name);
+      var days = [];
+      if (found) for (var c = 1; c <= found.book.chapters; c++) days.push([{ book: name, chapter: c }]);
+      return { days: days, key: 'book:' + name };
+    }
+    return { days: plan.build(), key: plan.id };
+  }
+
+  // "Genesis 1–3", collapsing runs of consecutive chapters in the same book
+  function passageLabel(day) {
+    var parts = [];
+    var i = 0;
+    while (i < day.length) {
+      var book = day[i].book;
+      var start = day[i].chapter;
+      var end = start;
+      var j = i + 1;
+      while (j < day.length && day[j].book === book && day[j].chapter === end + 1) { end = day[j].chapter; j++; }
+      parts.push(book + ' ' + (start === end ? start : start + '–' + end));
+      i = j;
+    }
+    return parts.join(', ');
+  }
+
+  function renderPlanDays() {
+    var wrap = document.getElementById('plan-days');
+    if (!wrap || !currentPlan) return;
+    wrap.textContent = '';
+
+    var pd = planDaysFor(currentPlan);
+    var prog = loadPlanProgress();
+    var done = (prog[pd.key] && prog[pd.key].done) || {};
+    var total = pd.days.length;
+    var doneCount = 0;
+    for (var k in done) { if (done[k]) doneCount++; }
+
+    document.getElementById('plan-progress-fill').style.width =
+      total ? (doneCount / total * 100).toFixed(0) + '%' : '0%';
+    document.getElementById('plan-progress-label').textContent =
+      (total && doneCount === total) ? t('plans.finished')
+                                     : t('plans.daysDone', { done: doneCount, total: total });
+
+    // the first unread day gets a "next up" accent
+    var nextIndex = -1;
+    for (var d = 0; d < total; d++) { if (!done[d]) { nextIndex = d; break; } }
+
+    pd.days.forEach(function (day, index) {
+      wrap.appendChild(buildPlanDay(pd.key, day, index, !!done[index], index === nextIndex));
+    });
+  }
+
+  function buildPlanDay(progKey, day, index, isRead, isNext) {
+    var row = el('div', 'plan-day' + (isRead ? ' is-read' : '') + (isNext ? ' is-next' : ''));
+
+    var info = el('div', 'plan-day-info');
+    info.appendChild(txt('span', 'plan-day-num', t('plans.day', { n: index + 1 })));
+    info.appendChild(txt('span', 'plan-day-ref', passageLabel(day)));
+    row.appendChild(info);
+
+    var actions = el('div', 'plan-day-actions');
+    var read = txt('button', 'plan-day-read', t('plans.readNow'));
+    read.type = 'button';
+    read.addEventListener('click', function () { openReaderAt(day[0].book, day[0].chapter); });
+    actions.appendChild(read);
+
+    var mark = txt('button', 'plan-day-mark' + (isRead ? ' is-read' : ''),
+      isRead ? t('plans.readDone') : t('plans.markRead'));
+    mark.type = 'button';
+    mark.addEventListener('click', function () { togglePlanDay(progKey, index); });
+    actions.appendChild(mark);
+
+    row.appendChild(actions);
+    return row;
+  }
+
+  function togglePlanDay(progKey, index) {
+    var prog = loadPlanProgress();
+    if (!prog[progKey]) prog[progKey] = { done: {} };
+    prog[progKey].done[index] = !prog[progKey].done[index];
+    savePlanProgress(prog);
+    renderPlanDays();
+  }
+
+  document.getElementById('plan-back').addEventListener('click', function () {
+    showPlansScreen('grid');
+    window.scrollTo(0, 0);
+  });
+  document.getElementById('plan-book-select').addEventListener('change', function () {
+    var prog = loadPlanProgress();
+    prog.bookPlan = prog.bookPlan || {};
+    prog.bookPlan.lastBook = this.value;
+    savePlanProgress(prog);
+    renderPlanDays();
+  });
+  document.getElementById('plan-reset').addEventListener('click', function () {
+    if (!currentPlan || !window.confirm(t('plans.resetConfirm'))) return;
+    var pd = planDaysFor(currentPlan);
+    var prog = loadPlanProgress();
+    delete prog[pd.key];
+    savePlanProgress(prog);
+    renderPlanDays();
+  });
+
+  /* ---------- the road to apologetics (a journey) ---------- */
+
+  /* Ten stations, roughly in the order a seeker meets them. The visible title is
+     a key so it translates; the question sent to the backend stays in English —
+     Claude still answers in the user's language, which rides along on every call. */
+  var APOLO_STATIONS = [
+    { id: 'exist', title: 'apologetics.st1.title', q: 'Does God exist? Give the strongest reasons to believe God is real.' },
+    { id: 'bible', title: 'apologetics.st2.title', q: 'Can I trust the Bible? Is it historically reliable and has it been changed over time?' },
+    { id: 'jesus', title: 'apologetics.st3.title', q: 'Who is Jesus, really? Was he only a good teacher, or the Son of God?' },
+    { id: 'resurrection', title: 'apologetics.st4.title', q: 'Did Jesus really rise from the dead? What is the historical evidence?' },
+    { id: 'suffering', title: 'apologetics.st5.title', q: 'If God is good and all-powerful, why is there so much suffering and evil in the world?' },
+    { id: 'faith', title: 'apologetics.st6.title', q: 'Isn’t faith just blind belief with no evidence?' },
+    { id: 'religions', title: 'apologetics.st7.title', q: 'Aren’t all religions basically the same and equally valid paths to God?' },
+    { id: 'science', title: 'apologetics.st8.title', q: 'Doesn’t science, especially evolution, disprove God and the Bible?' },
+    { id: 'onlyway', title: 'apologetics.st9.title', q: 'Why do Christians claim Jesus is the only way to God? Isn’t that arrogant and exclusive?' },
+    { id: 'share', title: 'apologetics.st10.title', q: 'How do I share my faith with a friend in a natural, loving, non-pushy way?' }
+  ];
+
+  var APOLO_RANKS = ['apologetics.rankSeeker', 'apologetics.rankStudent', 'apologetics.rankDefender', 'apologetics.rankApologist', 'apologetics.rankAmbassador'];
+  var APOLO_KEY = 'tgp.apologetics';
+
+  function loadApolo() {
+    var s = {};
+    try { s = JSON.parse(window.localStorage.getItem(APOLO_KEY)) || {}; } catch (e) { s = {}; }
+    if (!Array.isArray(s.done)) s.done = [];
+    return s;
+  }
+  function saveApolo(s) {
+    try { window.localStorage.setItem(APOLO_KEY, JSON.stringify(s)); } catch (e) { /* view-only */ }
+  }
+  function apoloDoneSet() {
+    var set = {};
+    loadApolo().done.forEach(function (id) { set[id] = true; });
+    return set;
+  }
+  function markStationDone(id) {
+    var s = loadApolo();
+    if (s.done.indexOf(id) === -1) s.done.push(id);
+    saveApolo(s);
+  }
+
+  function renderApologetics() {
+    var road = document.getElementById('apologetics-road');
+    if (!road) return;
+    road.textContent = '';
+
+    var doneSet = apoloDoneSet();
+    var total = APOLO_STATIONS.length;
+    var doneCount = APOLO_STATIONS.filter(function (s) { return doneSet[s.id]; }).length;
+    var rankIdx = doneCount <= 1 ? 0 : doneCount <= 3 ? 1 : doneCount <= 5 ? 2 : doneCount <= 8 ? 3 : 4;
+
+    document.getElementById('road-rank').textContent = t(APOLO_RANKS[rankIdx]);
+    document.getElementById('road-level').textContent = t('apologetics.levelLabel', { n: doneCount });
+    document.getElementById('road-xp').textContent = t('apologetics.xpLabel', { n: doneCount * 100 });
+    document.getElementById('road-progress-fill').style.width = (doneCount / total * 100).toFixed(0) + '%';
+    document.getElementById('road-stations').textContent = (doneCount === total)
+      ? t('apologetics.complete')
+      : t('apologetics.stationsDone', { done: doneCount, total: total });
+
+    APOLO_STATIONS.forEach(function (station, index) {
+      var done = !!doneSet[station.id];
+      var unlocked = index === 0 || !!doneSet[APOLO_STATIONS[index - 1].id];
+      road.appendChild(buildStation(station, index, done, unlocked));
+    });
+  }
+
+  function buildStation(station, index, done, unlocked) {
+    var card = el('article', 'road-station' +
+      (done ? ' is-done' : '') +
+      (!unlocked ? ' is-locked' : '') +
+      (unlocked && !done ? ' is-current' : ''));
+
+    var head = el('div', 'road-station-head');
+    head.appendChild(txt('span', 'road-station-num', done ? '✓' : (unlocked ? String(index + 1) : '🔒')));
+
+    var titles = el('div', 'road-station-titles');
+    titles.appendChild(txt('p', 'road-station-title', t(station.title)));
+    var status = done ? t('apologetics.stageDone')
+                      : unlocked ? (index === 0 ? t('apologetics.startHere') : '')
+                                 : t('apologetics.locked');
+    if (status) titles.appendChild(txt('p', 'road-station-status', status));
+    head.appendChild(titles);
+    card.appendChild(head);
+
+    if (!unlocked) {
+      card.appendChild(txt('p', 'road-station-lockhint', t('apologetics.lockedHint')));
+      return card;
+    }
+
+    var details = el('details', 'road-station-details');
+    var summary = el('summary', 'road-station-toggle');
+    summary.textContent = t('apologetics.prepare');
+    details.appendChild(summary);
+    var body = el('div', 'road-station-body');
+    details.appendChild(body);
+
+    var loaded = false;
+    details.addEventListener('toggle', function () {
+      if (details.open && !loaded) { loaded = true; loadStationAnswer(body, station); }
+    });
+
+    card.appendChild(details);
+    return card;
+  }
+
+  function loadStationAnswer(body, station) {
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('apologetics.preparing')));
+    request('evangelism-prep', { scenario: station.q })
+      .then(function (data) {
+        body.textContent = '';
+        body.appendChild(txt('div', 'road-station-answer prose', ((data && data.prep) || '').trim()));
+        if (apoloDoneSet()[station.id]) return;
+        var btn = txt('button', 'verse-panel-btn', t('apologetics.markComplete'));
+        btn.type = 'button';
+        btn.addEventListener('click', function () {
+          markStationDone(station.id);
+          renderApologetics();
+        });
+        body.appendChild(btn);
+      })
+      .catch(function (err) {
+        body.textContent = '';
+        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+      });
+  }
+
+  document.getElementById('apologetics-reset').addEventListener('click', function () {
+    if (!window.confirm(t('apologetics.resetConfirm'))) return;
+    saveApolo({ done: [] });
+    renderApologetics();
+  });
+
+  /* ---------- tips for new believers ---------- */
+
+  var TIP_IDS = ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8'];
+
+  function renderTips() {
+    var list = document.getElementById('tips-list');
+    if (!list) return;
+    list.textContent = '';
+    TIP_IDS.forEach(function (id, i) {
+      var card = el('article', 'tip-card');
+      card.appendChild(txt('span', 'tip-num', String(i + 1)));
+      var body = el('div', 'tip-body');
+      body.appendChild(txt('h3', 'tip-title', t('tips.' + id + '.title')));
+      body.appendChild(txt('p', 'tip-text', t('tips.' + id + '.body')));
+      card.appendChild(body);
+      list.appendChild(card);
+    });
   }
 
   /* ---------- tool forms ---------- */

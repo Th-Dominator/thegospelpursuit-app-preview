@@ -96,6 +96,10 @@
         <span class="nav-icon" aria-hidden="true">☩</span>
         <span class="nav-text" data-i18n="nav.apologetics">The Road to Apologetics</span>
       </button>
+      <button class="nav-link" data-view="tips">
+        <span class="nav-icon" aria-hidden="true">✿</span>
+        <span class="nav-text" data-i18n="nav.tips">New believers</span>
+      </button>
     </nav>
 
     <!-- settings sits at the foot of the rail -->
@@ -142,6 +146,10 @@
           <span class="feature-label" data-i18n="home.apologeticsLabel">The Road to Apologetics</span>
           <span class="feature-hint" data-i18n="home.apologeticsHint">Reasoned answers to hard questions</span>
         </button>
+        <button class="feature-card" data-view="tips">
+          <span class="feature-label" data-i18n="home.tipsLabel">Tips for new believers</span>
+          <span class="feature-hint" data-i18n="home.tipsHint">Where to start when faith is new</span>
+        </button>
       </div>
     </section>
 
@@ -181,6 +189,13 @@
             <select id="bible-version"></select>
           </label>
         </div>
+        <details id="chapter-guide" class="chapter-guide">
+          <summary class="chapter-guide-summary">
+            <span class="chapter-guide-title" data-i18n="bible.chapterGuide">Chapter guide</span>
+            <span class="chapter-guide-hint" data-i18n="bible.chapterGuideHint">Overview · how it points to Jesus · background</span>
+          </summary>
+          <div id="chapter-guide-body" class="chapter-guide-body"></div>
+        </details>
         <p id="bible-status" class="status" role="status" aria-live="polite"></p>
         <div id="bible-verses" class="bible-verses reader-font-medium"></div>
         <p id="bible-copyright" class="bible-copyright" hidden></p>
@@ -224,21 +239,70 @@
       <h1 class="view-title" data-i18n="plans.title">Read through scripture</h1>
       <p class="view-lede" data-i18n="plans.lede">Pick a plan and work through it a day at a time. Your place is kept as you go.</p>
 
-      <div id="plans-grid" class="card-grid"></div>
+      <!-- screen 1: choose a plan -->
+      <div id="plans-grid" class="card-grid plans-screen"></div>
+
+      <!-- screen 2: one plan, day by day -->
+      <div id="plan-detail" class="plans-screen" hidden>
+        <button type="button" id="plan-back" class="bible-back" data-i18n="plans.allPlans">All plans</button>
+        <h2 id="plan-detail-title" class="plan-detail-title"></h2>
+
+        <label id="plan-book-field" class="bible-control plan-book-field" hidden>
+          <span class="bible-control-label" data-i18n="plans.pickBook">Choose a book to read through</span>
+          <select id="plan-book-select"></select>
+        </label>
+
+        <div class="plan-progress">
+          <div id="plan-progress-fill" class="plan-progress-fill"></div>
+        </div>
+        <p id="plan-progress-label" class="plan-progress-label"></p>
+
+        <div id="plan-days" class="plan-days"></div>
+
+        <button type="button" id="plan-reset" class="plan-reset" data-i18n="plans.resetPlan">Reset this plan</button>
+      </div>
+
       <p id="plans-status" class="status" role="status" aria-live="polite"></p>
     </section>
 
     <!-- THE ROAD TO APOLOGETICS -->
     <section id="view-apologetics" class="view">
       <p class="eyebrow" data-i18n="apologetics.eyebrow">the road to apologetics</p>
-      <h1 class="view-title" data-i18n="apologetics.title">Answer the hard question</h1>
-      <p class="view-lede" data-i18n="apologetics.lede">Describe the objection or question you're facing. You'll get the reasoning, the scripture behind it, and how to say it plainly.</p>
+      <h1 class="view-title" data-i18n="apologetics.journeyHeading">The Road to Apologetics</h1>
+      <p class="view-lede" data-i18n="apologetics.journeyLede">Walk the road one stage at a time. Each stage prepares you to answer a real question — finish it to unlock the next.</p>
+
+      <!-- rank / level / xp / progress -->
+      <div class="road-hero">
+        <div class="road-hero-badge" id="road-rank-badge" aria-hidden="true">☩</div>
+        <div class="road-hero-info">
+          <p class="road-rank" id="road-rank">Seeker</p>
+          <p class="road-sub"><span id="road-level"></span> · <span id="road-xp"></span></p>
+          <div class="road-progress"><div id="road-progress-fill" class="road-progress-fill"></div></div>
+          <p class="road-sub" id="road-stations"></p>
+        </div>
+      </div>
+
+      <!-- the road: stations built by JS -->
+      <div id="apologetics-road" class="apologetics-road"></div>
+
+      <button type="button" id="apologetics-reset" class="plan-reset" data-i18n="apologetics.resetProgress">Reset my progress</button>
+
+      <!-- free-form sandbox -->
+      <h2 class="settings-heading road-ask-heading" data-i18n="apologetics.askHeading">Ask your own question</h2>
       <form id="apologetics-form" class="tool-form">
         <input id="apologetics-scenario" type="text" data-i18n-placeholder="apologetics.placeholder" placeholder="if God is good, why is there suffering?" required>
         <button type="submit">Prepare</button>
       </form>
       <div id="apologetics-result" class="result-card prose" hidden></div>
       <p id="apologetics-status" class="status"></p>
+    </section>
+
+    <!-- TIPS FOR NEW BELIEVERS -->
+    <section id="view-tips" class="view">
+      <p class="eyebrow" data-i18n="tips.eyebrow">new believers</p>
+      <h1 class="view-title" data-i18n="tips.title">Tips for new believers</h1>
+      <p class="view-lede" data-i18n="tips.lede">If following Jesus is new to you, start here. A few simple things help faith take root and grow.</p>
+      <div id="tips-list" class="tips-list"></div>
     </section>
 
     <!-- SETTINGS -->
