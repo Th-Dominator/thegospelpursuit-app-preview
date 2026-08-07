@@ -613,14 +613,17 @@
     return node;
   }
 
-  /* Public-domain versions ship now so English reads today; the backend will
-     extend this list (NIV, ESV, …) once GET /bible-versions lands. The empty
-     id means "let the server pick what's best for the language". */
+  /* Public-domain versions (kjv/web/bbe) come from bible-api.com; the "api:"
+     ids are licensed versions served through API.Bible, which returns the
+     copyright line the reader then shows. The empty id lets the server pick
+     what's best for the language. */
   var BIBLE_VERSIONS = [
     { id: '', labelKey: 'settings.translationDefault' },
     { id: 'kjv', label: 'King James Version (KJV)' },
     { id: 'web', label: 'World English Bible (WEB)' },
-    { id: 'bbe', label: 'Bible in Basic English (BBE)' }
+    { id: 'bbe', label: 'Bible in Basic English (BBE)' },
+    { id: 'api:78a9f6124f344018-01', label: 'New International Version (NIV)' },
+    { id: 'api:61fd76eafa1577c2-02', label: 'Good News Translation (GNT)' }
   ];
 
   function currentVersion() {
@@ -744,12 +747,19 @@
     return out.length > 1 ? out : [{ number: 1, text: blob }];
   }
 
+  function setCopyright(text) {
+    var el = document.getElementById('bible-copyright');
+    el.textContent = (text || '').trim();
+    el.hidden = !el.textContent;
+  }
+
   function loadChapter() {
     if (!bibleState.book) return;
     var status = document.getElementById('bible-status');
     var list = document.getElementById('bible-verses');
 
     list.textContent = '';
+    setCopyright('');
     setStatus(status, t('bible.busyStatus'), false);
     updateBibleCrumbs();
     updatePrevNext();
@@ -764,6 +774,8 @@
         var verses = extractVerses(data);
         if (verses.length) {
           renderVerses(verses);
+          // licensed versions (NIV, GNT) require the copyright line be shown
+          setCopyright(data && data.copyright);
           setStatus(status, '', false);
         } else {
           // an empty 200 means the reader endpoint isn't wired yet

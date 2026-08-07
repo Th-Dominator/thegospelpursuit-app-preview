@@ -539,6 +539,15 @@ body {
 /* leave room under the fixed bar/topbar when the verse picker jumps to a verse */
 .verse-card { scroll-margin-top: 72px; }
 
+/* the copyright / attribution line a licensed version requires */
+.bible-copyright {
+  margin: 18px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.bible-copyright[hidden] { display: none; }
+
 .bible-verses {
   display: flex;
   flex-direction: column;
