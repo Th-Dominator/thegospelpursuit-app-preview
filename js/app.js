@@ -86,6 +86,9 @@
     if (currentPlan && !document.getElementById('plan-detail').hidden) openPlan(currentPlan);
     renderApologetics();
     renderTips();
+    renderProgressUI();
+    renderNotifUI();
+    if (!document.getElementById('notif-panel').hidden) renderNotifList();
     retranslateForms();
   }
 
@@ -304,6 +307,8 @@
     rays.hidden = true;
     appShell.hidden = false;
     loadDailyVerse();
+    renderProgressUI();
+    renderNotifUI();
   }
 
   /* ---------- view routing ---------- */
@@ -784,6 +789,8 @@
           // licensed versions (NIV, GNT) require the copyright line be shown
           setCopyright(data && data.copyright);
           setStatus(status, '', false);
+          // reaching a chapter counts toward the streak, chapter total, and badges
+          markChapterRead(bibleState.book.name, bibleState.chapter);
         } else {
           // an empty 200 means the reader endpoint isn't wired yet
           setStatus(status, t('bible.unavailable'), false);
@@ -1372,9 +1379,12 @@
   function togglePlanDay(progKey, index) {
     var prog = loadPlanProgress();
     if (!prog[progKey]) prog[progKey] = { done: {} };
-    prog[progKey].done[index] = !prog[progKey].done[index];
+    var nowRead = !prog[progKey].done[index];
+    prog[progKey].done[index] = nowRead;
     savePlanProgress(prog);
     renderPlanDays();
+    // marking a day read (not un-marking) counts toward streak + badges
+    if (nowRead) { recordActivity(); checkBadges(); renderProgressUI(); }
   }
 
   document.getElementById('plan-back').addEventListener('click', function () {
@@ -1515,6 +1525,10 @@
         btn.addEventListener('click', function () {
           markStationDone(station.id);
           renderApologetics();
+          // clearing a stage counts toward the streak and can unlock badges
+          recordActivity();
+          checkBadges();
+          renderProgressUI();
         });
         body.appendChild(btn);
       })
@@ -1548,6 +1562,250 @@
       list.appendChild(card);
     });
   }
+
+  /* ---------- progress: streak, badges, notifications ---------- */
+
+  /* One device-local store behind the whole gamification layer: the reading
+     streak, which chapters have been read, which badges are earned, and the
+     notification feed. Everything here is derived from actions the user already
+     takes (reading a chapter, finishing a plan day, clearing an apologetics
+     stage), so it needs no account and no backend. */
+  var PROGRESS_KEY = 'tgp.progress';
+
+  function loadProgress() {
+    var p = {};
+    try { p = JSON.parse(window.localStorage.getItem(PROGRESS_KEY)) || {}; } catch (e) { p = {}; }
+    if (typeof p.streak !== 'number') p.streak = 0;
+    if (typeof p.longest !== 'number') p.longest = 0;
+    if (typeof p.daysActive !== 'number') p.daysActive = 0;
+    if (typeof p.lastDay !== 'string') p.lastDay = null;
+    if (!p.chapters || typeof p.chapters !== 'object') p.chapters = {};
+    if (!p.badges || typeof p.badges !== 'object') p.badges = {};
+    if (!Array.isArray(p.notifs)) p.notifs = [];
+    return p;
+  }
+  function saveProgress(p) {
+    try { window.localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch (e) { /* view-only */ }
+  }
+
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  function dayGap(from, to) {
+    var a = new Date(from + 'T00:00:00');
+    var b = new Date(to + 'T00:00:00');
+    return Math.round((b - a) / 86400000);
+  }
+
+  // called whenever the user does something that counts as "showing up" today
+  function recordActivity() {
+    var p = loadProgress();
+    var today = todayStr();
+    if (p.lastDay === today) return; // already counted today
+
+    if (p.lastDay && dayGap(p.lastDay, today) === 1) p.streak += 1;
+    else p.streak = 1;
+    p.lastDay = today;
+    p.daysActive += 1;
+    if (p.streak > p.longest) p.longest = p.streak;
+    saveProgress(p);
+
+    if (p.streak === 1) notify('streak', t('notif.streakStart.title'), t('notif.streakStart.body'));
+    else notify('streak', t('notif.streak.title', { n: p.streak }), t('notif.streak.body', { n: p.streak }));
+  }
+
+  function chapterCount(p) {
+    var n = 0;
+    for (var k in p.chapters) { if (p.chapters[k]) n++; }
+    return n;
+  }
+  function anyBookComplete(p) {
+    var done = false;
+    BIBLE_BOOKS.forEach(function (g) {
+      g.books.forEach(function (b) {
+        var all = true;
+        for (var c = 1; c <= b.chapters; c++) { if (!p.chapters[b.name + '|' + c]) { all = false; break; } }
+        if (all) done = true;
+      });
+    });
+    return done;
+  }
+  function anyPlanDayDone() {
+    var prog = loadPlanProgress();
+    for (var k in prog) {
+      if (k === 'bookPlan') continue;
+      var d = prog[k] && prog[k].done;
+      for (var i in (d || {})) { if (d[i]) return true; }
+    }
+    return false;
+  }
+
+  var BADGES = [
+    { id: 'firstChapter', icon: '📖', test: function (p) { return chapterCount(p) >= 1; } },
+    { id: 'chapters10', icon: '📚', test: function (p) { return chapterCount(p) >= 10; } },
+    { id: 'chapters50', icon: '🏛️', test: function (p) { return chapterCount(p) >= 50; } },
+    { id: 'streak3', icon: '✨', test: function (p) { return p.longest >= 3; } },
+    { id: 'streak7', icon: '🔥', test: function (p) { return p.longest >= 7; } },
+    { id: 'streak30', icon: '👑', test: function (p) { return p.longest >= 30; } },
+    { id: 'bookDone', icon: '🎓', test: function (p) { return anyBookComplete(p); } },
+    { id: 'planDay', icon: '🧭', test: function () { return anyPlanDayDone(); } },
+    { id: 'apolo1', icon: '🛡️', test: function () { return loadApolo().done.length >= 1; } },
+    { id: 'apoloAll', icon: '☩', test: function () { return loadApolo().done.length >= APOLO_STATIONS.length; } }
+  ];
+
+  function checkBadges() {
+    var p = loadProgress();
+    var fresh = [];
+    BADGES.forEach(function (b) {
+      if (!p.badges[b.id] && b.test(p)) { p.badges[b.id] = todayStr(); fresh.push(b); }
+    });
+    if (fresh.length) {
+      saveProgress(p);
+      fresh.forEach(function (b) {
+        notify('badge', t('notif.badge.title'), t('notif.badge.body', { name: t('badge.' + b.id + '.title') }));
+      });
+    }
+  }
+
+  // record that a chapter was read, then re-check streak and badges
+  function markChapterRead(book, chapter) {
+    var p = loadProgress();
+    var key = book + '|' + chapter;
+    if (!p.chapters[key]) { p.chapters[key] = true; saveProgress(p); }
+    recordActivity();
+    checkBadges();
+    renderProgressUI();
+  }
+
+  /* ---- notifications: a stored feed plus a transient toast ---- */
+
+  function notify(type, title, body) {
+    var p = loadProgress();
+    p.notifs.unshift({
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      type: type, title: title, body: body, ts: Date.now(), read: false
+    });
+    if (p.notifs.length > 40) p.notifs = p.notifs.slice(0, 40);
+    saveProgress(p);
+    showToast(type, title, body);
+    renderNotifUI();
+  }
+
+  function showToast(type, title, body) {
+    var stack = document.getElementById('toast-stack');
+    if (!stack) return;
+    var toast = el('div', 'toast toast-' + type);
+    toast.appendChild(txt('span', 'toast-icon', type === 'badge' ? '🏅' : '🔥'));
+    var textWrap = el('div', 'toast-text');
+    textWrap.appendChild(txt('p', 'toast-title', title));
+    if (body) textWrap.appendChild(txt('p', 'toast-body', body));
+    toast.appendChild(textWrap);
+    stack.appendChild(toast);
+    // fade in, hold, fade out, remove
+    (window.requestAnimationFrame || function (f) { f(); })(function () { toast.classList.add('is-in'); });
+    setTimeout(function () {
+      toast.classList.remove('is-in');
+      setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+    }, 4600);
+  }
+
+  function unreadCount() {
+    return loadProgress().notifs.filter(function (n) { return !n.read; }).length;
+  }
+
+  function renderNotifUI() {
+    var count = unreadCount();
+    document.querySelectorAll('.js-notif-count').forEach(function (badge) {
+      badge.textContent = count > 9 ? '9+' : String(count);
+      badge.hidden = count === 0;
+    });
+  }
+
+  function renderNotifList() {
+    var list = document.getElementById('notif-list');
+    if (!list) return;
+    list.textContent = '';
+    var notifs = loadProgress().notifs;
+    if (!notifs.length) {
+      list.appendChild(txt('p', 'notif-empty', t('notif.empty')));
+      return;
+    }
+    notifs.forEach(function (n) {
+      var item = el('div', 'notif-item notif-' + n.type);
+      item.appendChild(txt('span', 'notif-item-icon', n.type === 'badge' ? '🏅' : '🔥'));
+      var body = el('div', 'notif-item-body');
+      body.appendChild(txt('p', 'notif-item-title', n.title));
+      if (n.body) body.appendChild(txt('p', 'notif-item-text', n.body));
+      item.appendChild(body);
+      list.appendChild(item);
+    });
+  }
+
+  function openNotif() {
+    var panel = document.getElementById('notif-panel');
+    var scrim = document.getElementById('notif-scrim');
+    renderNotifList();
+    panel.hidden = false;
+    scrim.hidden = false;
+    panel.setAttribute('aria-hidden', 'false');
+    // opening the drawer clears the unread count
+    var p = loadProgress();
+    p.notifs.forEach(function (n) { n.read = true; });
+    saveProgress(p);
+    renderNotifUI();
+    (window.requestAnimationFrame || function (f) { f(); })(function () { panel.classList.add('is-open'); });
+  }
+  function closeNotif() {
+    var panel = document.getElementById('notif-panel');
+    var scrim = document.getElementById('notif-scrim');
+    panel.classList.remove('is-open');
+    scrim.hidden = true;
+    panel.setAttribute('aria-hidden', 'true');
+    setTimeout(function () { panel.hidden = true; }, 250);
+  }
+
+  /* ---- the Home dashboard: streak numbers + badge grid ---- */
+
+  function renderProgressUI() {
+    var p = loadProgress();
+    document.querySelectorAll('.js-streak-count').forEach(function (n) { n.textContent = String(p.streak); });
+    var days = document.getElementById('dash-days');
+    if (days) days.textContent = String(p.daysActive);
+    var chapters = document.getElementById('dash-chapters');
+    if (chapters) chapters.textContent = String(chapterCount(p));
+
+    var grid = document.getElementById('badge-grid');
+    if (grid) {
+      grid.textContent = '';
+      BADGES.forEach(function (b) {
+        var earned = !!p.badges[b.id];
+        var tile = el('div', 'badge' + (earned ? ' is-earned' : ' is-locked'));
+        tile.appendChild(txt('span', 'badge-icon', earned ? b.icon : '🔒'));
+        tile.appendChild(txt('span', 'badge-name', t('badge.' + b.id + '.title')));
+        tile.appendChild(txt('span', 'badge-desc', earned ? t('badge.' + b.id + '.desc') : t('badge.locked')));
+        grid.appendChild(tile);
+      });
+    }
+  }
+
+  // wire the bell + streak chips (there's one pair in the sidebar, one in the topbar)
+  document.querySelectorAll('.js-notif-open').forEach(function (btn) {
+    btn.addEventListener('click', openNotif);
+  });
+  document.querySelectorAll('.js-streak-open').forEach(function (btn) {
+    btn.addEventListener('click', function () { showView('home'); });
+  });
+  document.getElementById('notif-close').addEventListener('click', closeNotif);
+  document.getElementById('notif-scrim').addEventListener('click', closeNotif);
+  document.getElementById('notif-clear').addEventListener('click', function () {
+    var p = loadProgress();
+    p.notifs = [];
+    saveProgress(p);
+    renderNotifList();
+    renderNotifUI();
+  });
 
   /* ---------- tool forms ---------- */
 

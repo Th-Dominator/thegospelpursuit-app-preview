@@ -293,7 +293,48 @@ var TRANSLATIONS = {
     'tips.t7.title': 'Obey the next small step',
     'tips.t7.body': 'You don’t have to change everything at once. Ask God for the one next step, and take it. Faith grows by walking.',
     'tips.t8.title': 'Tell someone',
-    'tips.t8.body': 'Share what’s happening in you with a trusted friend or believer. Saying it out loud makes it real and invites others to walk with you.'
+    'tips.t8.body': 'Share what’s happening in you with a trusted friend or believer. Saying it out loud makes it real and invites others to walk with you.',
+
+    /* ---- streak / badges dashboard ---- */
+    'dash.heading': 'Your walk',
+    'dash.streak': 'day streak',
+    'dash.daysActive': 'days in the Word',
+    'dash.chapters': 'chapters read',
+    'dash.badges': 'Badges',
+    'dash.streakChip': 'day streak',
+    'badge.locked': 'Locked',
+    'badge.firstChapter.title': 'First Steps',
+    'badge.firstChapter.desc': 'Read your first chapter',
+    'badge.chapters10.title': 'Reader',
+    'badge.chapters10.desc': 'Read 10 chapters',
+    'badge.chapters50.title': 'Devoted',
+    'badge.chapters50.desc': 'Read 50 chapters',
+    'badge.streak3.title': 'Kindling',
+    'badge.streak3.desc': 'A 3-day reading streak',
+    'badge.streak7.title': 'Aflame',
+    'badge.streak7.desc': 'A 7-day reading streak',
+    'badge.streak30.title': 'Faithful',
+    'badge.streak30.desc': 'A 30-day reading streak',
+    'badge.bookDone.title': 'Bookworm',
+    'badge.bookDone.desc': 'Finish an entire book',
+    'badge.planDay.title': 'On the Path',
+    'badge.planDay.desc': 'Complete a day in a reading plan',
+    'badge.apolo1.title': 'Apprentice',
+    'badge.apolo1.desc': 'Finish your first apologetics stage',
+    'badge.apoloAll.title': 'Ambassador',
+    'badge.apoloAll.desc': 'Complete the Road to Apologetics',
+
+    /* ---- notifications ---- */
+    'notif.title': 'Notifications',
+    'notif.open': 'Notifications',
+    'notif.clear': 'Clear all',
+    'notif.empty': 'Nothing yet — start reading to earn your first badge.',
+    'notif.streakStart.title': 'Streak started!',
+    'notif.streakStart.body': 'You showed up today. Come back tomorrow to keep it going.',
+    'notif.streak.title': '{n}-day streak!',
+    'notif.streak.body': 'You’ve read {n} days in a row. Keep the flame alive.',
+    'notif.badge.title': 'Badge unlocked',
+    'notif.badge.body': 'You earned “{name}”.'
   }
 };
 

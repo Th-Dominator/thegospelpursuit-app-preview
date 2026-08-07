@@ -64,6 +64,16 @@
       <span class="burger" aria-hidden="true"></span>
     </button>
     <span class="wordmark">The Gospel Pursuit</span>
+    <div class="topbar-tools">
+      <button type="button" class="streak-chip js-streak-open" title="Streak">
+        <span class="streak-flame" aria-hidden="true">🔥</span>
+        <span class="js-streak-count">0</span>
+      </button>
+      <button type="button" class="notif-btn js-notif-open" data-i18n-aria="notif.open" aria-label="Notifications">
+        <span aria-hidden="true">🔔</span>
+        <span class="notif-count js-notif-count" hidden>0</span>
+      </button>
+    </div>
   </div>
 
   <aside id="sidebar" class="sidebar">
@@ -104,6 +114,17 @@
 
     <!-- settings sits at the foot of the rail -->
     <div class="sidebar-foot">
+      <div class="sidebar-tools">
+        <button type="button" class="streak-chip js-streak-open" title="Streak">
+          <span class="streak-flame" aria-hidden="true">🔥</span>
+          <span class="js-streak-count">0</span>
+          <span class="streak-chip-label" data-i18n="dash.streakChip">day streak</span>
+        </button>
+        <button type="button" class="notif-btn js-notif-open" data-i18n-aria="notif.open" aria-label="Notifications">
+          <span aria-hidden="true">🔔</span>
+          <span class="notif-count js-notif-count" hidden>0</span>
+        </button>
+      </div>
       <button class="nav-link" data-view="settings">
         <span class="nav-icon" aria-hidden="true">⚙</span>
         <span class="nav-text" data-i18n="nav.settings">Settings</span>
@@ -113,6 +134,19 @@
   </aside>
 
   <div id="sidebar-scrim" class="sidebar-scrim" hidden></div>
+
+  <!-- notifications drawer -->
+  <div id="notif-scrim" class="notif-scrim" hidden></div>
+  <aside id="notif-panel" class="notif-panel" hidden aria-hidden="true">
+    <div class="notif-panel-head">
+      <span class="notif-panel-title" data-i18n="notif.title">Notifications</span>
+      <button type="button" id="notif-close" class="notif-close" aria-label="Close">✕</button>
+    </div>
+    <div id="notif-list" class="notif-list"></div>
+    <button type="button" id="notif-clear" class="notif-clear" data-i18n="notif.clear">Clear all</button>
+  </aside>
+
+  <div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
 
   <div class="app-main">
   <main class="wrap">
@@ -124,6 +158,27 @@
       <p id="verse-ref" class="verse-ref"></p>
 
       <div class="rule"></div>
+
+      <!-- your walk: streak, totals, and badges -->
+      <section id="home-dashboard" class="home-dash">
+        <h2 class="dash-heading" data-i18n="dash.heading">Your walk</h2>
+        <div class="dash-stats">
+          <div class="dash-stat">
+            <span class="dash-num"><span class="dash-flame" aria-hidden="true">🔥</span><span class="js-streak-count">0</span></span>
+            <span class="dash-label" data-i18n="dash.streak">day streak</span>
+          </div>
+          <div class="dash-stat">
+            <span class="dash-num" id="dash-days">0</span>
+            <span class="dash-label" data-i18n="dash.daysActive">days in the Word</span>
+          </div>
+          <div class="dash-stat">
+            <span class="dash-num" id="dash-chapters">0</span>
+            <span class="dash-label" data-i18n="dash.chapters">chapters read</span>
+          </div>
+        </div>
+        <h3 class="dash-subheading" data-i18n="dash.badges">Badges</h3>
+        <div id="badge-grid" class="badge-grid"></div>
+      </section>
 
       <div class="card-grid">
         <button class="feature-card" data-view="bible">
