@@ -1190,6 +1190,7 @@
     { key: 'apologetics', label: 'chap.apologetics', type: 'prose' },
     { key: 'archaeology', label: 'chap.archaeology', type: 'archaeology' },
     { key: 'places', label: 'chap.places', type: 'geography' },
+    { key: 'timeline', label: 'chap.timeline', type: 'timeline' },
     { key: 'next', label: 'chap.next', type: 'prose' },
     { key: 'quiz', label: 'chap.quiz', type: 'quiz' },
     { key: 'sources', label: 'chap.sources', type: 'list' }
@@ -1230,6 +1231,7 @@
     { key: 'controversies', label: 'book.controversies', type: 'named' },
     { key: 'archaeology', label: 'book.archaeology', type: 'archaeology' },
     { key: 'places', label: 'book.places', type: 'geography' },
+    { key: 'timeline', label: 'book.timeline', type: 'timeline' },
     { key: 'manuscripts', label: 'book.manuscripts', type: 'prose' },
     { key: 'reception', label: 'book.reception', type: 'prose' },
     { key: 'sources', label: 'book.sources', type: 'list' }
@@ -1252,7 +1254,7 @@
     if (!data) return null;
     // the archaeology panel loads on demand, so it never counts toward "rich"
     var hasRich = sections.some(function (d) {
-      if (d.type === 'archaeology' || d.type === 'geography') return false;
+      if (d.type === 'archaeology' || d.type === 'geography' || d.type === 'timeline') return false;
       var v = data[d.key];
       return d.type === 'prose' ? (typeof v === 'string' && v.trim()) : (Array.isArray(v) && v.length);
     });
@@ -1267,6 +1269,10 @@
       }
       if (d.type === 'geography') {
         if (archScope) wrap.appendChild(buildGeographyPanel(d, archScope));
+        return;
+      }
+      if (d.type === 'timeline') {
+        if (archScope) wrap.appendChild(buildTimelinePanel(d, archScope));
         return;
       }
       var content = buildStudySection(d, data[d.key]);
@@ -1544,6 +1550,78 @@
     if (/(unknown|unidentif|unlocat|not\s+located|lost)/.test(s)) return 'low';
     if (/(disput|uncertain|debat|proposed|possible|tentativ|approx)/.test(s)) return 'med';
     return 'high';
+  }
+
+  /* A chronological timeline is a lazy panel too: opening it calls the
+     `timeline` endpoint for this book (or book+chapter) and renders a
+     vertical timeline, one entry per event with its date, the figures
+     alive, the empires and rulers of the period, and relevant
+     archaeological and extrabiblical events. */
+  function buildTimelinePanel(d, scope) {
+    var det = el('details', 'ctx-section');
+    var sum = el('summary', 'ctx-summary');
+    sum.appendChild(txt('span', 'ctx-title', t(d.label)));
+    det.appendChild(sum);
+    var body = el('div', 'ctx-body');
+    body.appendChild(txt('p', 'verse-panel-note', t('time.hint')));
+    det.appendChild(body);
+
+    var loaded = false;
+    det.addEventListener('toggle', function () {
+      if (!det.open || loaded) return;
+      loaded = true;
+      body.textContent = '';
+      body.appendChild(txt('p', 'verse-panel-note', t('time.busy')));
+      request('timeline', scope)
+        .then(function (data) {
+          body.textContent = '';
+          body.appendChild(renderTimeline(data) || txt('p', 'verse-panel-note', t('time.none')));
+        })
+        .catch(function (err) {
+          loaded = false; // let the next open retry
+          body.textContent = '';
+          body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+        });
+    });
+    return det;
+  }
+
+  function renderTimeline(data) {
+    var entries = data && (data.entries || data.timeline || data.events || data.items);
+    if (!Array.isArray(entries) || !entries.length) return null;
+    var wrap = el('div', 'timeline');
+    entries.forEach(function (e) {
+      var node = buildTimelineEntry(e);
+      if (node) wrap.appendChild(node);
+    });
+    return wrap.children.length ? wrap : null;
+  }
+
+  function buildTimelineEntry(e) {
+    if (!e) return null;
+    var event = ((e.event || e.title || e.name) || '').trim();
+    var date = ((e.date || e.approxDate) || '').trim();
+    if (!event && !date) return null;
+
+    var item = el('div', 'tl-item');
+    item.appendChild(el('span', 'tl-marker'));
+    var card = el('div', 'arch-card tl-card');
+    if (date) card.appendChild(txt('div', 'tl-date', date));
+    if (event) card.appendChild(txt('h5', 'tl-event', event));
+
+    var dl = el('dl', 'arch-fields');
+    addArchRefField(dl, 'time.reference', e.reference || e.passage);
+    addArchField(dl, 'time.alt', e.alternativeDates || e.altDates);
+    if (dl.children.length) card.appendChild(dl);
+
+    addGeoGroup(card, 'time.figures', buildNamedList(e.figures));
+    addGeoGroup(card, 'time.empires', buildBulletList(e.empires));
+    addGeoGroup(card, 'time.rulers', buildNamedList(e.rulers));
+    addGeoGroup(card, 'time.archaeology', buildBulletList(e.archaeology));
+    addGeoGroup(card, 'time.extrabiblical', buildBulletList(e.extrabiblical));
+
+    item.appendChild(card);
+    return card.children.length ? item : null;
   }
 
   function buildStudySection(d, val) {

@@ -1512,6 +1512,51 @@ button.verse-num:hover { text-decoration: underline; }
   .geo-ident-low { background: rgba(220, 110, 110, 0.2); color: #eaa1a1; }
 }
 
+/* timeline: a vertical spine with a marker per chronological entry */
+.timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding-left: 6px;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--line, rgba(0, 0, 0, 0.12));
+}
+.tl-item { position: relative; padding-left: 24px; }
+.tl-marker {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent, #1c7a4b);
+  border: 2px solid var(--surface, #fff);
+  box-shadow: 0 0 0 1px var(--line, rgba(0, 0, 0, 0.12));
+}
+.tl-card { gap: 8px; }
+.tl-date {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--accent, #1c7a4b);
+}
+.tl-event {
+  margin: 0;
+  font-family: var(--font-display, inherit);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 /* chapter overview: bullet lists, named lists (people/places), knowledge check */
 .ctx-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 .ctx-list-item { font-size: 15px; line-height: 1.6; color: var(--ink); }
