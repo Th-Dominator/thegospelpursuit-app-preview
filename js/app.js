@@ -599,8 +599,9 @@
   }
 
   function renderChapterGrid() {
-    var grid = bibleScreens.chapters;
+    var grid = document.getElementById('bible-chapters-grid');
     grid.textContent = '';
+    resetBookGuide();
     if (!bibleState.book) return;
     for (var n = 1; n <= bibleState.book.chapters; n++) {
       (function (chapter) {
@@ -1193,9 +1194,60 @@
     { key: 'sources', label: 'chap.sources', type: 'list' }
   ];
 
+  /* The whole-book study, shown when a book is selected and in the verse
+     study view. Same accordion machinery as the chapter overview. */
+  var BOOK_SECTIONS = [
+    { key: 'name', label: 'book.name', type: 'prose' },
+    { key: 'nameMeaning', label: 'book.nameMeaning', type: 'prose' },
+    { key: 'testament', label: 'book.testament', type: 'prose' },
+    { key: 'category', label: 'book.category', type: 'prose' },
+    { key: 'author', label: 'book.author', type: 'prose' },
+    { key: 'authorship', label: 'book.authorship', type: 'prose' },
+    { key: 'date', label: 'book.date', type: 'prose' },
+    { key: 'dating', label: 'book.dating', type: 'prose' },
+    { key: 'audience', label: 'book.audience', type: 'prose' },
+    { key: 'historical', label: 'book.historical', type: 'prose' },
+    { key: 'political', label: 'book.political', type: 'prose' },
+    { key: 'cultural', label: 'book.cultural', type: 'prose' },
+    { key: 'geography', label: 'book.geography', type: 'prose' },
+    { key: 'genre', label: 'book.genre', type: 'prose' },
+    { key: 'purpose', label: 'book.purpose', type: 'prose' },
+    { key: 'summary', label: 'book.summary', type: 'prose' },
+    { key: 'outline', label: 'book.outline', type: 'list' },
+    { key: 'people', label: 'book.people', type: 'named' },
+    { key: 'locations', label: 'book.locations', type: 'named' },
+    { key: 'events', label: 'book.events', type: 'list' },
+    { key: 'themes', label: 'book.themes', type: 'list' },
+    { key: 'doctrines', label: 'book.doctrines', type: 'named' },
+    { key: 'keyVerses', label: 'book.keyVerses', type: 'refs' },
+    { key: 'keyChapters', label: 'book.keyChapters', type: 'refs' },
+    { key: 'covenants', label: 'book.covenants', type: 'named' },
+    { key: 'neighbors', label: 'book.neighbors', type: 'prose' },
+    { key: 'storyline', label: 'book.storyline', type: 'prose' },
+    { key: 'christ', label: 'book.christ', type: 'prose' },
+    { key: 'connections', label: 'book.connections', type: 'refs' },
+    { key: 'controversies', label: 'book.controversies', type: 'named' },
+    { key: 'archaeology', label: 'book.archaeology', type: 'prose' },
+    { key: 'manuscripts', label: 'book.manuscripts', type: 'prose' },
+    { key: 'reception', label: 'book.reception', type: 'prose' },
+    { key: 'sources', label: 'book.sources', type: 'list' }
+  ];
+
   function renderChapterOverview(data) {
+    return renderSectionedStudy(data, CHAPTER_SECTIONS);
+  }
+
+  function renderBookOverview(data) {
+    return renderSectionedStudy(data, BOOK_SECTIONS);
+  }
+
+  /* Shared accordion for the chapter and book studies: each configured
+     section becomes a collapsible panel, the first non-empty one open.
+     Returns null when none of the rich keys are present, so callers can
+     fall back to an older, simpler reply shape. */
+  function renderSectionedStudy(data, sections) {
     if (!data) return null;
-    var hasRich = CHAPTER_SECTIONS.some(function (d) {
+    var hasRich = sections.some(function (d) {
       var v = data[d.key];
       return d.type === 'prose' ? (typeof v === 'string' && v.trim()) : (Array.isArray(v) && v.length);
     });
@@ -1203,8 +1255,8 @@
 
     var wrap = el('div', 'verse-context');
     var openFirst = true;
-    CHAPTER_SECTIONS.forEach(function (d) {
-      var content = buildChapterSection(d, data[d.key]);
+    sections.forEach(function (d) {
+      var content = buildStudySection(d, data[d.key]);
       if (!content) return;
       var det = el('details', 'ctx-section');
       if (openFirst) { det.open = true; openFirst = false; }
@@ -1219,7 +1271,7 @@
     return wrap.children.length ? wrap : null;
   }
 
-  function buildChapterSection(d, val) {
+  function buildStudySection(d, val) {
     if (d.type === 'prose') return buildProseSection(val);
     if (d.type === 'list') return buildBulletList(val);
     if (d.type === 'named') return buildNamedList(val);
@@ -1507,6 +1559,52 @@
     if (this.open) loadChapterGuide();
   });
 
+  /* The whole-book overview that sits above the chapter grid. Keyed by book
+     so it refetches when you switch books but not when reopened on the same. */
+  var bookGuideKey = null;
+
+  function resetBookGuide() {
+    var guide = document.getElementById('book-guide');
+    var body = document.getElementById('book-guide-body');
+    if (!guide || !body) return;
+    guide.open = false;
+    body.textContent = '';
+    bookGuideKey = null;
+  }
+
+  function loadBookGuide() {
+    var body = document.getElementById('book-guide-body');
+    if (!body || !bibleState.book) return;
+    var key = bibleState.book.name;
+    if (bookGuideKey === key) return;
+    bookGuideKey = key;
+
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
+
+    request('book-insight', { book: bibleState.book.name })
+      .then(function (data) {
+        if (bookGuideKey !== key) return;
+        body.textContent = '';
+        var rich = renderBookOverview(data);
+        if (rich) { body.appendChild(rich); return; }
+        renderInsight(body, [
+          { key: 'bible.bookAbout', text: data && data.overview },
+          { key: 'bible.pointsToChrist', text: data && data.christ },
+          { key: 'bible.bookBackground', text: data && data.history }
+        ], 'bible.bookUnavailable');
+      })
+      .catch(function (err) {
+        bookGuideKey = null;
+        body.textContent = '';
+        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+      });
+  }
+
+  document.getElementById('book-guide').addEventListener('toggle', function () {
+    if (this.open) loadBookGuide();
+  });
+
   /* ---------- single-verse study view ---------- */
 
   /* The chosen version's human label, shown under the reference so the reader
@@ -1748,6 +1846,8 @@
     request('book-insight', { book: bibleState.book.name })
       .then(function (data) {
         if (focusKeys.book !== key) return;
+        var rich = renderBookOverview(data);
+        if (rich) { body.textContent = ''; body.appendChild(rich); return; }
         renderInsight(body, [
           { key: 'bible.bookAbout', text: data && data.overview },
           { key: 'bible.pointsToChrist', text: data && data.christ },

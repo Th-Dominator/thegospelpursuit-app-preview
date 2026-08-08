@@ -228,8 +228,17 @@
       <!-- screen 2: pick a book -->
       <div id="bible-screen-books" class="bible-grid bible-screen" hidden></div>
 
-      <!-- screen 3: pick a chapter -->
-      <div id="bible-screen-chapters" class="bible-grid bible-grid-num bible-screen" hidden></div>
+      <!-- screen 3: pick a chapter (with a whole-book overview on top) -->
+      <div id="bible-screen-chapters" class="bible-screen" hidden>
+        <details id="book-guide" class="chapter-guide">
+          <summary class="chapter-guide-summary">
+            <span class="chapter-guide-title" data-i18n="bible.bookGuide">Book overview</span>
+            <span class="chapter-guide-hint" data-i18n="bible.bookGuideHint">Author, date, setting, themes, and where it points</span>
+          </summary>
+          <div id="book-guide-body" class="chapter-guide-body"></div>
+        </details>
+        <div id="bible-chapters-grid" class="bible-grid bible-grid-num"></div>
+      </div>
 
       <!-- screen 4: read the chapter, verse by verse -->
       <div id="bible-screen-reader" class="bible-screen" hidden>
