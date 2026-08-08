@@ -301,6 +301,8 @@ var TRANSLATIONS = {
     'dash.daysActive': 'days in the Word',
     'dash.chapters': 'chapters read',
     'dash.badges': 'Badges',
+    'dash.badgesIntro': 'Earn badges by reading, keeping a streak, finishing books, and working through plans. Locked badges show how to earn them.',
+    'dash.badgesEarned': '{done} of {total} badges earned',
     'dash.streakChip': 'day streak',
     'badge.locked': 'Locked',
     'badge.firstChapter.title': 'First Steps',

@@ -1721,7 +1721,24 @@ html[lang="my"] .dropcap,
   color: var(--gold-dark);
   margin: 0 0 12px;
 }
-.badge-grid {
+.dash-badges-intro { font-size: 13px; color: var(--ink-soft); margin: 0 0 6px; line-height: 1.5; }
+.badge-summary {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--gold-dark);
+  margin: 0 0 16px;
+}
+.badge-groups { display: flex; flex-direction: column; gap: 22px; }
+.badge-group-title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+}
+.badge-grid-inner {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 10px;
@@ -1749,9 +1766,75 @@ html[lang="my"] .dropcap,
 .badge-desc { font-size: 11px; color: var(--ink-soft); line-height: 1.35; }
 
 @media (max-width: 560px) {
-  .badge-grid { grid-template-columns: repeat(2, 1fr); }
+  .badge-grid-inner { grid-template-columns: repeat(2, 1fr); }
   .streak-chip-label { display: none; }
 }
+
+/* ---------- apologetics: themed chapters + question badges ---------- */
+
+.apolo-theme {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.apolo-theme.is-complete { border-color: var(--gold); }
+.apolo-theme-head {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+}
+.apolo-theme-head::-webkit-details-marker { display: none; }
+.apolo-theme-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: var(--gold-tint);
+  border-radius: 50%;
+}
+.apolo-theme.is-complete .apolo-theme-icon { background: var(--gold); }
+.apolo-theme-titles { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.apolo-theme-name { font-family: var(--font-display); font-weight: 600; font-size: 17px; }
+.apolo-theme-count {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--gold-dark);
+  font-variant-numeric: tabular-nums;
+}
+.apolo-theme-body {
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.apolo-topic {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.apolo-topic.is-prepared { background: var(--gold-tint); border-color: var(--gold); }
+.apolo-topic-head {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.apolo-topic-head::-webkit-details-marker { display: none; }
+.apolo-topic-badge { font-size: 16px; flex: none; }
+.apolo-topic-q { font-size: 14px; color: var(--ink); line-height: 1.45; }
+.apolo-topic-body { padding: 0 14px 14px; }
+.apolo-topic .road-station-answer { margin-bottom: 0; }
 
 .settings-fineprint {
   font-size: 12px;

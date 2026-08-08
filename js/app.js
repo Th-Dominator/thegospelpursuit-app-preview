@@ -1407,26 +1407,14 @@
     renderPlanDays();
   });
 
-  /* ---------- the road to apologetics (a journey) ---------- */
+  /* ---------- the road to apologetics: 200 questions, one badge each ---------- */
 
-  /* Ten stations, roughly in the order a seeker meets them. The visible title is
-     a key so it translates; the question sent to the backend stays in English —
-     Claude still answers in the user's language, which rides along on every call. */
-  var APOLO_STATIONS = [
-    { id: 'exist', title: 'apologetics.st1.title', q: 'Does God exist? Give the strongest reasons to believe God is real.' },
-    { id: 'bible', title: 'apologetics.st2.title', q: 'Can I trust the Bible? Is it historically reliable and has it been changed over time?' },
-    { id: 'jesus', title: 'apologetics.st3.title', q: 'Who is Jesus, really? Was he only a good teacher, or the Son of God?' },
-    { id: 'resurrection', title: 'apologetics.st4.title', q: 'Did Jesus really rise from the dead? What is the historical evidence?' },
-    { id: 'suffering', title: 'apologetics.st5.title', q: 'If God is good and all-powerful, why is there so much suffering and evil in the world?' },
-    { id: 'faith', title: 'apologetics.st6.title', q: 'Isn’t faith just blind belief with no evidence?' },
-    { id: 'religions', title: 'apologetics.st7.title', q: 'Aren’t all religions basically the same and equally valid paths to God?' },
-    { id: 'science', title: 'apologetics.st8.title', q: 'Doesn’t science, especially evolution, disprove God and the Bible?' },
-    { id: 'onlyway', title: 'apologetics.st9.title', q: 'Why do Christians claim Jesus is the only way to God? Isn’t that arrogant and exclusive?' },
-    { id: 'share', title: 'apologetics.st10.title', q: 'How do I share my faith with a friend in a natural, loving, non-pushy way?' }
-  ];
-
-  var APOLO_RANKS = ['apologetics.rankSeeker', 'apologetics.rankStudent', 'apologetics.rankDefender', 'apologetics.rankApologist', 'apologetics.rankAmbassador'];
+  /* The questions live in js/apologetics-data.js as APOLO_THEMES (20 themed
+     chapters of 10). Opening a question's prepared answer earns its badge.
+     Progress is a flat list of topic ids in tgp.apologetics. */
   var APOLO_KEY = 'tgp.apologetics';
+  // stable id for a question: chapter index + question index
+  function apoloId(ti, qi) { return 'a' + ti + 'q' + qi; }
 
   function loadApolo() {
     var s = {};
@@ -1442,95 +1430,132 @@
     loadApolo().done.forEach(function (id) { set[id] = true; });
     return set;
   }
-  function markStationDone(id) {
+  function markApoloDone(id) {
     var s = loadApolo();
     if (s.done.indexOf(id) === -1) s.done.push(id);
     saveApolo(s);
   }
 
+  // running totals over all chapters
+  function apoloCounts() {
+    var set = apoloDoneSet();
+    var total = 0, done = 0;
+    if (typeof APOLO_THEMES !== 'undefined') {
+      APOLO_THEMES.forEach(function (th, ti) {
+        th.questions.forEach(function (q, qi) { total++; if (set[apoloId(ti, qi)]) done++; });
+      });
+    }
+    return { total: total, done: done };
+  }
+
+  var APOLO_RANKS = ['Seeker', 'Student', 'Defender', 'Apologist', 'Ambassador', 'Champion', 'Contender for the Faith'];
+  function apoloRank(done, total) {
+    if (done >= total && total > 0) return APOLO_RANKS[6];
+    if (done === 0) return APOLO_RANKS[0];
+    if (done < 10) return APOLO_RANKS[1];
+    if (done < 30) return APOLO_RANKS[2];
+    if (done < 75) return APOLO_RANKS[3];
+    if (done < 125) return APOLO_RANKS[4];
+    return APOLO_RANKS[5];
+  }
+
+  function updateApoloHero() {
+    var c = apoloCounts();
+    var rank = document.getElementById('road-rank');
+    if (!rank) return;
+    rank.textContent = apoloRank(c.done, c.total);
+    document.getElementById('road-level').textContent = t('apologetics.levelLabel', { n: c.done });
+    document.getElementById('road-xp').textContent = t('apologetics.xpLabel', { n: c.done * 50 });
+    document.getElementById('road-progress-fill').style.width = c.total ? (c.done / c.total * 100).toFixed(0) + '%' : '0%';
+    document.getElementById('road-stations').textContent = (c.done === c.total && c.total)
+      ? t('apologetics.complete')
+      : t('dash.badgesEarned', { done: c.done, total: c.total });
+  }
+
   function renderApologetics() {
     var road = document.getElementById('apologetics-road');
-    if (!road) return;
+    if (!road || typeof APOLO_THEMES === 'undefined') return;
     road.textContent = '';
-
-    var doneSet = apoloDoneSet();
-    var total = APOLO_STATIONS.length;
-    var doneCount = APOLO_STATIONS.filter(function (s) { return doneSet[s.id]; }).length;
-    var rankIdx = doneCount <= 1 ? 0 : doneCount <= 3 ? 1 : doneCount <= 5 ? 2 : doneCount <= 8 ? 3 : 4;
-
-    document.getElementById('road-rank').textContent = t(APOLO_RANKS[rankIdx]);
-    document.getElementById('road-level').textContent = t('apologetics.levelLabel', { n: doneCount });
-    document.getElementById('road-xp').textContent = t('apologetics.xpLabel', { n: doneCount * 100 });
-    document.getElementById('road-progress-fill').style.width = (doneCount / total * 100).toFixed(0) + '%';
-    document.getElementById('road-stations').textContent = (doneCount === total)
-      ? t('apologetics.complete')
-      : t('apologetics.stationsDone', { done: doneCount, total: total });
-
-    APOLO_STATIONS.forEach(function (station, index) {
-      var done = !!doneSet[station.id];
-      var unlocked = index === 0 || !!doneSet[APOLO_STATIONS[index - 1].id];
-      road.appendChild(buildStation(station, index, done, unlocked));
+    updateApoloHero();
+    var set = apoloDoneSet();
+    APOLO_THEMES.forEach(function (th, ti) {
+      road.appendChild(buildApoloTheme(th, ti, set));
     });
   }
 
-  function buildStation(station, index, done, unlocked) {
-    var card = el('article', 'road-station' +
-      (done ? ' is-done' : '') +
-      (!unlocked ? ' is-locked' : '') +
-      (unlocked && !done ? ' is-current' : ''));
+  function themeDoneCount(th, ti, set) {
+    var n = 0;
+    th.questions.forEach(function (q, qi) { if (set[apoloId(ti, qi)]) n++; });
+    return n;
+  }
 
-    var head = el('div', 'road-station-head');
-    head.appendChild(txt('span', 'road-station-num', done ? '✓' : (unlocked ? String(index + 1) : '🔒')));
+  function buildApoloTheme(th, ti, set) {
+    var done = themeDoneCount(th, ti, set);
+    var full = done === th.questions.length;
+    var chapter = el('details', 'apolo-theme' + (full ? ' is-complete' : ''));
 
-    var titles = el('div', 'road-station-titles');
-    titles.appendChild(txt('p', 'road-station-title', t(station.title)));
-    var status = done ? t('apologetics.stageDone')
-                      : unlocked ? (index === 0 ? t('apologetics.startHere') : '')
-                                 : t('apologetics.locked');
-    if (status) titles.appendChild(txt('p', 'road-station-status', status));
+    var head = el('summary', 'apolo-theme-head');
+    head.appendChild(txt('span', 'apolo-theme-icon', th.icon || '☩'));
+    var titles = el('span', 'apolo-theme-titles');
+    titles.appendChild(txt('span', 'apolo-theme-name', th.theme));
+    titles.appendChild(txt('span', 'apolo-theme-count', done + ' / ' + th.questions.length));
     head.appendChild(titles);
-    card.appendChild(head);
+    chapter.appendChild(head);
 
-    if (!unlocked) {
-      card.appendChild(txt('p', 'road-station-lockhint', t('apologetics.lockedHint')));
-      return card;
-    }
+    var body = el('div', 'apolo-theme-body');
+    th.questions.forEach(function (q, qi) {
+      body.appendChild(buildApoloTopic(apoloId(ti, qi), q, !!set[apoloId(ti, qi)]));
+    });
+    chapter.appendChild(body);
+    return chapter;
+  }
 
-    var details = el('details', 'road-station-details');
-    var summary = el('summary', 'road-station-toggle');
-    summary.textContent = t('apologetics.prepare');
-    details.appendChild(summary);
-    var body = el('div', 'road-station-body');
-    details.appendChild(body);
+  function buildApoloTopic(id, q, prepared) {
+    var topic = el('details', 'apolo-topic' + (prepared ? ' is-prepared' : ''));
+    var head = el('summary', 'apolo-topic-head');
+    head.appendChild(txt('span', 'apolo-topic-badge', prepared ? '🏅' : '🔒'));
+    head.appendChild(txt('span', 'apolo-topic-q', q));
+    topic.appendChild(head);
+
+    var body = el('div', 'apolo-topic-body');
+    topic.appendChild(body);
 
     var loaded = false;
-    details.addEventListener('toggle', function () {
-      if (details.open && !loaded) { loaded = true; loadStationAnswer(body, station); }
+    topic.addEventListener('toggle', function () {
+      if (topic.open && !loaded) { loaded = true; loadApoloAnswer(body, id, q, topic); }
     });
-
-    card.appendChild(details);
-    return card;
+    return topic;
   }
 
-  function loadStationAnswer(body, station) {
+  function loadApoloAnswer(body, id, q, topic) {
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('apologetics.preparing')));
-    request('evangelism-prep', { scenario: station.q })
+    request('evangelism-prep', { scenario: q })
       .then(function (data) {
         body.textContent = '';
         body.appendChild(txt('div', 'road-station-answer prose', ((data && data.prep) || '').trim()));
-        if (apoloDoneSet()[station.id]) return;
-        var btn = txt('button', 'verse-panel-btn', t('apologetics.markComplete'));
-        btn.type = 'button';
-        btn.addEventListener('click', function () {
-          markStationDone(station.id);
-          renderApologetics();
-          // clearing a stage counts toward the streak and can unlock badges
-          recordActivity();
-          checkBadges();
-          renderProgressUI();
-        });
-        body.appendChild(btn);
+        // preparing the answer earns this question's badge (once)
+        if (apoloDoneSet()[id]) return;
+        markApoloDone(id);
+        topic.classList.add('is-prepared');
+        var icon = topic.querySelector('.apolo-topic-badge');
+        if (icon) icon.textContent = '🏅';
+        // reflect the new count on the chapter header and the hero
+        var chapter = topic.closest ? topic.closest('.apolo-theme') : null;
+        if (chapter) {
+          var ti = parseInt(id.slice(1).split('q')[0], 10);
+          var th = APOLO_THEMES[ti];
+          var set = apoloDoneSet();
+          var td = themeDoneCount(th, ti, set);
+          var cnt = chapter.querySelector('.apolo-theme-count');
+          if (cnt) cnt.textContent = td + ' / ' + th.questions.length;
+          if (td === th.questions.length) chapter.classList.add('is-complete');
+        }
+        updateApoloHero();
+        notify('badge', t('notif.badge.title'), t('notif.badge.body', { name: q }));
+        recordActivity();
+        checkBadges();
+        renderProgressUI();
       })
       .catch(function (err) {
         body.textContent = '';
@@ -1621,50 +1646,113 @@
     for (var k in p.chapters) { if (p.chapters[k]) n++; }
     return n;
   }
-  function anyBookComplete(p) {
-    var done = false;
-    BIBLE_BOOKS.forEach(function (g) {
-      g.books.forEach(function (b) {
-        var all = true;
-        for (var c = 1; c <= b.chapters; c++) { if (!p.chapters[b.name + '|' + c]) { all = false; break; } }
-        if (all) done = true;
-      });
-    });
-    return done;
+  // --- badge predicates over reading / streak / plan progress ---
+  function testamentComplete(p, idx) {
+    var g = BIBLE_BOOKS[idx];
+    if (!g) return false;
+    for (var i = 0; i < g.books.length; i++) {
+      var b = g.books[i];
+      for (var c = 1; c <= b.chapters; c++) { if (!p.chapters[b.name + '|' + c]) return false; }
+    }
+    return true;
   }
-  function anyPlanDayDone() {
+  function totalPlanDays() {
     var prog = loadPlanProgress();
+    var n = 0;
     for (var k in prog) {
       if (k === 'bookPlan') continue;
       var d = prog[k] && prog[k].done;
-      for (var i in (d || {})) { if (d[i]) return true; }
+      for (var i in (d || {})) { if (d[i]) n++; }
+    }
+    return n;
+  }
+  function planComplete(key, days) {
+    var prog = loadPlanProgress();
+    var d = prog[key] && prog[key].done;
+    if (!d) return false;
+    var n = 0;
+    for (var i in d) { if (d[i]) n++; }
+    return n >= days;
+  }
+  function anyBookPlanComplete() {
+    var prog = loadPlanProgress();
+    for (var k in prog) {
+      if (k.indexOf('book:') !== 0) continue;
+      var found = findBook(k.slice(5));
+      if (!found) continue;
+      var d = prog[k].done || {};
+      var n = 0;
+      for (var i in d) { if (d[i]) n++; }
+      if (n >= found.book.chapters) return true;
     }
     return false;
   }
 
-  var BADGES = [
-    { id: 'firstChapter', icon: '📖', test: function (p) { return chapterCount(p) >= 1; } },
-    { id: 'chapters10', icon: '📚', test: function (p) { return chapterCount(p) >= 10; } },
-    { id: 'chapters50', icon: '🏛️', test: function (p) { return chapterCount(p) >= 50; } },
-    { id: 'streak3', icon: '✨', test: function (p) { return p.longest >= 3; } },
-    { id: 'streak7', icon: '🔥', test: function (p) { return p.longest >= 7; } },
-    { id: 'streak30', icon: '👑', test: function (p) { return p.longest >= 30; } },
-    { id: 'bookDone', icon: '🎓', test: function (p) { return anyBookComplete(p); } },
-    { id: 'planDay', icon: '🧭', test: function () { return anyPlanDayDone(); } },
-    { id: 'apolo1', icon: '🛡️', test: function () { return loadApolo().done.length >= 1; } },
-    { id: 'apoloAll', icon: '☩', test: function () { return loadApolo().done.length >= APOLO_STATIONS.length; } }
-  ];
+  /* 100 general badges, generated so the how-to text stays in step with the data:
+     one per Bible book (66) plus reading, streak, testament and plan milestones. */
+  function buildGeneralBadges() {
+    var list = [];
+    BIBLE_BOOKS.forEach(function (g) {
+      g.books.forEach(function (b) {
+        (function (book) {
+          list.push({
+            id: 'book:' + book.name, cat: 'Books', icon: '📗',
+            title: 'Finished ' + book.name,
+            desc: 'Read all ' + book.chapters + ' chapter' + (book.chapters > 1 ? 's' : '') + ' of ' + book.name,
+            test: function (p) {
+              for (var c = 1; c <= book.chapters; c++) { if (!p.chapters[book.name + '|' + c]) return false; }
+              return true;
+            }
+          });
+        })(b);
+      });
+    });
+    [1, 5, 10, 25, 50, 100, 150, 250, 400, 600, 900, 1189].forEach(function (n) {
+      list.push({
+        id: 'chap:' + n, cat: 'Reading', icon: '📖',
+        title: n === 1 ? 'First chapter' : ('Read ' + n + ' chapters'),
+        desc: 'Read a total of ' + n + ' chapter' + (n > 1 ? 's' : ''),
+        test: (function (need) { return function (p) { return chapterCount(p) >= need; }; })(n)
+      });
+    });
+    [2, 3, 7, 14, 30, 50, 100, 200, 365].forEach(function (n) {
+      list.push({
+        id: 'streak:' + n, cat: 'Streaks', icon: '🔥',
+        title: n + '-day streak', desc: 'Read on ' + n + ' days in a row',
+        test: (function (need) { return function (p) { return p.longest >= need; }; })(n)
+      });
+    });
+    [10, 30, 100, 365].forEach(function (n) {
+      list.push({
+        id: 'days:' + n, cat: 'Streaks', icon: '📅',
+        title: n + ' days in the Word', desc: 'Read on ' + n + ' separate days',
+        test: (function (need) { return function (p) { return p.daysActive >= need; }; })(n)
+      });
+    });
+    list.push({ id: 'ot', cat: 'Milestones', icon: '📜', title: 'Old Testament complete', desc: 'Read every chapter of all 39 Old Testament books', test: function (p) { return testamentComplete(p, 0); } });
+    list.push({ id: 'nt', cat: 'Milestones', icon: '✝', title: 'New Testament complete', desc: 'Read every chapter of all 27 New Testament books', test: function (p) { return testamentComplete(p, 1); } });
+    list.push({ id: 'whole', cat: 'Milestones', icon: '👑', title: 'The whole Bible', desc: 'Read every chapter of all 66 books', test: function (p) { return testamentComplete(p, 0) && testamentComplete(p, 1); } });
+    list.push({ id: 'planday1', cat: 'Plans', icon: '🧭', title: 'On the path', desc: 'Mark your first reading-plan day complete', test: function () { return totalPlanDays() >= 1; } });
+    list.push({ id: 'planday7', cat: 'Plans', icon: '🗺️', title: 'One week in', desc: 'Complete 7 reading-plan days', test: function () { return totalPlanDays() >= 7; } });
+    list.push({ id: 'planday30', cat: 'Plans', icon: '⛰️', title: 'A month of days', desc: 'Complete 30 reading-plan days', test: function () { return totalPlanDays() >= 30; } });
+    list.push({ id: 'planday100', cat: 'Plans', icon: '🏔️', title: 'Centurion', desc: 'Complete 100 reading-plan days', test: function () { return totalPlanDays() >= 100; } });
+    list.push({ id: 'bookplan', cat: 'Plans', icon: '🎓', title: 'Book finisher', desc: 'Complete a One-Book-at-a-Time plan', test: function () { return anyBookPlanComplete(); } });
+    list.push({ id: 'yearplan', cat: 'Plans', icon: '🏆', title: 'The long road', desc: 'Complete the Bible-in-a-Year plan', test: function () { return planComplete('year', 365); } });
+    return list;
+  }
+
+  var GENERAL_BADGES = buildGeneralBadges();
 
   function checkBadges() {
     var p = loadProgress();
     var fresh = [];
-    BADGES.forEach(function (b) {
+    GENERAL_BADGES.forEach(function (b) {
       if (!p.badges[b.id] && b.test(p)) { p.badges[b.id] = todayStr(); fresh.push(b); }
     });
     if (fresh.length) {
       saveProgress(p);
       fresh.forEach(function (b) {
-        notify('badge', t('notif.badge.title'), t('notif.badge.body', { name: t('badge.' + b.id + '.title') }));
+        notify('badge', t('notif.badge.title'), t('notif.badge.body', { name: b.title }));
       });
     }
   }
@@ -1776,18 +1864,38 @@
     var chapters = document.getElementById('dash-chapters');
     if (chapters) chapters.textContent = String(chapterCount(p));
 
-    var grid = document.getElementById('badge-grid');
-    if (grid) {
-      grid.textContent = '';
-      BADGES.forEach(function (b) {
-        var earned = !!p.badges[b.id];
-        var tile = el('div', 'badge' + (earned ? ' is-earned' : ' is-locked'));
-        tile.appendChild(txt('span', 'badge-icon', earned ? b.icon : '🔒'));
-        tile.appendChild(txt('span', 'badge-name', t('badge.' + b.id + '.title')));
-        tile.appendChild(txt('span', 'badge-desc', earned ? t('badge.' + b.id + '.desc') : t('badge.locked')));
+    var wrap = document.getElementById('badge-grid');
+    if (!wrap) return;
+    wrap.textContent = '';
+
+    var earned = GENERAL_BADGES.filter(function (b) { return p.badges[b.id]; }).length;
+    var summary = document.getElementById('badge-summary');
+    if (summary) summary.textContent = t('dash.badgesEarned', { done: earned, total: GENERAL_BADGES.length });
+
+    // group by category, keeping the order categories first appear
+    var cats = [], byCat = {};
+    GENERAL_BADGES.forEach(function (b) {
+      if (!byCat[b.cat]) { byCat[b.cat] = []; cats.push(b.cat); }
+      byCat[b.cat].push(b);
+    });
+
+    cats.forEach(function (cat) {
+      var items = byCat[cat];
+      var ec = items.filter(function (b) { return p.badges[b.id]; }).length;
+      var group = el('div', 'badge-group');
+      group.appendChild(txt('h4', 'badge-group-title', cat + ' · ' + ec + '/' + items.length));
+      var grid = el('div', 'badge-grid-inner');
+      items.forEach(function (b) {
+        var got = !!p.badges[b.id];
+        var tile = el('div', 'badge' + (got ? ' is-earned' : ' is-locked'));
+        tile.appendChild(txt('span', 'badge-icon', got ? b.icon : '🔒'));
+        tile.appendChild(txt('span', 'badge-name', b.title));
+        tile.appendChild(txt('span', 'badge-desc', b.desc)); // how-to, shown earned or locked
         grid.appendChild(tile);
       });
-    }
+      group.appendChild(grid);
+      wrap.appendChild(group);
+    });
   }
 
   // wire the bell + streak chips (there's one pair in the sidebar, one in the topbar)
