@@ -261,6 +261,49 @@
           <button type="button" id="bible-next" class="bible-step" data-i18n="bible.nextChapter">Next</button>
         </div>
       </div>
+
+      <!-- screen 5: study a single verse -->
+      <div id="bible-screen-verse" class="bible-screen verse-focus" hidden>
+        <p id="verse-focus-ref" class="verse-focus-ref"></p>
+        <p id="verse-focus-version" class="verse-focus-version"></p>
+        <p id="verse-focus-text" class="verse-focus-text"></p>
+
+        <!-- a video for this verse, shown directly beneath the text -->
+        <section class="verse-focus-video-block">
+          <h2 class="verse-focus-label" data-i18n="bible.video">Video</h2>
+          <div id="verse-focus-video"></div>
+        </section>
+
+        <!-- context, chapter and book overviews: each opens on demand -->
+        <details id="verse-focus-context" class="chapter-guide verse-focus-details">
+          <summary class="chapter-guide-summary">
+            <span class="chapter-guide-title" data-i18n="bible.context">Context &amp; meaning</span>
+            <span class="chapter-guide-hint" data-i18n="bible.contextHint">What this verse means, and the passage around it</span>
+          </summary>
+          <div id="verse-focus-context-body" class="chapter-guide-body"></div>
+        </details>
+
+        <details id="verse-focus-chapter" class="chapter-guide verse-focus-details">
+          <summary class="chapter-guide-summary">
+            <span class="chapter-guide-title" data-i18n="bible.chapterOverview">Chapter overview</span>
+            <span class="chapter-guide-hint" data-i18n="bible.chapterGuideHint">Overview · how it points to Jesus · background</span>
+          </summary>
+          <div id="verse-focus-chapter-body" class="chapter-guide-body"></div>
+        </details>
+
+        <details id="verse-focus-book" class="chapter-guide verse-focus-details">
+          <summary class="chapter-guide-summary">
+            <span class="chapter-guide-title" data-i18n="bible.bookOverview">Book overview</span>
+            <span class="chapter-guide-hint" data-i18n="bible.bookOverviewHint">What the whole book is about, and where it points</span>
+          </summary>
+          <div id="verse-focus-book-body" class="chapter-guide-body"></div>
+        </details>
+
+        <div class="bible-reader-nav">
+          <button type="button" id="verse-focus-prev" class="bible-step" data-i18n="bible.prevVerse">Previous verse</button>
+          <button type="button" id="verse-focus-next" class="bible-step" data-i18n="bible.nextVerse">Next verse</button>
+        </div>
+      </div>
     </section>
 
     <!-- SEARCH SCRIPTURE -->

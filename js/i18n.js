@@ -107,6 +107,7 @@ var TRANSLATIONS = {
     'bible.prevChapter': 'Previous',
     'bible.nextChapter': 'Next',
     'bible.chapter': 'Chapter',
+    'bible.verse': 'Verse',
     'bible.version': 'Version',
     'bible.goToVerse': 'Verse',
     'bible.video': 'Video',
@@ -215,6 +216,22 @@ var TRANSLATIONS = {
     'bible.background': 'History & background',
     'bible.guideBusy': 'Preparing the chapter guide…',
     'bible.guideUnavailable': 'The chapter guide isn’t available right now.',
+
+    /* ---- single-verse study view ---- */
+    'bible.studyVerse': 'Study this verse',
+    'bible.prevVerse': 'Previous verse',
+    'bible.nextVerse': 'Next verse',
+    'bible.contextHint': 'What this verse means, and the passage around it',
+    'bible.contextBusy': 'Looking into this verse…',
+    'bible.chapterOverview': 'Chapter overview',
+    'bible.bookOverview': 'Book overview',
+    'bible.bookOverviewHint': 'What the whole book is about, and where it points',
+    'bible.bookAbout': 'About this book',
+    'bible.bookBackground': 'Background & setting',
+    'bible.bookBusy': 'Preparing the book overview…',
+    'bible.bookUnavailable': 'The book overview isn’t available right now.',
+    'bible.verseVideoHint': 'Add a video that opens up this verse — paste a YouTube, Vimeo, or video link.',
+    'bible.noVerseText': 'This verse isn’t loaded. Open the chapter again to read it.',
 
     /* ---- the road to apologetics (journey) ---- */
     'apologetics.journeyHeading': 'The Road to Apologetics',

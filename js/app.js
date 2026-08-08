@@ -259,7 +259,13 @@
     applyReadingPrefs();
     if (name === 'version') {
       renderVersionOptions();
-      if (bibleState.screen === 'reader') loadChapter();
+      if (bibleState.screen === 'reader') {
+        loadChapter();
+      } else if (bibleState.screen === 'verse') {
+        // reload the chapter in the new version but stay on this verse
+        bibleState.focusAfterLoad = 'keep';
+        loadChapter();
+      }
     }
   }
 
@@ -490,14 +496,20 @@
     }
   ];
 
-  /* Which screen of the browser is showing, and the path taken to it. */
-  var bibleState = { screen: 'testaments', testament: 0, book: null, chapter: 1 };
+  /* Which screen of the browser is showing, and the path taken to it.
+     `verse` and `chapterVerses` back the single-verse study view: the number
+     in focus, and the whole chapter's verses so prev/next can move through it. */
+  var bibleState = {
+    screen: 'testaments', testament: 0, book: null, chapter: 1,
+    verse: 1, chapterVerses: [], focusAfterLoad: null
+  };
 
   var bibleScreens = {
     testaments: document.getElementById('bible-screen-testaments'),
     books: document.getElementById('bible-screen-books'),
     chapters: document.getElementById('bible-screen-chapters'),
-    reader: document.getElementById('bible-screen-reader')
+    reader: document.getElementById('bible-screen-reader'),
+    verse: document.getElementById('bible-screen-verse')
   };
 
   function showBibleScreen(name) {
@@ -530,8 +542,11 @@
     if (bibleState.book && bibleState.screen !== 'books') {
       parts.push(bibleState.book.name);
     }
-    if (bibleState.screen === 'reader') {
+    if (bibleState.screen === 'reader' || bibleState.screen === 'verse') {
       parts.push(t('bible.chapter') + ' ' + bibleState.chapter);
+    }
+    if (bibleState.screen === 'verse') {
+      parts.push(t('bible.verse') + ' ' + bibleState.verse);
     }
     document.getElementById('bible-path').textContent = parts.join(bibleSeparator());
   }
@@ -791,18 +806,38 @@
           setStatus(status, '', false);
           // reaching a chapter counts toward the streak, chapter total, and badges
           markChapterRead(bibleState.book.name, bibleState.chapter);
+          // a verse step that crossed a chapter edge (or a version change made
+          // while studying a verse) lands back in the study view
+          if (bibleState.focusAfterLoad) {
+            var edge = bibleState.focusAfterLoad;
+            bibleState.focusAfterLoad = null;
+            var pick;
+            if (edge === 'keep') {
+              pick = verses.filter(function (x) { return x.number === bibleState.verse; })[0] || verses[0];
+            } else {
+              pick = edge === 'last' ? verses[verses.length - 1] : verses[0];
+            }
+            bibleState.verse = pick.number;
+            showBibleScreen('verse');
+            renderVerseFocus();
+            window.scrollTo(0, 0);
+          }
         } else {
           // an empty 200 means the reader endpoint isn't wired yet
+          bibleState.focusAfterLoad = null;
           setStatus(status, t('bible.unavailable'), false);
         }
       })
       .catch(function (err) {
+        bibleState.focusAfterLoad = null;
         list.textContent = '';
         setStatus(status, err.message, true);
       });
   }
 
   function renderVerses(verses) {
+    // keep the chapter's verses so the study view can read text and step around
+    bibleState.chapterVerses = verses;
     var list = document.getElementById('bible-verses');
     list.textContent = '';
     verses.forEach(function (verse) {
@@ -831,11 +866,21 @@
     card.setAttribute('data-verse', verse.number);
 
     var head = el('div', 'verse-head');
-    head.appendChild(txt('span', 'verse-num', verse.number));
+    // the number opens the single-verse study view for this verse
+    var num = txt('button', 'verse-num', verse.number);
+    num.type = 'button';
+    num.title = t('bible.studyVerse');
+    num.setAttribute('aria-label', t('bible.studyVerse') + ': ' + verse.number);
+    num.addEventListener('click', function () { openVerseFocus(verse.number); });
+    head.appendChild(num);
     head.appendChild(txt('p', 'verse-body', verse.text));
     card.appendChild(head);
 
     var actions = el('div', 'verse-actions');
+    var study = txt('button', 'verse-action verse-action-study', t('bible.studyVerse'));
+    study.type = 'button';
+    study.addEventListener('click', function () { openVerseFocus(verse.number); });
+    actions.appendChild(study);
     var panel = el('div', 'verse-panel');
     panel.hidden = true;
 
@@ -1063,7 +1108,12 @@
   }
 
   document.getElementById('bible-back').addEventListener('click', function () {
-    if (bibleState.screen === 'reader') {
+    if (bibleState.screen === 'verse') {
+      showBibleScreen('reader');
+      // land back on the verse we studied rather than the top of the chapter
+      var card = document.querySelector('.verse-card[data-verse="' + bibleState.verse + '"]');
+      if (card) card.scrollIntoView({ block: 'center' });
+    } else if (bibleState.screen === 'reader') {
       renderChapterGrid();
       showBibleScreen('chapters');
     } else if (bibleState.screen === 'chapters') {
@@ -1084,6 +1134,7 @@
     renderVersionOptions();
     if (bibleState.screen === 'books') renderBookGrid();
     else if (bibleState.screen === 'chapters') renderChapterGrid();
+    else if (bibleState.screen === 'verse') renderVerseFocus();
     updateBibleCrumbs();
     updatePrevNext();
   }
@@ -1142,6 +1193,271 @@
 
   document.getElementById('chapter-guide').addEventListener('toggle', function () {
     if (this.open) loadChapterGuide();
+  });
+
+  /* ---------- single-verse study view ---------- */
+
+  /* The chosen version's human label, shown under the reference so the reader
+     always knows which translation they're looking at. */
+  function currentVersionLabel() {
+    var id = currentVersion();
+    for (var i = 0; i < BIBLE_VERSIONS.length; i++) {
+      if (BIBLE_VERSIONS[i].id === id) {
+        return BIBLE_VERSIONS[i].labelKey ? t(BIBLE_VERSIONS[i].labelKey) : BIBLE_VERSIONS[i].label;
+      }
+    }
+    return id || t('settings.translationDefault');
+  }
+
+  function currentVerseObj() {
+    var vs = bibleState.chapterVerses || [];
+    for (var i = 0; i < vs.length; i++) {
+      if (vs[i].number === bibleState.verse) return vs[i];
+    }
+    return null;
+  }
+
+  function openVerseFocus(number) {
+    bibleState.verse = number;
+    showBibleScreen('verse');
+    renderVerseFocus();
+    window.scrollTo(0, 0);
+  }
+
+  function renderVerseFocus() {
+    if (!bibleState.book) return;
+    var v = currentVerseObj();
+    document.getElementById('verse-focus-ref').textContent =
+      bibleState.book.name + ' ' + bibleState.chapter + ':' + bibleState.verse;
+    document.getElementById('verse-focus-version').textContent = currentVersionLabel();
+
+    var text = document.getElementById('verse-focus-text');
+    text.textContent = v ? v.text : t('bible.noVerseText');
+    text.classList.toggle('is-empty', !v);
+
+    renderFocusVideo(document.getElementById('verse-focus-video'), bibleState.verse);
+    resetFocusDetails();
+    updateVerseNav();
+    updateBibleCrumbs();
+    applyReadingPrefs();
+  }
+
+  /* The three expandables (context / chapter / book) each remember which
+     verse|chapter|book they last filled, so reopening on the same target is
+     free but moving to a new one refetches. */
+  var focusKeys = { context: null, chapter: null, book: null };
+
+  function resetFocusDetails() {
+    ['verse-focus-context', 'verse-focus-chapter', 'verse-focus-book'].forEach(function (id) {
+      var d = document.getElementById(id);
+      if (d) d.open = false;
+    });
+    ['verse-focus-context-body', 'verse-focus-chapter-body', 'verse-focus-book-body'].forEach(function (id) {
+      var b = document.getElementById(id);
+      if (b) b.textContent = '';
+    });
+    focusKeys = { context: null, chapter: null, book: null };
+  }
+
+  function updateVerseNav() {
+    var vs = bibleState.chapterVerses || [];
+    var first = vs.length ? vs[0].number : 1;
+    var last = vs.length ? vs[vs.length - 1].number : 1;
+    var atStart = bibleState.chapter <= 1 && bibleState.verse <= first;
+    var atEnd = bibleState.book &&
+      bibleState.chapter >= bibleState.book.chapters && bibleState.verse >= last;
+    document.getElementById('verse-focus-prev').disabled = atStart;
+    document.getElementById('verse-focus-next').disabled = !!atEnd;
+  }
+
+  // move one verse at a time, rolling into the neighbouring chapter at the edges
+  function stepVerse(delta) {
+    var vs = bibleState.chapterVerses || [];
+    var idx = -1;
+    for (var i = 0; i < vs.length; i++) {
+      if (vs[i].number === bibleState.verse) { idx = i; break; }
+    }
+    var next = idx + delta;
+    if (idx !== -1 && next >= 0 && next < vs.length) {
+      bibleState.verse = vs[next].number;
+      renderVerseFocus();
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (!bibleState.book) return;
+    if (delta < 0 && bibleState.chapter > 1) {
+      bibleState.chapter -= 1;
+      bibleState.focusAfterLoad = 'last';
+      showFocusLoading();
+      loadChapter();
+    } else if (delta > 0 && bibleState.chapter < bibleState.book.chapters) {
+      bibleState.chapter += 1;
+      bibleState.focusAfterLoad = 'first';
+      showFocusLoading();
+      loadChapter();
+    }
+  }
+
+  function showFocusLoading() {
+    document.getElementById('verse-focus-text').textContent = t('bible.busyStatus');
+  }
+
+  document.getElementById('verse-focus-prev').addEventListener('click', function () { stepVerse(-1); });
+  document.getElementById('verse-focus-next').addEventListener('click', function () { stepVerse(1); });
+
+  /* The verse's video, shown inline right under the text: the saved embed if one
+     was posted, otherwise the paste-a-link form. Shares the same per-verse key as
+     the chapter reader, so a video posted in either place shows in both. */
+  function renderFocusVideo(container, number) {
+    container.textContent = '';
+    var map = loadVideos();
+    var saved = map[verseKey(number)];
+
+    if (saved) {
+      var embed = videoEmbed(saved);
+      if (embed) {
+        container.appendChild(embed);
+      } else {
+        var link = txt('a', 'verse-video-link', saved);
+        link.href = saved;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        container.appendChild(link);
+      }
+      var remove = txt('button', 'verse-panel-btn', t('bible.videoRemove'));
+      remove.type = 'button';
+      remove.addEventListener('click', function () {
+        var m = loadVideos();
+        delete m[verseKey(number)];
+        saveVideos(m);
+        renderFocusVideo(container, number);
+      });
+      container.appendChild(remove);
+      return;
+    }
+
+    var form = el('div', 'verse-video-form');
+    var input = el('input', 'verse-video-input');
+    input.type = 'url';
+    input.placeholder = t('bible.videoHint');
+    var post = txt('button', 'verse-panel-btn', t('bible.videoPost'));
+    post.type = 'button';
+    var note = el('p', 'verse-panel-note');
+    note.textContent = t('bible.verseVideoHint');
+
+    post.addEventListener('click', function () {
+      var url = input.value.trim();
+      if (!url) return;
+      if (!/^https?:\/\//i.test(url)) { note.textContent = t('bible.videoInvalid'); return; }
+      var m = loadVideos();
+      m[verseKey(number)] = url;
+      saveVideos(m);
+      renderFocusVideo(container, number);
+    });
+
+    form.appendChild(input);
+    form.appendChild(post);
+    container.appendChild(form);
+    container.appendChild(note);
+  }
+
+  // shared renderer for the chapter/book overview panels
+  function renderInsight(body, sections, emptyKey) {
+    body.textContent = '';
+    var any = false;
+    sections.forEach(function (s) {
+      var text = (s.text || '').trim();
+      if (!text) return;
+      any = true;
+      body.appendChild(txt('h4', 'chapter-guide-heading', t(s.key)));
+      body.appendChild(txt('p', 'chapter-guide-text', text));
+    });
+    if (!any) body.appendChild(txt('p', 'verse-panel-note', t(emptyKey)));
+  }
+
+  function loadFocusContext() {
+    var body = document.getElementById('verse-focus-context-body');
+    var key = verseKey(bibleState.verse);
+    if (focusKeys.context === key) return;
+    focusKeys.context = key;
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('bible.contextBusy')));
+    request('verse-context', {
+      book: bibleState.book.name, chapter: bibleState.chapter,
+      verse: bibleState.verse, version: currentVersion()
+    })
+      .then(function (data) {
+        if (focusKeys.context !== key) return;
+        var text = ((data && (data.context || data.text)) || '').trim();
+        body.textContent = '';
+        body.appendChild(text
+          ? txt('p', 'chapter-guide-text', text)
+          : txt('p', 'verse-panel-note', t('bible.sectionUnavailable')));
+      })
+      .catch(function (err) {
+        if (focusKeys.context !== key) return;
+        focusKeys.context = null;
+        body.textContent = '';
+        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+      });
+  }
+
+  function loadFocusChapter() {
+    var body = document.getElementById('verse-focus-chapter-body');
+    var key = bibleState.book.name + '|' + bibleState.chapter;
+    if (focusKeys.chapter === key) return;
+    focusKeys.chapter = key;
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('bible.guideBusy')));
+    request('chapter-insight', { book: bibleState.book.name, chapter: bibleState.chapter })
+      .then(function (data) {
+        if (focusKeys.chapter !== key) return;
+        renderInsight(body, [
+          { key: 'bible.overview', text: data && data.overview },
+          { key: 'bible.pointsToChrist', text: data && data.christ },
+          { key: 'bible.background', text: data && data.history }
+        ], 'bible.guideUnavailable');
+      })
+      .catch(function (err) {
+        if (focusKeys.chapter !== key) return;
+        focusKeys.chapter = null;
+        body.textContent = '';
+        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+      });
+  }
+
+  function loadFocusBook() {
+    var body = document.getElementById('verse-focus-book-body');
+    var key = bibleState.book.name;
+    if (focusKeys.book === key) return;
+    focusKeys.book = key;
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
+    request('book-insight', { book: bibleState.book.name })
+      .then(function (data) {
+        if (focusKeys.book !== key) return;
+        renderInsight(body, [
+          { key: 'bible.bookAbout', text: data && data.overview },
+          { key: 'bible.pointsToChrist', text: data && data.christ },
+          { key: 'bible.bookBackground', text: data && data.history }
+        ], 'bible.bookUnavailable');
+      })
+      .catch(function (err) {
+        if (focusKeys.book !== key) return;
+        focusKeys.book = null;
+        body.textContent = '';
+        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+      });
+  }
+
+  document.getElementById('verse-focus-context').addEventListener('toggle', function () {
+    if (this.open) loadFocusContext();
+  });
+  document.getElementById('verse-focus-chapter').addEventListener('toggle', function () {
+    if (this.open) loadFocusChapter();
+  });
+  document.getElementById('verse-focus-book').addEventListener('toggle', function () {
+    if (this.open) loadFocusBook();
   });
 
   /* ---------- jumping into the reader from anywhere (plans) ---------- */

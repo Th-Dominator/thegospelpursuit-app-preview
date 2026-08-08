@@ -1252,6 +1252,71 @@ html[lang="my"] .dropcap,
   color: var(--ink);
 }
 
+/* ---------- single-verse study view ---------- */
+
+/* the verse number becomes a button that opens the study view, but should still
+   read as the plain gold number it was */
+button.verse-num {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: inherit;
+  line-height: inherit;
+}
+button.verse-num:hover { text-decoration: underline; }
+
+/* the "Study this verse" pill leads the action row, so mark it out a little */
+.verse-action-study {
+  color: var(--gold-dark);
+  border-color: var(--gold);
+}
+
+.verse-focus-ref {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--ink);
+  unicode-bidi: plaintext;
+}
+.verse-focus-version {
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+}
+.verse-focus-text {
+  margin: 18px 0 4px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.55;
+  color: var(--ink);
+  unicode-bidi: plaintext;
+}
+.verse-focus-text.is-empty {
+  font-size: 15px;
+  color: var(--ink-muted);
+}
+
+.verse-focus-video-block { margin: 22px 0 6px; }
+.verse-focus-label {
+  margin: 0 0 10px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* the context / chapter / book expandables sit a touch tighter than the guide */
+.verse-focus-details { margin-bottom: 12px; }
+.verse-focus .bible-reader-nav { margin-top: 18px; }
+
 /* ---------- bible plans: detail + day list ---------- */
 
 .plan-detail-title {
