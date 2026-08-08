@@ -1807,6 +1807,107 @@
     renderNotifUI();
   });
 
+  /* ---------- push reminders (web push) ---------- */
+
+  var swReg = null;
+
+  function pushSupported() {
+    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  }
+
+  function registerSW() {
+    if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+    if (swReg) return Promise.resolve(swReg);
+    return navigator.serviceWorker.register('sw.js').then(
+      function (reg) { swReg = reg; return reg; },
+      function () { return null; }
+    );
+  }
+
+  // VAPID public key travels as base64url; PushManager wants a Uint8Array
+  function urlB64ToBytes(base64) {
+    var pad = '='.repeat((4 - base64.length % 4) % 4);
+    var b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = window.atob(b64);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function reminderStatus(msg, isError) {
+    var el = document.getElementById('reminder-status');
+    if (el) setStatus(el, msg, isError);
+  }
+
+  function initPush() {
+    var box = document.getElementById('setting-daily-reminder');
+    if (!box) return;
+    if (!pushSupported() || typeof PUSH_VAPID_PUBLIC === 'undefined' || !PUSH_VAPID_PUBLIC) {
+      box.disabled = true;
+      reminderStatus(t('settings.reminderUnsupported'), false);
+      return;
+    }
+    box.checked = !!settings.dailyReminder;
+    // keep the service worker registered so notification taps are handled
+    registerSW();
+    box.addEventListener('change', function () {
+      if (box.checked) enablePush();
+      else disablePush();
+    });
+  }
+
+  function enablePush() {
+    reminderStatus(t('settings.reminderEnabling'), false);
+    registerSW()
+      .then(function (reg) {
+        if (!reg) throw new Error('sw');
+        return Notification.requestPermission().then(function (perm) {
+          if (perm !== 'granted') throw new Error('perm');
+          return reg.pushManager.getSubscription().then(function (existing) {
+            return existing || reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlB64ToBytes(PUSH_VAPID_PUBLIC)
+            });
+          });
+        });
+      })
+      .then(function (sub) {
+        return request('push-subscribe', {
+          subscription: sub.toJSON(),
+          tzOffset: new Date().getTimezoneOffset(),
+          hour: 8
+        });
+      })
+      .then(function () {
+        settings.dailyReminder = true;
+        persistSettings();
+        reminderStatus(t('settings.reminderOn'), false);
+      })
+      .catch(function (err) {
+        var box = document.getElementById('setting-daily-reminder');
+        if (box) box.checked = false;
+        settings.dailyReminder = false;
+        persistSettings();
+        reminderStatus(err && err.message === 'perm' ? t('settings.reminderDenied') : t('settings.reminderFailed'), true);
+      });
+  }
+
+  function disablePush() {
+    settings.dailyReminder = false;
+    persistSettings();
+    reminderStatus(t('settings.reminderOff'), false);
+    registerSW().then(function (reg) {
+      if (!reg) return;
+      return reg.pushManager.getSubscription().then(function (sub) {
+        if (!sub) return;
+        var endpoint = sub.endpoint;
+        return sub.unsubscribe().then(function () {
+          return request('push-unsubscribe', { endpoint: endpoint }).catch(function () {});
+        });
+      });
+    }).catch(function () {});
+  }
+
   /* ---------- tool forms ---------- */
 
   // kept so a language change can relabel buttons that aren't mid-request
@@ -1919,6 +2020,7 @@
   resetBibleBrowser();
   renderVersionOptions();
   wireSettings();
+  initPush();
   applyReadingPrefs();
 
   /* A saved non-English choice needs its table fetched before the first paint,

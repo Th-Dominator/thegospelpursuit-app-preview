@@ -334,7 +334,19 @@ var TRANSLATIONS = {
     'notif.streak.title': '{n}-day streak!',
     'notif.streak.body': 'You’ve read {n} days in a row. Keep the flame alive.',
     'notif.badge.title': 'Badge unlocked',
-    'notif.badge.body': 'You earned “{name}”.'
+    'notif.badge.body': 'You earned “{name}”.',
+
+    /* ---- reminders (web push) ---- */
+    'settings.remindersHeading': 'Reminders',
+    'settings.remindersHint': 'A gentle daily nudge to spend time in the Word — it reaches you even when the app is closed.',
+    'settings.dailyReminderLabel': 'Send me a daily reading reminder (around 8 AM)',
+    'settings.reminderIosHint': 'On iPhone or iPad, add this app to your Home Screen first, then turn this on.',
+    'settings.reminderUnsupported': 'Your browser doesn’t support push notifications.',
+    'settings.reminderEnabling': 'Setting up your reminder…',
+    'settings.reminderOn': 'Daily reminder is on. See you tomorrow morning.',
+    'settings.reminderOff': 'Daily reminder turned off.',
+    'settings.reminderDenied': 'Notifications are blocked. Allow them in your browser settings, then try again.',
+    'settings.reminderFailed': 'Couldn’t set up the reminder. Please try again.'
   }
 };
 

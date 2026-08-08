@@ -415,6 +415,18 @@
         </label>
       </section>
 
+      <!-- reminders (web push) -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.remindersHeading">Reminders</h2>
+        <p class="settings-hint" data-i18n="settings.remindersHint">A gentle daily nudge to spend time in the Word — it reaches you even when the app is closed.</p>
+        <label class="settings-toggle">
+          <input type="checkbox" id="setting-daily-reminder">
+          <span class="settings-toggle-text" data-i18n="settings.dailyReminderLabel">Send me a daily reading reminder (around 8 AM)</span>
+        </label>
+        <p class="settings-fineprint" data-i18n="settings.reminderIosHint">On iPhone or iPad, add this app to your Home Screen first, then turn this on.</p>
+        <p id="reminder-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
       <!-- search scripture -->
       <section class="settings-group">
         <h2 class="settings-heading" data-i18n="settings.searchHeading">Search scripture</h2>
