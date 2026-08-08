@@ -978,11 +978,99 @@
     panel.appendChild(note);
   }
 
+  /* --- verse context: a ten-part study built from the backend ---
+     The ten sections cover immediate / historical / literary context, the
+     original language, cross references, the connection to Christ, theology,
+     interpretive views, common misinterpretations, and application. Older
+     replies that were a single `context` blob still render as plain prose. */
+  var CONTEXT_SECTIONS = [
+    { key: 'immediate', label: 'ctx.immediate' },
+    { key: 'historical', label: 'ctx.historical' },
+    { key: 'literary', label: 'ctx.literary' },
+    { key: 'language', label: 'ctx.language' },
+    { key: 'crossRefs', label: 'ctx.crossRefs' },
+    { key: 'christ', label: 'ctx.christ' },
+    { key: 'theology', label: 'ctx.theology' },
+    { key: 'views', label: 'ctx.views' },
+    { key: 'misreadings', label: 'ctx.misreadings' },
+    { key: 'application', label: 'ctx.application' }
+  ];
+
+  function renderVerseContext(data) {
+    if (!data) return null;
+    var legacy = ((data.context || data.text) || '').trim();
+    var hasRich = CONTEXT_SECTIONS.some(function (d) {
+      var v = data[d.key];
+      return d.key === 'crossRefs'
+        ? (Array.isArray(v) && v.length)
+        : (typeof v === 'string' && v.trim());
+    });
+    if (!hasRich) return legacy ? txt('p', 'verse-prose', legacy) : null;
+
+    var wrap = el('div', 'verse-context');
+    var openFirst = true;
+    CONTEXT_SECTIONS.forEach(function (d) {
+      var content = d.key === 'crossRefs'
+        ? buildCrossRefs(data.crossRefs)
+        : buildProseSection(data[d.key]);
+      if (!content) return;
+
+      var det = el('details', 'ctx-section');
+      if (openFirst) { det.open = true; openFirst = false; }
+      var sum = el('summary', 'ctx-summary');
+      sum.appendChild(txt('span', 'ctx-title', t(d.label)));
+      det.appendChild(sum);
+      var body = el('div', 'ctx-body');
+      body.appendChild(content);
+      det.appendChild(body);
+      wrap.appendChild(det);
+    });
+    return wrap.children.length ? wrap : (legacy ? txt('p', 'verse-prose', legacy) : null);
+  }
+
+  function buildProseSection(val) {
+    var text = (typeof val === 'string' ? val : '').trim();
+    return text ? txt('p', 'ctx-text', text) : null;
+  }
+
+  function buildCrossRefs(refs) {
+    if (!Array.isArray(refs) || !refs.length) return null;
+    var ul = el('ul', 'ctx-refs');
+    refs.forEach(function (r) {
+      var reference = ((r && r.reference) || '').trim();
+      if (!reference) return;
+      var note = ((r && r.note) || '').trim();
+      var li = el('li', 'ctx-ref');
+
+      var loc = parseRef(reference);
+      if (loc) {
+        // a resolvable reference becomes a link into that chapter
+        var link = txt('button', 'ctx-ref-link', reference);
+        link.type = 'button';
+        link.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
+        li.appendChild(link);
+      } else {
+        li.appendChild(txt('span', 'ctx-ref-name', reference));
+      }
+      if (note) li.appendChild(txt('span', 'ctx-ref-note', ' — ' + note));
+      ul.appendChild(li);
+    });
+    return ul.children.length ? ul : null;
+  }
+
+  // "1 John 4:9" -> { book:'1 John', chapter:4, verse:9 } when the book is in our canon
+  function parseRef(ref) {
+    var m = String(ref).trim().match(/^(.+?)\s+(\d+)(?::(\d+))?/);
+    if (!m) return null;
+    var found = findBook(m[1]);
+    if (!found) return null;
+    return { book: found.book.name, chapter: parseInt(m[2], 10), verse: m[3] ? parseInt(m[3], 10) : 1 };
+  }
+
   // --- context & resources: generated per verse by the backend ---
   function fillContextPanel(panel, verse) {
     fetchInto(panel, 'verse-context', verse, {}, function (data) {
-      var text = ((data && (data.context || data.text)) || '').trim();
-      return text ? txt('p', 'verse-prose', text) : null;
+      return renderVerseContext(data);
     });
   }
 
@@ -1388,11 +1476,9 @@
     })
       .then(function (data) {
         if (focusKeys.context !== key) return;
-        var text = ((data && (data.context || data.text)) || '').trim();
+        var node = renderVerseContext(data);
         body.textContent = '';
-        body.appendChild(text
-          ? txt('p', 'chapter-guide-text', text)
-          : txt('p', 'verse-panel-note', t('bible.sectionUnavailable')));
+        body.appendChild(node || txt('p', 'verse-panel-note', t('bible.sectionUnavailable')));
       })
       .catch(function (err) {
         if (focusKeys.context !== key) return;
