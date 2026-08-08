@@ -1188,7 +1188,7 @@
     { key: 'connections', label: 'chap.connections', type: 'refs' },
     { key: 'christ', label: 'chap.christ', type: 'prose' },
     { key: 'apologetics', label: 'chap.apologetics', type: 'prose' },
-    { key: 'archaeology', label: 'chap.archaeology', type: 'prose' },
+    { key: 'archaeology', label: 'chap.archaeology', type: 'archaeology' },
     { key: 'next', label: 'chap.next', type: 'prose' },
     { key: 'quiz', label: 'chap.quiz', type: 'quiz' },
     { key: 'sources', label: 'chap.sources', type: 'list' }
@@ -1227,27 +1227,30 @@
     { key: 'christ', label: 'book.christ', type: 'prose' },
     { key: 'connections', label: 'book.connections', type: 'refs' },
     { key: 'controversies', label: 'book.controversies', type: 'named' },
-    { key: 'archaeology', label: 'book.archaeology', type: 'prose' },
+    { key: 'archaeology', label: 'book.archaeology', type: 'archaeology' },
     { key: 'manuscripts', label: 'book.manuscripts', type: 'prose' },
     { key: 'reception', label: 'book.reception', type: 'prose' },
     { key: 'sources', label: 'book.sources', type: 'list' }
   ];
 
   function renderChapterOverview(data) {
-    return renderSectionedStudy(data, CHAPTER_SECTIONS);
+    return renderSectionedStudy(data, CHAPTER_SECTIONS,
+      { book: bibleState.book.name, chapter: bibleState.chapter });
   }
 
   function renderBookOverview(data) {
-    return renderSectionedStudy(data, BOOK_SECTIONS);
+    return renderSectionedStudy(data, BOOK_SECTIONS, { book: bibleState.book.name });
   }
 
   /* Shared accordion for the chapter and book studies: each configured
      section becomes a collapsible panel, the first non-empty one open.
      Returns null when none of the rich keys are present, so callers can
      fall back to an older, simpler reply shape. */
-  function renderSectionedStudy(data, sections) {
+  function renderSectionedStudy(data, sections, archScope) {
     if (!data) return null;
+    // the archaeology panel loads on demand, so it never counts toward "rich"
     var hasRich = sections.some(function (d) {
+      if (d.type === 'archaeology') return false;
       var v = data[d.key];
       return d.type === 'prose' ? (typeof v === 'string' && v.trim()) : (Array.isArray(v) && v.length);
     });
@@ -1256,6 +1259,10 @@
     var wrap = el('div', 'verse-context');
     var openFirst = true;
     sections.forEach(function (d) {
+      if (d.type === 'archaeology') {
+        if (archScope) wrap.appendChild(buildArchaeologyPanel(d, archScope));
+        return;
+      }
       var content = buildStudySection(d, data[d.key]);
       if (!content) return;
       var det = el('details', 'ctx-section');
@@ -1269,6 +1276,137 @@
       wrap.appendChild(det);
     });
     return wrap.children.length ? wrap : null;
+  }
+
+  /* The archaeology section is its own lazy fetch: opening it calls the
+     `archaeology` endpoint for this book (or book+chapter) and renders a
+     card per catalogued artifact. Kept separate so it doesn't bloat the
+     already-heavy chapter/book overview generations. */
+  function buildArchaeologyPanel(d, scope) {
+    var det = el('details', 'ctx-section');
+    var sum = el('summary', 'ctx-summary');
+    sum.appendChild(txt('span', 'ctx-title', t(d.label)));
+    det.appendChild(sum);
+    var body = el('div', 'ctx-body');
+    body.appendChild(txt('p', 'verse-panel-note', t('arch.hint')));
+    det.appendChild(body);
+
+    var loaded = false;
+    det.addEventListener('toggle', function () {
+      if (!det.open || loaded) return;
+      loaded = true;
+      body.textContent = '';
+      body.appendChild(txt('p', 'verse-panel-note', t('arch.busy')));
+      request('archaeology', scope)
+        .then(function (data) {
+          body.textContent = '';
+          body.appendChild(renderArchaeology(data) || txt('p', 'verse-panel-note', t('arch.none')));
+        })
+        .catch(function (err) {
+          loaded = false; // let the next open retry
+          body.textContent = '';
+          body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+        });
+    });
+    return det;
+  }
+
+  function renderArchaeology(data) {
+    var artifacts = data && (data.artifacts || data.items);
+    if (!Array.isArray(artifacts) || !artifacts.length) return null;
+    var wrap = el('div', 'arch-list');
+    artifacts.forEach(function (a) {
+      var card = buildArtifactCard(a);
+      if (card) wrap.appendChild(card);
+    });
+    return wrap.children.length ? wrap : null;
+  }
+
+  function buildArtifactCard(a) {
+    if (!a) return null;
+    var name = ((a.name || a.artifact) || '').trim();
+    var card = el('div', 'arch-card');
+    if (name) card.appendChild(txt('h5', 'arch-name', name));
+
+    var fig = buildArtifactImage(a.image);
+    if (fig) card.appendChild(fig);
+
+    var dl = el('dl', 'arch-fields');
+    addArchField(dl, 'arch.found', a.discoveryLocation);
+    addArchField(dl, 'arch.now', a.currentLocation);
+    addArchField(dl, 'arch.discovered', a.discoveryDate);
+    addArchField(dl, 'arch.dated', a.artifactDate);
+    addArchField(dl, 'arch.by', a.discoveredBy);
+    addArchField(dl, 'arch.what', a.description);
+    addArchRefField(dl, 'arch.passage', a.passage);
+    addArchField(dl, 'arch.significance', a.significance);
+    addArchField(dl, 'arch.supports', a.supports);
+    addArchField(dl, 'arch.doesnt', a.doesntProve);
+    addArchField(dl, 'arch.disagreement', a.disagreements);
+    addArchField(dl, 'arch.primary', a.primarySource);
+    addArchField(dl, 'arch.modern', a.scholarlySources);
+    if (dl.children.length) card.appendChild(dl);
+
+    var conf = (a.confidence || '').trim();
+    if (conf) {
+      var badge = el('div', 'arch-confidence');
+      badge.appendChild(txt('span', 'christ-conf-label', t('arch.confidence')));
+      badge.appendChild(txt('span', 'christ-conf-value christ-conf-' + confLevel(conf), conf));
+      card.appendChild(badge);
+    }
+    return card.children.length ? card : null;
+  }
+
+  // a label/value pair, skipped when the value is empty
+  function addArchField(dl, labelKey, val) {
+    var text = (typeof val === 'string' ? val : '').trim();
+    if (!text) return;
+    dl.appendChild(txt('dt', 'arch-key', t(labelKey)));
+    dl.appendChild(txt('dd', 'arch-val', text));
+  }
+
+  // the biblical passage becomes a link into the reader when it resolves
+  function addArchRefField(dl, labelKey, val) {
+    var ref = (typeof val === 'string' ? val : '').trim();
+    if (!ref) return;
+    dl.appendChild(txt('dt', 'arch-key', t(labelKey)));
+    var dd = el('dd', 'arch-val');
+    var loc = parseRef(ref);
+    if (loc) {
+      var link = txt('button', 'ctx-ref-link', ref);
+      link.type = 'button';
+      link.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
+      dd.appendChild(link);
+    } else {
+      dd.textContent = ref;
+    }
+    dl.appendChild(dd);
+  }
+
+  /* Embed a public-domain artifact image via Wikimedia Commons' Special:FilePath,
+     which resolves a plain file name to the actual image (no host-side hash to
+     guess). We build the URL ourselves, so it is always Wikimedia-hosted, ask
+     for a 480px thumbnail, show credit + license, and hide the figure if the
+     file does not resolve. */
+  function buildArtifactImage(image) {
+    if (!image || typeof image !== 'object') return null;
+    var file = (image.commonsFile || '').trim();
+    if (!file) return null;
+    var src = 'https://commons.wikimedia.org/wiki/Special:FilePath/' +
+      encodeURIComponent(file) + '?width=480';
+
+    var fig = el('figure', 'arch-figure');
+    var img = el('img', 'arch-img');
+    img.src = src;
+    img.loading = 'lazy';
+    img.alt = file.replace(/\.[a-z0-9]+$/i, '');
+    img.addEventListener('error', function () { fig.hidden = true; });
+    fig.appendChild(img);
+
+    var credit = [image.credit, image.license].map(function (x) { return (x || '').trim(); })
+      .filter(Boolean).join(' · ');
+    if (credit) fig.appendChild(txt('figcaption', 'arch-credit', credit));
+    return fig;
   }
 
   function buildStudySection(d, val) {
