@@ -1189,6 +1189,7 @@
     { key: 'christ', label: 'chap.christ', type: 'prose' },
     { key: 'apologetics', label: 'chap.apologetics', type: 'prose' },
     { key: 'archaeology', label: 'chap.archaeology', type: 'archaeology' },
+    { key: 'places', label: 'chap.places', type: 'geography' },
     { key: 'next', label: 'chap.next', type: 'prose' },
     { key: 'quiz', label: 'chap.quiz', type: 'quiz' },
     { key: 'sources', label: 'chap.sources', type: 'list' }
@@ -1228,6 +1229,7 @@
     { key: 'connections', label: 'book.connections', type: 'refs' },
     { key: 'controversies', label: 'book.controversies', type: 'named' },
     { key: 'archaeology', label: 'book.archaeology', type: 'archaeology' },
+    { key: 'places', label: 'book.places', type: 'geography' },
     { key: 'manuscripts', label: 'book.manuscripts', type: 'prose' },
     { key: 'reception', label: 'book.reception', type: 'prose' },
     { key: 'sources', label: 'book.sources', type: 'list' }
@@ -1250,7 +1252,7 @@
     if (!data) return null;
     // the archaeology panel loads on demand, so it never counts toward "rich"
     var hasRich = sections.some(function (d) {
-      if (d.type === 'archaeology') return false;
+      if (d.type === 'archaeology' || d.type === 'geography') return false;
       var v = data[d.key];
       return d.type === 'prose' ? (typeof v === 'string' && v.trim()) : (Array.isArray(v) && v.length);
     });
@@ -1261,6 +1263,10 @@
     sections.forEach(function (d) {
       if (d.type === 'archaeology') {
         if (archScope) wrap.appendChild(buildArchaeologyPanel(d, archScope));
+        return;
+      }
+      if (d.type === 'geography') {
+        if (archScope) wrap.appendChild(buildGeographyPanel(d, archScope));
         return;
       }
       var content = buildStudySection(d, data[d.key]);
@@ -1407,6 +1413,137 @@
       .filter(Boolean).join(' · ');
     if (credit) fig.appendChild(txt('figcaption', 'arch-credit', credit));
     return fig;
+  }
+
+  /* Biblical geography is a lazy panel too: opening it calls the `geography`
+     endpoint for this book (or book+chapter) and renders a card per place,
+     each with an interactive OpenStreetMap when the site is located. Kept
+     separate from the heavy overview generation, like the archaeology panel. */
+  function buildGeographyPanel(d, scope) {
+    var det = el('details', 'ctx-section');
+    var sum = el('summary', 'ctx-summary');
+    sum.appendChild(txt('span', 'ctx-title', t(d.label)));
+    det.appendChild(sum);
+    var body = el('div', 'ctx-body');
+    body.appendChild(txt('p', 'verse-panel-note', t('geo.hint')));
+    det.appendChild(body);
+
+    var loaded = false;
+    det.addEventListener('toggle', function () {
+      if (!det.open || loaded) return;
+      loaded = true;
+      body.textContent = '';
+      body.appendChild(txt('p', 'verse-panel-note', t('geo.busy')));
+      request('geography', scope)
+        .then(function (data) {
+          body.textContent = '';
+          body.appendChild(renderGeography(data) || txt('p', 'verse-panel-note', t('geo.none')));
+        })
+        .catch(function (err) {
+          loaded = false; // let the next open retry
+          body.textContent = '';
+          body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+        });
+    });
+    return det;
+  }
+
+  function renderGeography(data) {
+    var places = data && (data.places || data.locations || data.items);
+    if (!Array.isArray(places) || !places.length) return null;
+    var wrap = el('div', 'arch-list');
+    places.forEach(function (p) {
+      var card = buildPlaceCard(p);
+      if (card) wrap.appendChild(card);
+    });
+    return wrap.children.length ? wrap : null;
+  }
+
+  function buildPlaceCard(p) {
+    if (!p) return null;
+    var name = ((p.name || p.place) || '').trim();
+    var card = el('div', 'arch-card geo-card');
+
+    if (name) {
+      var head = el('div', 'geo-head');
+      head.appendChild(txt('h5', 'arch-name', name));
+      var ident = (p.identification || p.status || '').trim();
+      if (ident) head.appendChild(txt('span', 'geo-ident geo-ident-' + geoIdentLevel(ident), ident));
+      card.appendChild(head);
+    }
+
+    var fig = buildArtifactImage(p.image);
+    if (fig) card.appendChild(fig);
+
+    var map = buildPlaceMap(p.lat, p.lng != null ? p.lng : p.lon);
+    if (map) card.appendChild(map);
+
+    var dl = el('dl', 'arch-fields');
+    addArchField(dl, 'geo.modern', p.modernName || p.modern);
+    addArchField(dl, 'geo.alternatives', p.alternatives);
+    addArchField(dl, 'geo.region', p.region || p.boundaries);
+    addArchField(dl, 'geo.importance', p.importance);
+    addArchField(dl, 'geo.travel', p.travel);
+    addArchField(dl, 'geo.archaeology', p.archaeology);
+    addArchField(dl, 'geo.imagery', p.imagery);
+    if (dl.children.length) card.appendChild(dl);
+
+    addGeoGroup(card, 'geo.verses', buildCrossRefs(normalizeRefs(p.verses)));
+    addGeoGroup(card, 'geo.people', buildNamedList(p.people));
+    addGeoGroup(card, 'geo.events', buildBulletList(p.events));
+
+    var conf = (p.confidence || '').trim();
+    if (conf) {
+      var badge = el('div', 'arch-confidence');
+      badge.appendChild(txt('span', 'christ-conf-label', t('geo.confidence')));
+      badge.appendChild(txt('span', 'christ-conf-value christ-conf-' + confLevel(conf), conf));
+      card.appendChild(badge);
+    }
+    return card.children.length ? card : null;
+  }
+
+  // a labelled sub-group (verses / people / events) appended only when it has content
+  function addGeoGroup(card, labelKey, node) {
+    if (!node) return;
+    card.appendChild(txt('h6', 'geo-group-title', t(labelKey)));
+    card.appendChild(node);
+  }
+
+  /* An interactive, keyless OpenStreetMap embed centred on the site, plus a
+     link out to the full map. Only rendered when the model gives real
+     coordinates (a located, identifiable site); disputed/unknown sites get
+     no map. */
+  function buildPlaceMap(lat, lng) {
+    var la = parseFloat(lat), lo = parseFloat(lng);
+    if (!isFinite(la) || !isFinite(lo)) return null;
+    if (la < -90 || la > 90 || lo < -180 || lo > 180) return null;
+    if (la === 0 && lo === 0) return null; // null-island placeholder, treat as absent
+    var d = 0.12;
+    var bbox = [lo - d, la - d, lo + d, la + d].join(',');
+    var wrap = el('div', 'geo-map');
+    var frame = el('iframe', 'geo-map-frame');
+    frame.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' +
+      encodeURIComponent(bbox) + '&layer=mapnik&marker=' + la + ',' + lo;
+    frame.loading = 'lazy';
+    frame.setAttribute('title', t('geo.mapTitle'));
+    frame.setAttribute('referrerpolicy', 'no-referrer');
+    frame.addEventListener('error', function () { wrap.hidden = true; });
+    wrap.appendChild(frame);
+    var link = el('a', 'geo-map-link');
+    link.href = 'https://www.openstreetmap.org/?mlat=' + la + '&mlon=' + lo + '#map=9/' + la + '/' + lo;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = t('geo.mapLink');
+    wrap.appendChild(link);
+    return wrap;
+  }
+
+  // identified -> green, disputed/uncertain -> amber, unknown/lost -> red
+  function geoIdentLevel(s) {
+    s = String(s || '').toLowerCase();
+    if (/(unknown|unidentif|unlocat|not\s+located|lost)/.test(s)) return 'low';
+    if (/(disput|uncertain|debat|proposed|possible|tentativ|approx)/.test(s)) return 'med';
+    return 'high';
   }
 
   function buildStudySection(d, val) {
