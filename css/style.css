@@ -1591,6 +1591,53 @@ button.verse-num:hover { text-decoration: underline; }
   padding-left: 10px;
 }
 
+/* two-tier knowledge check: a labelled Medium block and Hard block */
+.quiz-tiers { display: flex; flex-direction: column; gap: 20px; }
+.quiz-tier { display: flex; flex-direction: column; gap: 12px; }
+.quiz-tier-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold-dark, #96660a);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+}
+
+/* common questions: a FAQ accordion */
+.faq-list { display: flex; flex-direction: column; gap: 8px; }
+.faq-item {
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  overflow: hidden;
+}
+.faq-q {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.faq-q::-webkit-details-marker { display: none; }
+.faq-q::before {
+  content: '+';
+  flex: 0 0 auto;
+  font-weight: 700;
+  color: var(--gold-dark, #96660a);
+  line-height: 1.4;
+}
+.faq-item[open] .faq-q::before { content: '\2212'; } /* minus */
+.faq-q-text { flex: 1 1 auto; }
+.faq-a { padding: 0 14px 12px 30px; display: flex; flex-direction: column; gap: 8px; }
+.faq-a-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink-soft); }
+
 /* ---------- bible plans: detail + day list ---------- */
 
 .plan-detail-title {

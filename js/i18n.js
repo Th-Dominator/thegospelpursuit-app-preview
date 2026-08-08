@@ -268,7 +268,10 @@ var TRANSLATIONS = {
     'chap.places': 'Biblical geography',
     'chap.timeline': 'Timeline',
     'chap.next': 'What happens next',
+    'chap.faq': 'Common questions',
     'chap.quiz': 'Knowledge check',
+    'chap.quizMedium': 'Medium · 3 questions',
+    'chap.quizHard': 'Hard · 5 questions',
     'chap.sources': 'Sources & further study',
     /* ---- book overview: the full book study ---- */
     'bible.bookGuide': 'Book overview',

@@ -1192,6 +1192,7 @@
     { key: 'places', label: 'chap.places', type: 'geography' },
     { key: 'timeline', label: 'chap.timeline', type: 'timeline' },
     { key: 'next', label: 'chap.next', type: 'prose' },
+    { key: 'commonQuestions', label: 'chap.faq', type: 'faq' },
     { key: 'quiz', label: 'chap.quiz', type: 'quiz' },
     { key: 'sources', label: 'chap.sources', type: 'list' }
   ];
@@ -1630,6 +1631,7 @@
     if (d.type === 'named') return buildNamedList(val);
     if (d.type === 'refs') return buildCrossRefs(normalizeRefs(val));
     if (d.type === 'quiz') return buildKnowledgeCheck(val);
+    if (d.type === 'faq') return buildFaqSection(val);
     return null;
   }
 
@@ -1662,8 +1664,31 @@
     return ul.children.length ? ul : null;
   }
 
+  /* The knowledge check now comes in two tiers — medium (3) and hard (5).
+     Accepts the new { medium, hard } shape and still renders a legacy flat
+     array of questions as a single untiered check. */
+  function buildKnowledgeCheck(val) {
+    if (Array.isArray(val)) return buildQuizList(val);
+    if (!val || typeof val !== 'object') return null;
+    var wrap = el('div', 'quiz-tiers');
+    var med = buildQuizTier('chap.quizMedium', val.medium);
+    var hard = buildQuizTier('chap.quizHard', val.hard);
+    if (med) wrap.appendChild(med);
+    if (hard) wrap.appendChild(hard);
+    return wrap.children.length ? wrap : null;
+  }
+
+  function buildQuizTier(labelKey, arr) {
+    var list = buildQuizList(arr);
+    if (!list) return null;
+    var box = el('div', 'quiz-tier');
+    box.appendChild(txt('h6', 'quiz-tier-title', t(labelKey)));
+    box.appendChild(list);
+    return box;
+  }
+
   // an interactive multiple-choice knowledge check; each question locks after a pick
-  function buildKnowledgeCheck(arr) {
+  function buildQuizList(arr) {
     if (!Array.isArray(arr) || !arr.length) return null;
     var wrap = el('div', 'chap-quiz');
     arr.forEach(function (q, qi) {
@@ -1698,6 +1723,31 @@
       card.appendChild(opts);
       if (explanation) card.appendChild(exp);
       wrap.appendChild(card);
+    });
+    return wrap.children.length ? wrap : null;
+  }
+
+  /* Common questions: a FAQ accordion. Each question is its own collapsible
+     row so the section stays scannable; the answer may hold a few paragraphs. */
+  function buildFaqSection(arr) {
+    if (!Array.isArray(arr) || !arr.length) return null;
+    var wrap = el('div', 'faq-list');
+    arr.forEach(function (item) {
+      var q = ((item && (item.question || item.q)) || '').trim();
+      var an = ((item && (item.answer || item.a)) || '').trim();
+      if (!q || !an) return;
+      var det = el('details', 'faq-item');
+      var sum = el('summary', 'faq-q');
+      sum.appendChild(txt('span', 'faq-q-text', q));
+      det.appendChild(sum);
+      var body = el('div', 'faq-a');
+      an.split(/\n{2,}|\r\n\r\n/).forEach(function (p) {
+        p = p.trim();
+        if (p) body.appendChild(txt('p', 'faq-a-text', p));
+      });
+      if (!body.children.length) body.appendChild(txt('p', 'faq-a-text', an));
+      det.appendChild(body);
+      wrap.appendChild(det);
     });
     return wrap.children.length ? wrap : null;
   }
