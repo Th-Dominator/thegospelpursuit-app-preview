@@ -1001,9 +1001,9 @@
     var legacy = ((data.context || data.text) || '').trim();
     var hasRich = CONTEXT_SECTIONS.some(function (d) {
       var v = data[d.key];
-      return d.key === 'crossRefs'
-        ? (Array.isArray(v) && v.length)
-        : (typeof v === 'string' && v.trim());
+      if (d.key === 'crossRefs') return Array.isArray(v) && v.length;
+      if (d.key === 'christ') return v && (typeof v === 'string' ? v.trim() : typeof v === 'object');
+      return typeof v === 'string' && v.trim();
     });
     if (!hasRich) return legacy ? txt('p', 'verse-prose', legacy) : null;
 
@@ -1012,7 +1012,9 @@
     CONTEXT_SECTIONS.forEach(function (d) {
       var content = d.key === 'crossRefs'
         ? buildCrossRefs(data.crossRefs)
-        : buildProseSection(data[d.key]);
+        : d.key === 'christ'
+          ? buildChristSection(data.christ)
+          : buildProseSection(data[d.key]);
       if (!content) return;
 
       var det = el('details', 'ctx-section');
@@ -1056,6 +1058,98 @@
       ul.appendChild(li);
     });
     return ul.children.length ? ul : null;
+  }
+
+  // the seven kinds of connection to Christ the backend may tag a verse with
+  var CHRIST_KINDS = {
+    direct: 'ctx.christKind.direct',
+    prophetic: 'ctx.christKind.prophetic',
+    typological: 'ctx.christKind.typological',
+    thematic: 'ctx.christKind.thematic',
+    canonical: 'ctx.christKind.canonical',
+    indirect: 'ctx.christKind.indirect',
+    none: 'ctx.christKind.none'
+  };
+
+  /* The Christ & the gospel section is richer than the others: a classified
+     connection (direct / prophetic / typological / thematic / canonical /
+     indirect / none) with an explanation, supporting scripture, NT usage, an
+     alternative reading when disputed, and a confidence level. Legacy prose
+     replies (a plain string) still render as a paragraph. */
+  function buildChristSection(val) {
+    if (typeof val === 'string') return buildProseSection(val);
+    if (!val || typeof val !== 'object') return null;
+    var wrap = el('div', 'ctx-christ');
+
+    var kinds = val.classification;
+    if (typeof kinds === 'string') kinds = [kinds];
+    if (Array.isArray(kinds) && kinds.length) {
+      var chips = el('div', 'christ-kinds');
+      kinds.forEach(function (k) {
+        var slug = String(k).trim().toLowerCase().replace(/[^a-z]/g, '');
+        if (slug === 'noexplicitconnection' || slug === 'noconnection' || slug === 'nil') slug = 'none';
+        var labelKey = CHRIST_KINDS[slug];
+        chips.appendChild(txt('span', 'christ-kind christ-kind-' + (labelKey ? slug : 'other'),
+          labelKey ? t(labelKey) : String(k)));
+      });
+      wrap.appendChild(chips);
+    }
+
+    var explanation = ((val.explanation || val.text) || '').trim();
+    if (explanation) wrap.appendChild(txt('p', 'ctx-text', explanation));
+
+    var refs = buildCrossRefs(normalizeRefs(val.supportingScripture || val.scripture));
+    if (refs) {
+      wrap.appendChild(txt('p', 'christ-sublabel', t('ctx.christSupport')));
+      wrap.appendChild(refs);
+    }
+
+    appendChristNote(wrap, val.ntUsage, 'ctx.christNT');
+    appendChristNote(wrap, val.alternative, 'ctx.christAlt');
+
+    var conf = (val.confidence || '').trim();
+    if (conf) {
+      var badge = el('div', 'christ-confidence');
+      badge.appendChild(txt('span', 'christ-conf-label', t('ctx.christConfidence')));
+      badge.appendChild(txt('span', 'christ-conf-value christ-conf-' + confLevel(conf), conf));
+      wrap.appendChild(badge);
+    }
+    return wrap.children.length ? wrap : null;
+  }
+
+  // a labelled inline note ("New Testament usage: …"), skipped when empty
+  function appendChristNote(wrap, val, labelKey) {
+    var s = (typeof val === 'string' ? val : '').trim();
+    if (!s) return;
+    var p = el('p', 'ctx-text christ-note');
+    p.appendChild(txt('span', 'christ-sublabel-inline', t(labelKey) + ' '));
+    p.appendChild(document.createTextNode(s));
+    wrap.appendChild(p);
+  }
+
+  // accept a string, an array of strings, or an array of {reference,note}
+  function normalizeRefs(support) {
+    if (!support) return [];
+    if (typeof support === 'string') {
+      return support.split(/;|\n/).map(function (x) {
+        return { reference: x.trim(), note: '' };
+      }).filter(function (r) { return r.reference; });
+    }
+    if (Array.isArray(support)) {
+      return support.map(function (r) {
+        return (typeof r === 'string')
+          ? { reference: r.trim(), note: '' }
+          : { reference: ((r && r.reference) || '').trim(), note: ((r && r.note) || '').trim() };
+      }).filter(function (r) { return r.reference; });
+    }
+    return [];
+  }
+
+  function confLevel(conf) {
+    var c = String(conf).toLowerCase();
+    if (c.indexOf('high') > -1) return 'high';
+    if (c.indexOf('low') > -1) return 'low';
+    return 'med';
   }
 
   // "1 John 4:9" -> { book:'1 John', chapter:4, verse:9 } when the book is in our canon

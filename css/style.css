@@ -1376,6 +1376,53 @@ button.verse-num:hover { text-decoration: underline; }
 .ctx-ref-name { font-weight: 600; color: var(--ink); }
 .ctx-ref-note { color: var(--ink-soft); }
 
+/* Christ & the gospel: classification chips, supporting scripture, confidence */
+.ctx-christ { display: flex; flex-direction: column; gap: 12px; }
+.christ-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.christ-kind {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--gold-soft, rgba(184, 134, 11, 0.12));
+  color: var(--gold-dark);
+  border: 1px solid var(--gold-dark);
+}
+.christ-kind-none, .christ-kind-indirect {
+  background: transparent;
+  color: var(--ink-soft);
+  border-color: var(--line, rgba(0, 0, 0, 0.15));
+}
+.christ-sublabel {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.christ-note { margin: 0; }
+.christ-sublabel-inline { font-weight: 700; color: var(--ink); }
+.christ-confidence { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.christ-conf-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.christ-conf-value {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+.christ-conf-high { background: rgba(34, 139, 34, 0.14); color: #1c7a1c; }
+.christ-conf-med { background: rgba(184, 134, 11, 0.16); color: var(--gold-dark); }
+.christ-conf-low { background: rgba(140, 140, 140, 0.16); color: var(--ink-soft); }
+
 /* ---------- bible plans: detail + day list ---------- */
 
 .plan-detail-title {
