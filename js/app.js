@@ -1161,6 +1161,142 @@
     return { book: found.book.name, chapter: parseInt(m[2], 10), verse: m[3] ? parseInt(m[3], 10) : 1 };
   }
 
+  /* ---------- chapter overview: a full study of the whole chapter ---------- */
+
+  /* The rich chapter study, rendered as the same accordion as the verse
+     context. Prose sections are paragraphs; list sections are bulleted;
+     people/locations are name + note; key verses, difficult passages, and
+     cross-references link into the reader; and the knowledge check is an
+     interactive multiple-choice quiz. Older {overview, christ, history}
+     replies aren't rich, so renderChapterOverview returns null and the
+     caller falls back to the previous three-heading layout. */
+  var CHAPTER_SECTIONS = [
+    { key: 'summary', label: 'chap.summary', type: 'prose' },
+    { key: 'previously', label: 'chap.previously', type: 'prose' },
+    { key: 'placement', label: 'chap.placement', type: 'prose' },
+    { key: 'outline', label: 'chap.outline', type: 'list' },
+    { key: 'events', label: 'chap.events', type: 'list' },
+    { key: 'people', label: 'chap.people', type: 'named' },
+    { key: 'locations', label: 'chap.locations', type: 'named' },
+    { key: 'historical', label: 'chap.historical', type: 'prose' },
+    { key: 'structure', label: 'chap.structure', type: 'prose' },
+    { key: 'themes', label: 'chap.themes', type: 'list' },
+    { key: 'keyVerses', label: 'chap.keyVerses', type: 'refs' },
+    { key: 'difficult', label: 'chap.difficult', type: 'refs' },
+    { key: 'theology', label: 'chap.theology', type: 'prose' },
+    { key: 'connections', label: 'chap.connections', type: 'refs' },
+    { key: 'christ', label: 'chap.christ', type: 'prose' },
+    { key: 'apologetics', label: 'chap.apologetics', type: 'prose' },
+    { key: 'archaeology', label: 'chap.archaeology', type: 'prose' },
+    { key: 'next', label: 'chap.next', type: 'prose' },
+    { key: 'quiz', label: 'chap.quiz', type: 'quiz' },
+    { key: 'sources', label: 'chap.sources', type: 'list' }
+  ];
+
+  function renderChapterOverview(data) {
+    if (!data) return null;
+    var hasRich = CHAPTER_SECTIONS.some(function (d) {
+      var v = data[d.key];
+      return d.type === 'prose' ? (typeof v === 'string' && v.trim()) : (Array.isArray(v) && v.length);
+    });
+    if (!hasRich) return null;
+
+    var wrap = el('div', 'verse-context');
+    var openFirst = true;
+    CHAPTER_SECTIONS.forEach(function (d) {
+      var content = buildChapterSection(d, data[d.key]);
+      if (!content) return;
+      var det = el('details', 'ctx-section');
+      if (openFirst) { det.open = true; openFirst = false; }
+      var sum = el('summary', 'ctx-summary');
+      sum.appendChild(txt('span', 'ctx-title', t(d.label)));
+      det.appendChild(sum);
+      var body = el('div', 'ctx-body');
+      body.appendChild(content);
+      det.appendChild(body);
+      wrap.appendChild(det);
+    });
+    return wrap.children.length ? wrap : null;
+  }
+
+  function buildChapterSection(d, val) {
+    if (d.type === 'prose') return buildProseSection(val);
+    if (d.type === 'list') return buildBulletList(val);
+    if (d.type === 'named') return buildNamedList(val);
+    if (d.type === 'refs') return buildCrossRefs(normalizeRefs(val));
+    if (d.type === 'quiz') return buildKnowledgeCheck(val);
+    return null;
+  }
+
+  function buildBulletList(arr) {
+    if (!Array.isArray(arr)) return null;
+    var ul = el('ul', 'ctx-list');
+    arr.forEach(function (item) {
+      var text = (typeof item === 'string' ? item : (item && (item.text || item.label || item.point))) || '';
+      text = String(text).trim();
+      if (text) ul.appendChild(txt('li', 'ctx-list-item', text));
+    });
+    return ul.children.length ? ul : null;
+  }
+
+  function buildNamedList(arr) {
+    if (!Array.isArray(arr)) return null;
+    var ul = el('ul', 'ctx-list');
+    arr.forEach(function (item) {
+      var name = '', note = '';
+      if (typeof item === 'string') { name = item; }
+      else if (item) { name = item.name || item.title || ''; note = item.note || item.description || ''; }
+      name = String(name).trim();
+      note = String(note).trim();
+      if (!name && !note) return;
+      var li = el('li', 'ctx-list-item');
+      if (name) li.appendChild(txt('span', 'ctx-name', name));
+      if (note) li.appendChild(txt('span', 'ctx-ref-note', (name ? ' — ' : '') + note));
+      ul.appendChild(li);
+    });
+    return ul.children.length ? ul : null;
+  }
+
+  // an interactive multiple-choice knowledge check; each question locks after a pick
+  function buildKnowledgeCheck(arr) {
+    if (!Array.isArray(arr) || !arr.length) return null;
+    var wrap = el('div', 'chap-quiz');
+    arr.forEach(function (q, qi) {
+      var question = ((q && q.question) || '').trim();
+      var options = (q && Array.isArray(q.options)) ? q.options : [];
+      if (!question || !options.length) return;
+      var answerIdx = (q && typeof q.answer === 'number') ? q.answer : 0;
+      var explanation = ((q && q.explanation) || '').trim();
+
+      var card = el('div', 'quiz-q');
+      card.appendChild(txt('p', 'quiz-q-text', (qi + 1) + '. ' + question));
+      var opts = el('div', 'quiz-opts');
+      var exp = txt('p', 'quiz-explain', explanation);
+      exp.hidden = true;
+      var answered = false;
+
+      options.forEach(function (opt, oi) {
+        var b = txt('button', 'quiz-opt', String(opt));
+        b.type = 'button';
+        b.addEventListener('click', function () {
+          if (answered) return;
+          answered = true;
+          [].slice.call(opts.children).forEach(function (child, ci) {
+            child.classList.add('is-locked');
+            if (ci === answerIdx) child.classList.add('is-correct');
+          });
+          if (oi !== answerIdx) b.classList.add('is-wrong');
+          if (explanation) exp.hidden = false;
+        });
+        opts.appendChild(b);
+      });
+      card.appendChild(opts);
+      if (explanation) card.appendChild(exp);
+      wrap.appendChild(card);
+    });
+    return wrap.children.length ? wrap : null;
+  }
+
   // --- context & resources: generated per verse by the backend ---
   function fillContextPanel(panel, verse) {
     fetchInto(panel, 'verse-context', verse, {}, function (data) {
@@ -1351,20 +1487,14 @@
         // a late reply for a chapter we've since left shouldn't overwrite the new one
         if (chapterGuideKey !== key) return;
         body.textContent = '';
-        var sections = [
+        var rich = renderChapterOverview(data);
+        if (rich) { body.appendChild(rich); return; }
+        // fall back to the older overview / points-to-Christ / background layout
+        renderInsight(body, [
           { key: 'bible.overview', text: data && data.overview },
           { key: 'bible.pointsToChrist', text: data && data.christ },
           { key: 'bible.background', text: data && data.history }
-        ];
-        var any = false;
-        sections.forEach(function (s) {
-          var text = (s.text || '').trim();
-          if (!text) return;
-          any = true;
-          body.appendChild(txt('h4', 'chapter-guide-heading', t(s.key)));
-          body.appendChild(txt('p', 'chapter-guide-text', text));
-        });
-        if (!any) body.appendChild(txt('p', 'verse-panel-note', t('bible.guideUnavailable')));
+        ], 'bible.guideUnavailable');
       })
       .catch(function (err) {
         chapterGuideKey = null; // allow a retry on the next open
@@ -1592,6 +1722,8 @@
     request('chapter-insight', { book: bibleState.book.name, chapter: bibleState.chapter })
       .then(function (data) {
         if (focusKeys.chapter !== key) return;
+        var rich = renderChapterOverview(data);
+        if (rich) { body.textContent = ''; body.appendChild(rich); return; }
         renderInsight(body, [
           { key: 'bible.overview', text: data && data.overview },
           { key: 'bible.pointsToChrist', text: data && data.christ },

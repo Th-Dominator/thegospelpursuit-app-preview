@@ -1423,6 +1423,40 @@ button.verse-num:hover { text-decoration: underline; }
 .christ-conf-med { background: rgba(184, 134, 11, 0.16); color: var(--gold-dark); }
 .christ-conf-low { background: rgba(140, 140, 140, 0.16); color: var(--ink-soft); }
 
+/* chapter overview: bullet lists, named lists (people/places), knowledge check */
+.ctx-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.ctx-list-item { font-size: 15px; line-height: 1.6; color: var(--ink); }
+.ctx-name { font-weight: 600; color: var(--ink); }
+
+.chap-quiz { display: flex; flex-direction: column; gap: 16px; }
+.quiz-q { display: flex; flex-direction: column; gap: 8px; }
+.quiz-q-text { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.5; color: var(--ink); }
+.quiz-opts { display: flex; flex-direction: column; gap: 6px; }
+.quiz-opt {
+  font-family: var(--font-body);
+  font-size: 15px;
+  text-align: left;
+  padding: 9px 12px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.15));
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.quiz-opt:hover:not(.is-locked) { border-color: var(--gold-dark); }
+.quiz-opt.is-locked { cursor: default; }
+.quiz-opt.is-correct { border-color: #1c7a1c; background: rgba(34, 139, 34, 0.12); color: #1c7a1c; font-weight: 600; }
+.quiz-opt.is-wrong { border-color: #b23b3b; background: rgba(178, 59, 59, 0.10); color: #b23b3b; }
+.quiz-explain {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  border-left: 3px solid var(--gold-dark);
+  padding-left: 10px;
+}
+
 /* ---------- bible plans: detail + day list ---------- */
 
 .plan-detail-title {
