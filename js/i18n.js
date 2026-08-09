@@ -542,6 +542,7 @@ var TRANSLATIONS = {
     /* ---- bible plans ---- */
     'plans.newBeliever': 'New Believers',
     'plans.newBelieverHint': 'A 30-day walk through the heart of the gospel',
+    'plans.newBelieverNote': 'New to the Bible? Read this plan in the Good News Bible (Good News Translation) — it’s written in plain, everyday language. Don’t start with the King James Version; its old English is beautiful but very hard to read when you’re beginning. You can change your version in Settings.',
     'plans.year': 'The Bible in a Year',
     'plans.yearHint': 'The whole Bible, about three chapters a day',
     'plans.chrono': 'Chronological',
@@ -576,6 +577,8 @@ var TRANSLATIONS = {
     'tips.lede': 'If following Jesus is new to you, start here. A few simple things help faith take root and grow.',
     'tips.t1.title': 'Start with the Gospels',
     'tips.t1.body': 'Read the life of Jesus first — the book of John or Mark is a good place to begin. Everything else in the Bible makes more sense once you know him.',
+    'tips.trans.title': 'Choose an easy-to-read Bible',
+    'tips.trans.body': 'Begin with the Good News Bible (the Good News Translation) — it’s written in clear, everyday language that’s easy to understand. Don’t jump straight into the King James Version: its 400-year-old English is beautiful but very hard to read when you’re new, and it can make the Bible feel more confusing than it really is. You can set your version in Settings.',
     'tips.t2.title': 'Talk to God daily',
     'tips.t2.body': 'Prayer is simply honest conversation with God. You don’t need special words — thank him, ask him for help, and tell him what’s on your heart.',
     'tips.t3.title': 'Read a little every day',

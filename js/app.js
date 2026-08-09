@@ -2895,6 +2895,12 @@
     currentPlan = plan;
     showPlansScreen('detail');
     document.getElementById('plan-detail-title').textContent = t(plan.labelKey);
+    // the new-believer plan carries a note on which translation to start with
+    var note = document.getElementById('plan-note');
+    if (note) {
+      if (plan.id === 'newbeliever') { note.textContent = t('plans.newBelieverNote'); note.hidden = false; }
+      else { note.hidden = true; note.textContent = ''; }
+    }
     document.getElementById('plan-book-field').hidden = !plan.book;
     if (plan.book) fillPlanBookSelect();
     renderPlanDays();
@@ -3612,7 +3618,7 @@
 
   /* ---------- tips for new believers ---------- */
 
-  var TIP_IDS = ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8'];
+  var TIP_IDS = ['t1', 'trans', 't2', 't3', 't4', 't5', 't6', 't7', 't8'];
 
   function renderTips() {
     var list = document.getElementById('tips-list');

@@ -1068,6 +1068,24 @@ html[lang="my"] .dropcap,
 @keyframes verseInRTL { from { transform: translateX(70px);  opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes karaokeSweep { from { background-position: 100% 0; } to { background-position: 0 0; } }
 
+/* the scripture reference under each verse on the splash */
+.verse-cite {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  opacity: 0;
+}
+.verse-cite-en { margin-top: -4px; animation: citeFade 0.8s ease-out 1.6s both; }
+.verse-cite-gr { margin-top: 6px; letter-spacing: 0.08em; animation: citeFade 0.8s ease-out 4.6s both; }
+@keyframes citeFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 0.85; transform: translateY(0); } }
+
 /* cross assembly */
 .cross-stage {
   position: relative;
@@ -3293,4 +3311,18 @@ button.verse-num:hover { text-decoration: underline; }
   cursor: pointer;
 }
 .tl-event-ref:hover { border-color: var(--gold); background: var(--gold-tint); }
+
+/* new-believer plan: which-translation note */
+.plan-note {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--gold-tint);
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.plan-note[hidden] { display: none; }
 
