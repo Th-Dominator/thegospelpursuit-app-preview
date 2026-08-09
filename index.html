@@ -110,6 +110,10 @@
         <span class="nav-icon" aria-hidden="true">✿</span>
         <span class="nav-text" data-i18n="nav.tips">New believers</span>
       </button>
+      <button class="nav-link" data-view="badges">
+        <span class="nav-icon" aria-hidden="true">🏅</span>
+        <span class="nav-text" data-i18n="nav.badges">Badges</span>
+      </button>
     </nav>
 
     <!-- settings sits at the foot of the rail -->
@@ -177,9 +181,8 @@
           </div>
         </div>
         <h3 class="dash-subheading" data-i18n="dash.badges">Badges</h3>
-        <p class="dash-badges-intro" data-i18n="dash.badgesIntro">Earn badges by reading, keeping a streak, finishing books, and working through plans. Locked badges show how to earn them.</p>
-        <p id="badge-summary" class="badge-summary"></p>
-        <div id="badge-grid" class="badge-groups"></div>
+        <p class="badge-summary js-badge-summary"></p>
+        <button type="button" class="dash-badges-link" data-view="badges" data-i18n="dash.viewBadges">See all your badges</button>
       </section>
 
       <div class="card-grid">
@@ -208,6 +211,15 @@
           <span class="feature-hint" data-i18n="home.tipsHint">Where to start when faith is new</span>
         </button>
       </div>
+    </section>
+
+    <!-- BADGES -->
+    <section id="view-badges" class="view">
+      <p class="eyebrow" data-i18n="badges.eyebrow">your walk</p>
+      <h1 class="view-title" data-i18n="badges.title">Badges</h1>
+      <p class="view-lede" data-i18n="badges.lede">Every badge you can earn — by reading, keeping a streak, finishing books, and working through plans. Locked badges show how to earn them.</p>
+      <p class="badge-summary js-badge-summary"></p>
+      <div id="badge-grid" class="badge-groups"></div>
     </section>
 
     <!-- THE BIBLE -->

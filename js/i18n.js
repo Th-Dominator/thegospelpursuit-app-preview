@@ -489,6 +489,11 @@ var TRANSLATIONS = {
 
     /* ---- tips for new believers ---- */
     'nav.tips': 'New believers',
+    'nav.badges': 'Badges',
+    'badges.eyebrow': 'your walk',
+    'badges.title': 'Badges',
+    'badges.lede': 'Every badge you can earn — by reading, keeping a streak, finishing books, and working through plans. Locked badges show how to earn them.',
+    'dash.viewBadges': 'See all your badges',
     'home.tipsLabel': 'Tips for new believers',
     'home.tipsHint': 'Where to start when faith is new',
     'tips.eyebrow': 'new believers',

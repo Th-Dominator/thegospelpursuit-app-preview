@@ -339,7 +339,7 @@
     window.scrollTo(0, 0);
   }
 
-  document.querySelectorAll('.nav-link, .feature-card').forEach(function (el) {
+  document.querySelectorAll('.nav-link, .feature-card, .dash-badges-link').forEach(function (el) {
     el.addEventListener('click', function () {
       showView(el.dataset.view);
     });
@@ -3328,8 +3328,10 @@
     wrap.textContent = '';
 
     var earned = GENERAL_BADGES.filter(function (b) { return p.badges[b.id]; }).length;
-    var summary = document.getElementById('badge-summary');
-    if (summary) summary.textContent = t('dash.badgesEarned', { done: earned, total: GENERAL_BADGES.length });
+    // the summary appears both as a home teaser and atop the Badges tab
+    document.querySelectorAll('.js-badge-summary').forEach(function (summary) {
+      summary.textContent = t('dash.badgesEarned', { done: earned, total: GENERAL_BADGES.length });
+    });
 
     // group by category, keeping the order categories first appear
     var cats = [], byCat = {};
