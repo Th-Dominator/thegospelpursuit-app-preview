@@ -262,6 +262,7 @@
   // a preference changed: repaint the reader, and refetch if the version moved
   function onSettingChanged(name) {
     applyReadingPrefs();
+    if (name === 'devotionalLength' && devoLengthPaint) devoLengthPaint();
     if (name === 'version') {
       renderVersionOptions();
       if (bibleState.screen === 'reader') {
@@ -336,6 +337,8 @@
     if (name === 'bible') resetBibleBrowser();
     // entering Bible plans always starts at the plan chooser
     if (name === 'plans') showPlansScreen('grid');
+    // entering the Road always opens on the world map
+    if (name === 'apologetics') { apoloStage = null; renderApologetics(); }
     // keep the fixed progress bar from lingering over other views
     applyReadingPrefs();
     closeSidebar();
@@ -415,6 +418,25 @@
     el.textContent = message;
     el.classList.toggle('is-error', Boolean(isError));
   }
+
+  /* Tidy AI-written text before it's shown. The model sometimes formats with
+     Markdown headings (#, ##) or hashtags (#faith); since we render as plain
+     text those markers would show literally, so strip them everywhere. */
+  function cleanAIText(str) {
+    if (!str) return '';
+    return String(str)
+      // drop markdown heading markers at the start of a line: "## Title" -> "Title"
+      .replace(/^[ \t]*#{1,6}[ \t]+/gm, '')
+      // drop hashtags like "#Faith" or " #hope" but keep the word
+      .replace(/(^|[\s(])#(?=[^\s#])/g, '$1')
+      // clean up any lone "#" tokens left behind
+      .replace(/(^|\s)#+(?=\s|$)/g, '$1')
+      .replace(/[ \t]+\n/g, '\n')
+      .trim();
+  }
+
+  // set once the devotional-length chips are wired, so Settings can re-sync them
+  var devoLengthPaint = null;
 
   /* ---------- verse of the day ---------- */
 
@@ -683,6 +705,16 @@
     });
     // the testaments screen is the root, so it carries no back button
     document.getElementById('bible-crumbs').hidden = name === 'testaments';
+    // the book search only makes sense while choosing a book
+    var search = document.getElementById('bible-book-search');
+    var onPickScreen = name === 'testaments' || name === 'books';
+    if (search) search.hidden = !onPickScreen;
+    if (!onPickScreen) {
+      var results = document.getElementById('bible-book-results');
+      if (results) { results.hidden = true; results.textContent = ''; }
+      var q = document.getElementById('bible-book-query');
+      if (q) q.value = '';
+    }
     updateBibleCrumbs();
     applyReadingPrefs();
   }
@@ -1196,7 +1228,7 @@
   }
 
   function buildProseSection(val) {
-    var text = (typeof val === 'string' ? val : '').trim();
+    var text = cleanAIText((typeof val === 'string' ? val : '').trim());
     return text ? txt('p', 'ctx-text', text) : null;
   }
 
@@ -2065,6 +2097,28 @@
   document.getElementById('bible-prev').addEventListener('click', function () { stepChapter(-1); });
   document.getElementById('bible-next').addEventListener('click', function () { stepChapter(1); });
 
+  /* Book search in the Bible view: type any book name and jump to its chapters.
+     Works across both testaments regardless of which screen you're on. */
+  (function wireBibleBookSearch() {
+    var input = document.getElementById('bible-book-query');
+    var results = document.getElementById('bible-book-results');
+    if (!input || !results) return;
+    input.addEventListener('input', function () {
+      renderBookSuggestions(results, input.value, function (name) {
+        input.value = '';
+        results.hidden = true;
+        openBookChapters(name);
+      });
+    });
+    // Enter jumps straight to the single best match
+    input.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      var best = matchBooks(input.value, 1)[0];
+      if (best) { input.value = ''; results.hidden = true; openBookChapters(best.book.name); }
+    });
+  })();
+
   // rebuilt on a language change so the labels and breadcrumb follow the UI
   function renderBibleBrowser() {
     renderTestamentCards();
@@ -2464,6 +2518,61 @@
     loadChapter();
   }
 
+  /* Jump to a book's chapter picker (used by the book-search boxes in the Bible
+     view and in Search scripture). Unlike openReaderAt it stops at the chapter
+     grid so the reader can choose where to start. */
+  function openBookChapters(name) {
+    var found = findBook(name);
+    if (!found) return;
+    showView('bible');
+    bibleState.testament = found.testament;
+    bibleState.book = found.book;
+    bibleState.chapter = 1;
+    renderChapterGrid();
+    showBibleScreen('chapters');
+    window.scrollTo(0, 0);
+  }
+
+  /* Match books by name for the search boxes. A leading-word match ranks above a
+     mid-name one so "jo" surfaces Job/John/Joel/Jonah before "Song of Solomon".
+     Returns [{ testament, book }] limited to `limit`. */
+  function matchBooks(query, limit) {
+    var q = (query || '').trim().toLowerCase();
+    if (!q) return [];
+    var starts = [], contains = [];
+    BIBLE_BOOKS.forEach(function (group, gi) {
+      group.books.forEach(function (book) {
+        var name = book.name.toLowerCase();
+        if (name.indexOf(q) === 0) starts.push({ testament: gi, book: book });
+        else if (name.indexOf(q) !== -1) contains.push({ testament: gi, book: book });
+      });
+    });
+    var out = starts.concat(contains);
+    return typeof limit === 'number' ? out.slice(0, limit) : out;
+  }
+
+  /* Shared renderer for a list of book matches into a suggestions container.
+     `onPick(name)` runs when a suggestion is chosen; `note` is shown per row. */
+  function renderBookSuggestions(container, query, onPick, note) {
+    if (!container) return;
+    var matches = matchBooks(query, 8);
+    container.textContent = '';
+    if (!query.trim() || !matches.length) { container.hidden = true; return; }
+    matches.forEach(function (m) {
+      var btn = el('button', 'book-suggestion');
+      btn.type = 'button';
+      btn.appendChild(txt('span', 'book-suggestion-icon', '📖'));
+      var label = el('span', 'book-suggestion-text');
+      label.appendChild(txt('span', 'book-suggestion-name', m.book.name));
+      label.appendChild(txt('span', 'book-suggestion-meta', t(BIBLE_BOOKS[m.testament].testamentKey)));
+      btn.appendChild(label);
+      if (note) btn.appendChild(txt('span', 'book-suggestion-note', note));
+      btn.addEventListener('click', function () { onPick(m.book.name); });
+      container.appendChild(btn);
+    });
+    container.hidden = false;
+  }
+
   /* ---------- bible plans ---------- */
 
   /* A flat, chapter-by-chapter reading order (both testaments in canonical
@@ -2767,87 +2876,172 @@
       : t('dash.badgesEarned', { done: c.done, total: c.total });
   }
 
-  function renderApologetics() {
-    // keep the Apologist-mode difficulty label in step with the language
-    if (typeof updateApologistLevelUI === 'function') updateApologistLevelUI();
-    var road = document.getElementById('apologetics-road');
-    if (!road || typeof APOLO_THEMES === 'undefined') return;
-    road.textContent = '';
-    updateApoloHero();
-    var set = apoloDoneSet();
-    APOLO_THEMES.forEach(function (th, ti) {
-      road.appendChild(buildApoloTheme(th, ti, set));
-    });
-  }
-
   function themeDoneCount(th, ti, set) {
     var n = 0;
     th.questions.forEach(function (q, qi) { if (set[apoloId(ti, qi)]) n++; });
     return n;
   }
 
-  function buildApoloTheme(th, ti, set) {
-    var done = themeDoneCount(th, ti, set);
-    var full = done === th.questions.length;
-    var chapter = el('details', 'apolo-theme' + (full ? ' is-complete' : ''));
+  /* ---- the map: a Candy-Crush-style trail of "worlds", each a themed set of
+     retro "lessons". Worlds unlock as the one before them is cleared; lessons
+     unlock one after another. `apoloStage` holds the open world (null = map). */
+  var apoloStage = null;
 
-    var head = el('summary', 'apolo-theme-head');
-    head.appendChild(txt('span', 'apolo-theme-icon', th.icon || '☩'));
-    var titles = el('span', 'apolo-theme-titles');
-    titles.appendChild(txt('span', 'apolo-theme-name', th.theme));
-    titles.appendChild(txt('span', 'apolo-theme-count', done + ' / ' + th.questions.length));
-    head.appendChild(titles);
-    chapter.appendChild(head);
-
-    var body = el('div', 'apolo-theme-body');
-    th.questions.forEach(function (q, qi) {
-      body.appendChild(buildApoloTopic(apoloId(ti, qi), q, !!set[apoloId(ti, qi)]));
-    });
-    chapter.appendChild(body);
-    return chapter;
+  function themeComplete(ti, set) {
+    var th = APOLO_THEMES[ti];
+    return themeDoneCount(th, ti, set) === th.questions.length;
+  }
+  // a world is playable once the previous one is cleared (or it's already begun)
+  function themeUnlocked(ti, set) {
+    if (ti === 0) return true;
+    if (themeDoneCount(APOLO_THEMES[ti], ti, set) > 0) return true;
+    return themeComplete(ti - 1, set);
+  }
+  // a lesson opens after the one before it is cleared (or if it's already done)
+  function levelUnlocked(ti, qi, set) {
+    if (qi === 0) return true;
+    if (set[apoloId(ti, qi)]) return true;
+    return !!set[apoloId(ti, qi - 1)];
+  }
+  // the first world still in progress — the one to highlight as "current"
+  function currentThemeIndex(set) {
+    for (var ti = 0; ti < APOLO_THEMES.length; ti++) {
+      if (themeUnlocked(ti, set) && !themeComplete(ti, set)) return ti;
+    }
+    return -1;
   }
 
-  function buildApoloTopic(id, q, prepared) {
-    var topic = el('details', 'apolo-topic' + (prepared ? ' is-prepared' : ''));
-    var head = el('summary', 'apolo-topic-head');
-    head.appendChild(txt('span', 'apolo-topic-badge', prepared ? '🏅' : '🔒'));
-    head.appendChild(txt('span', 'apolo-topic-q', q));
-    topic.appendChild(head);
+  function renderApologetics() {
+    // keep the Apologist-mode difficulty label in step with the language
+    if (typeof updateApologistLevelUI === 'function') updateApologistLevelUI();
+    var road = document.getElementById('apologetics-road');
+    if (!road || typeof APOLO_THEMES === 'undefined') return;
+    updateApoloHero();
+    road.textContent = '';
+    // a stage that no longer exists (e.g. after a reset) falls back to the map
+    if (apoloStage !== null && !APOLO_THEMES[apoloStage]) apoloStage = null;
+    road.appendChild(apoloStage === null ? buildApoloMap() : buildApoloStage(apoloStage));
+  }
 
-    var body = el('div', 'apolo-topic-body');
-    topic.appendChild(body);
+  function buildApoloMap() {
+    var set = apoloDoneSet();
+    var map = el('div', 'apolo-map');
+    map.appendChild(txt('p', 'apolo-map-hint', t('apologetics.mapHint')));
+    var track = el('div', 'apolo-map-track');
+    var current = currentThemeIndex(set);
+    APOLO_THEMES.forEach(function (th, ti) {
+      var done = themeDoneCount(th, ti, set);
+      var full = done === th.questions.length;
+      var unlocked = themeUnlocked(ti, set);
+
+      var node = el('button', 'apolo-node ' + (full ? 'is-complete' : (unlocked ? 'is-unlocked' : 'is-locked')));
+      node.type = 'button';
+      if (ti === current) node.className += ' is-current';
+
+      var disc = el('span', 'apolo-node-disc');
+      disc.appendChild(txt('span', 'apolo-node-icon', full ? '✓' : (unlocked ? (th.icon || '☩') : '🔒')));
+      node.appendChild(disc);
+
+      var label = el('span', 'apolo-node-label');
+      label.appendChild(txt('span', 'apolo-node-world', t('apologetics.worldWord', { n: ti + 1 })));
+      label.appendChild(txt('span', 'apolo-node-name', th.theme));
+      label.appendChild(txt('span', 'apolo-node-stars', full ? t('apologetics.worldComplete') : t('apologetics.starsOf', { done: done, total: th.questions.length })));
+      node.appendChild(label);
+
+      if (unlocked) {
+        node.addEventListener('click', function () { apoloStage = ti; renderApologetics(); window.scrollTo(0, 0); });
+      } else {
+        node.disabled = true;
+        node.title = t('apologetics.stageLocked');
+      }
+      track.appendChild(node);
+    });
+    map.appendChild(track);
+    return map;
+  }
+
+  function buildApoloStage(ti) {
+    var set = apoloDoneSet();
+    var th = APOLO_THEMES[ti];
+    var stage = el('div', 'apolo-stage');
+
+    var top = el('div', 'apolo-stage-top');
+    var back = txt('button', 'apolo-back', '‹ ' + t('apologetics.backToMap'));
+    back.type = 'button';
+    back.addEventListener('click', function () { apoloStage = null; renderApologetics(); window.scrollTo(0, 0); });
+    top.appendChild(back);
+
+    var titleWrap = el('div', 'apolo-stage-titlewrap');
+    titleWrap.appendChild(txt('span', 'apolo-stage-icon', th.icon || '☩'));
+    var titles = el('div', 'apolo-stage-titles');
+    titles.appendChild(txt('span', 'apolo-stage-world', t('apologetics.worldWord', { n: ti + 1 })));
+    titles.appendChild(txt('h3', 'apolo-stage-name', th.theme));
+    titleWrap.appendChild(titles);
+    top.appendChild(titleWrap);
+
+    top.appendChild(txt('span', 'apolo-stage-progress apolo-stage-progress-js',
+      t('apologetics.starsOf', { done: themeDoneCount(th, ti, set), total: th.questions.length })));
+    stage.appendChild(top);
+
+    var levels = el('div', 'apolo-levels');
+    th.questions.forEach(function (q, qi) {
+      levels.appendChild(buildApoloLevel(ti, qi, q, set));
+    });
+    stage.appendChild(levels);
+    return stage;
+  }
+
+  function buildApoloLevel(ti, qi, q, set) {
+    var id = apoloId(ti, qi);
+    var done = !!set[id];
+    var unlocked = levelUnlocked(ti, qi, set);
+
+    var level = el('details', 'apolo-level ' + (done ? 'is-cleared' : (unlocked ? 'is-open' : 'is-locked')));
+    level.setAttribute('data-lesson', qi);
+
+    var head = el('summary', 'apolo-level-head');
+    head.appendChild(txt('span', 'apolo-level-badge', done ? '⭐' : (unlocked ? String(qi + 1) : '🔒')));
+    var textWrap = el('span', 'apolo-level-textwrap');
+    textWrap.appendChild(txt('span', 'apolo-level-num', t('apologetics.lessonWord', { n: qi + 1 })));
+    textWrap.appendChild(txt('span', 'apolo-level-q', q));
+    head.appendChild(textWrap);
+    head.appendChild(txt('span', 'apolo-level-stat',
+      done ? t('apologetics.cleared') : (unlocked ? t('apologetics.tapToStart') : t('apologetics.lessonLocked'))));
+    level.appendChild(head);
+
+    var body = el('div', 'apolo-level-body');
+    level.appendChild(body);
+
+    if (!unlocked) {
+      // locked lessons can't be opened
+      head.addEventListener('click', function (e) { e.preventDefault(); });
+      return level;
+    }
 
     var loaded = false;
-    topic.addEventListener('toggle', function () {
-      if (topic.open && !loaded) { loaded = true; loadApoloAnswer(body, id, q, topic); }
+    level.addEventListener('toggle', function () {
+      if (level.open && !loaded) { loaded = true; loadApoloAnswer(body, id, q, level); }
     });
-    return topic;
+    return level;
   }
 
-  function loadApoloAnswer(body, id, q, topic) {
+  function loadApoloAnswer(body, id, q, level) {
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('apologetics.preparing')));
     request('evangelism-prep', { scenario: q })
       .then(function (data) {
         body.textContent = '';
-        body.appendChild(txt('div', 'road-station-answer prose', ((data && data.prep) || '').trim()));
-        // preparing the answer earns this question's badge (once)
+        body.appendChild(txt('div', 'road-station-answer prose', cleanAIText(((data && data.prep) || '').trim())));
+        // preparing the answer clears this lesson (once) and lights up the next
         if (apoloDoneSet()[id]) return;
         markApoloDone(id);
-        topic.classList.add('is-prepared');
-        var icon = topic.querySelector('.apolo-topic-badge');
-        if (icon) icon.textContent = '🏅';
-        // reflect the new count on the chapter header and the hero
-        var chapter = topic.closest ? topic.closest('.apolo-theme') : null;
-        if (chapter) {
-          var ti = parseInt(id.slice(1).split('q')[0], 10);
-          var th = APOLO_THEMES[ti];
-          var set = apoloDoneSet();
-          var td = themeDoneCount(th, ti, set);
-          var cnt = chapter.querySelector('.apolo-theme-count');
-          if (cnt) cnt.textContent = td + ' / ' + th.questions.length;
-          if (td === th.questions.length) chapter.classList.add('is-complete');
-        }
+        level.classList.remove('is-open');
+        level.classList.add('is-cleared');
+        var badge = level.querySelector('.apolo-level-badge');
+        if (badge) badge.textContent = '⭐';
+        var stat = level.querySelector('.apolo-level-stat');
+        if (stat) stat.textContent = t('apologetics.cleared');
+        refreshApoloAfterClear(id);
         updateApoloHero();
         notify('badge', t('notif.badge.title'), t('notif.badge.body', { name: q }));
         recordActivity();
@@ -2860,9 +3054,31 @@
       });
   }
 
+  /* After a lesson is cleared: update the world's star tally in the header and
+     unlock the next lesson tile in place (so the answer stays open to read). */
+  function refreshApoloAfterClear(id) {
+    var parts = id.slice(1).split('q');
+    var ti = parseInt(parts[0], 10), qi = parseInt(parts[1], 10);
+    var th = APOLO_THEMES[ti];
+    var set = apoloDoneSet();
+
+    var prog = document.querySelector('.apolo-stage-progress-js');
+    if (prog) prog.textContent = t('apologetics.starsOf', { done: themeDoneCount(th, ti, set), total: th.questions.length });
+
+    var levelsWrap = document.querySelector('.apolo-levels');
+    if (levelsWrap) {
+      var tiles = levelsWrap.querySelectorAll('.apolo-level');
+      var nextTile = tiles[qi + 1];
+      if (nextTile && nextTile.classList.contains('is-locked')) {
+        nextTile.parentNode.replaceChild(buildApoloLevel(ti, qi + 1, th.questions[qi + 1], set), nextTile);
+      }
+    }
+  }
+
   document.getElementById('apologetics-reset').addEventListener('click', function () {
     if (!window.confirm(t('apologetics.resetConfirm'))) return;
     saveApolo({ done: [] });
+    apoloStage = null;
     renderApologetics();
   });
 
@@ -3058,12 +3274,12 @@
       wrap.appendChild(box);
     }
     if ((data.encouragement || '').trim()) {
-      wrap.appendChild(txt('p', 'apologist-encouragement', data.encouragement.trim()));
+      wrap.appendChild(txt('p', 'apologist-encouragement', cleanAIText(data.encouragement.trim())));
     }
     return wrap;
   }
   function appendReportBlock(wrap, labelKey, val, cls) {
-    val = (val || '').trim();
+    val = cleanAIText((val || '').trim());
     if (!val) return;
     var box = el('div', 'apologist-block ' + (cls || ''));
     box.appendChild(txt('h4', 'apologist-block-title', t(labelKey)));
@@ -3728,6 +3944,36 @@
     }
   });
 
+  /* As you type in Search scripture, offer matching books of the Bible so a book
+     name jumps you straight into the reader instead of a passage lookup. */
+  (function wireSearchBookSuggestions() {
+    var input = document.getElementById('search-query');
+    var results = document.getElementById('search-book-results');
+    if (!input || !results) return;
+    input.addEventListener('input', function () {
+      renderBookSuggestions(results, input.value, function (name) {
+        results.hidden = true;
+        openBookChapters(name);
+      }, t('search.openBook'));
+    });
+
+    /* If the whole query is just a book name (no chapter/verse numbers), Enter
+       opens that book instead of running a passage lookup that would miss.
+       Captured on document so it runs before the form's own submit handler. */
+    document.addEventListener('submit', function (e) {
+      if (!e.target || e.target.id !== 'search-form') return;
+      var q = input.value.trim();
+      if (!q || /\d/.test(q)) return;
+      var best = matchBooks(q, 1)[0];
+      if (best && best.book.name.toLowerCase() === q.toLowerCase()) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        results.hidden = true;
+        openBookChapters(best.book.name);
+      }
+    }, true);
+  })();
+
   wireForm({
     formId: 'devotional-form',
     resultId: 'devotional-result',
@@ -3736,11 +3982,42 @@
     submitKey: 'devotional.submit',
     busyKey: 'devotional.busy',
     busyStatusKey: 'devotional.busyStatus',
-    collect: textField('devotional-topic', 'topic'),
+    // send the topic plus the length the reader picked in the view
+    collect: function () {
+      var topic = document.getElementById('devotional-topic').value.trim();
+      if (!topic) return null;
+      return { topic: topic, length: settings.devotionalLength || 'medium' };
+    },
     render: function (data, result) {
-      result.textContent = (data.devotional || '').trim();
+      result.textContent = cleanAIText((data.devotional || '').trim());
     }
   });
+
+  /* Devotional length chooser: the chips in the view mirror (and update) the
+     saved "Length" setting, so a quick pick here sticks for next time too. */
+  (function wireDevoLength() {
+    var chips = Array.prototype.slice.call(document.querySelectorAll('[data-devo-length]'));
+    if (!chips.length) return;
+    function paint() {
+      var current = settings.devotionalLength || 'medium';
+      chips.forEach(function (chip) {
+        var on = chip.getAttribute('data-devo-length') === current;
+        chip.classList.toggle('is-active', on);
+        chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+    chips.forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        settings.devotionalLength = chip.getAttribute('data-devo-length');
+        persistSettings();
+        var sel = document.getElementById('setting-devotional-length');
+        if (sel) sel.value = settings.devotionalLength; // keep Settings in step
+        paint();
+      });
+    });
+    paint();
+    devoLengthPaint = paint; // let the settings screen re-sync the chips
+  })();
 
   wireForm({
     formId: 'apologetics-form',
@@ -3753,7 +4030,7 @@
     busyStatusKey: 'apologetics.busyStatus',
     collect: textField('apologetics-scenario', 'scenario'),
     render: function (data, result) {
-      result.textContent = (data.prep || '').trim();
+      result.textContent = cleanAIText((data.prep || '').trim());
     }
   });
 

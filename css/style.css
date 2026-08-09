@@ -2810,3 +2810,328 @@ button.verse-num:hover { text-decoration: underline; }
   .walk-flame { width: 46px; height: 46px; }
 }
 
+/* ============================================================
+   Book search — used in the Bible view and Search scripture
+   ============================================================ */
+.book-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px;
+  padding: 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.book-search[hidden] { display: none; }
+.book-search-icon { font-size: 18px; color: var(--ink-muted); flex: none; }
+.book-search-input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  padding: 12px 0;
+  outline: none;
+}
+.book-search-input::placeholder { color: var(--ink-muted); }
+
+.book-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.book-suggestions[hidden] { display: none; }
+.book-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .12s, background .12s, transform .05s;
+}
+.book-suggestion:hover { border-color: var(--gold); background: var(--surface-2); }
+.book-suggestion:active { transform: translateY(1px); }
+.book-suggestion-icon { font-size: 18px; flex: none; }
+.book-suggestion-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.book-suggestion-name { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+.book-suggestion-meta { font-size: 12px; color: var(--ink-muted); }
+.book-suggestion-note {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold-dark);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--gold-tint);
+}
+
+/* ============================================================
+   Devotional length chooser
+   ============================================================ */
+.devo-length {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0 0 16px;
+}
+.devo-len-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .12s, background .12s, transform .05s;
+}
+.devo-len-opt:hover { border-color: var(--gold); }
+.devo-len-opt:active { transform: translateY(1px); }
+.devo-len-opt.is-active {
+  border-color: var(--gold);
+  background: var(--gold-tint);
+}
+.devo-len-name { font-weight: 600; font-size: 15px; }
+.devo-len-desc { font-size: 12px; color: var(--ink-muted); }
+@media (max-width: 460px) {
+  .devo-length { grid-template-columns: 1fr; }
+  .devo-len-opt { flex-direction: row; align-items: baseline; gap: 8px; }
+}
+
+/* ============================================================
+   The Road to Apologetics — Candy-Crush world map + retro lessons
+   ============================================================ */
+:root {
+  --apolo-trail: #d8ccae;
+  --apolo-disc-bg: var(--gold-tint);
+  --apolo-disc-border: var(--gold);
+  --apolo-star: #E8A100;
+  --apolo-shadow: rgba(60, 45, 20, 0.22);
+  --apolo-pixel: 'Press Start 2P', ui-monospace, monospace;
+}
+:root[data-theme="dark"] {
+  --apolo-trail: #3c4160;
+  --apolo-disc-bg: #2f2a52;
+  --apolo-disc-border: #6d61c0;
+  --apolo-star: #f5c451;
+  --apolo-shadow: rgba(0, 0, 0, 0.45);
+}
+
+.apolo-map-hint {
+  font-family: var(--apolo-pixel);
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  text-align: center;
+  margin: 4px 0 18px;
+}
+
+.apolo-map-track {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 6px 0 10px;
+}
+/* the dashed trail running down the middle, behind the world nodes */
+.apolo-map-track::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 4px dashed var(--apolo-trail);
+  z-index: 0;
+}
+
+.apolo-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(86%, 440px);
+  padding: 12px 16px;
+  text-align: left;
+  border: 3px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 5px 0 var(--apolo-shadow);
+  transition: transform .06s, box-shadow .12s, border-color .12s;
+}
+.apolo-node:nth-child(odd)  { align-self: flex-start; }
+.apolo-node:nth-child(even) { align-self: flex-end; }
+.apolo-node:not(.is-locked):hover { transform: translateY(-1px); }
+.apolo-node:not(.is-locked):active { transform: translateY(3px); box-shadow: 0 2px 0 var(--apolo-shadow); }
+.apolo-node.is-locked { cursor: not-allowed; opacity: 0.6; filter: grayscale(0.5); }
+.apolo-node.is-complete { border-color: var(--apolo-star); }
+.apolo-node.is-current {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 35%, transparent), 0 5px 0 var(--apolo-shadow);
+  animation: apolo-bob 1.6s ease-in-out infinite;
+}
+@keyframes apolo-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .apolo-node.is-current { animation: none; }
+}
+
+.apolo-node-disc {
+  flex: none;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  background: var(--apolo-disc-bg);
+  border: 3px solid var(--apolo-disc-border);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.14);
+}
+.apolo-node.is-complete .apolo-node-disc {
+  background: var(--apolo-star);
+  border-color: var(--apolo-star);
+  color: #3a2c00;
+}
+.apolo-node.is-locked .apolo-node-disc { background: var(--surface-2); border-color: var(--border); }
+
+.apolo-node-label { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.apolo-node-world {
+  font-family: var(--apolo-pixel);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+}
+.apolo-node-name { font-family: var(--font-display); font-weight: 600; font-size: 17px; line-height: 1.2; }
+.apolo-node-stars { font-size: 12px; color: var(--ink-soft); }
+.apolo-node.is-complete .apolo-node-stars { color: var(--apolo-star); font-weight: 600; }
+
+/* ---- a single world's lessons (the "stage") ---- */
+.apolo-stage-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.apolo-back {
+  font-family: var(--apolo-pixel);
+  font-size: 9px;
+  padding: 10px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .06s, box-shadow .06s;
+}
+.apolo-back:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.apolo-back:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+.apolo-stage-titlewrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.apolo-stage-icon {
+  flex: none;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: grid; place-items: center;
+  font-size: 22px;
+  background: var(--apolo-disc-bg);
+  border: 2px solid var(--apolo-disc-border);
+}
+.apolo-stage-titles { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.apolo-stage-world {
+  font-family: var(--apolo-pixel);
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+}
+.apolo-stage-name { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 20px; }
+.apolo-stage-progress {
+  margin-left: auto;
+  font-family: var(--apolo-pixel);
+  font-size: 11px;
+  color: var(--apolo-star);
+  white-space: nowrap;
+}
+
+.apolo-levels { display: flex; flex-direction: column; gap: 10px; }
+.apolo-level {
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: 0 3px 0 var(--apolo-shadow);
+}
+.apolo-level.is-cleared { border-color: var(--apolo-star); }
+.apolo-level.is-locked { opacity: 0.55; }
+.apolo-level-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.apolo-level-head::-webkit-details-marker { display: none; }
+.apolo-level.is-locked .apolo-level-head { cursor: not-allowed; }
+.apolo-level-badge {
+  flex: none;
+  width: 38px; height: 38px;
+  border-radius: 9px;
+  display: grid; place-items: center;
+  font-family: var(--apolo-pixel);
+  font-size: 12px;
+  background: var(--apolo-disc-bg);
+  border: 2px solid var(--apolo-disc-border);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.14);
+}
+.apolo-level.is-cleared .apolo-level-badge {
+  background: var(--apolo-star);
+  border-color: var(--apolo-star);
+  font-size: 16px;
+  box-shadow: none;
+}
+.apolo-level-textwrap { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.apolo-level-num {
+  font-family: var(--apolo-pixel);
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+}
+.apolo-level-q { font-size: 14px; line-height: 1.45; color: var(--ink); }
+.apolo-level-stat {
+  flex: none;
+  font-size: 11px;
+  color: var(--ink-muted);
+  text-align: right;
+}
+.apolo-level.is-cleared .apolo-level-stat { color: var(--apolo-star); font-weight: 600; }
+.apolo-level-body { padding: 0 14px 14px; }
+.apolo-level-body .road-station-answer { margin-bottom: 0; }
+
+@media (max-width: 460px) {
+  .apolo-node { width: 100%; }
+  .apolo-node:nth-child(odd), .apolo-node:nth-child(even) { align-self: stretch; }
+  .apolo-map-track::before { display: none; }
+  .apolo-stage-progress { margin-left: 0; width: 100%; }
+}
+

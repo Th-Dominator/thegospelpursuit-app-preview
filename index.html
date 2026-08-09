@@ -9,7 +9,7 @@
 <title>The Gospel Pursuit — scripture, devotionals, and apologetics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -316,6 +316,13 @@
         <span id="bible-path" class="bible-path"></span>
       </div>
 
+      <!-- search any book across both testaments; shown on the testament/book screens -->
+      <div id="bible-book-search" class="book-search">
+        <span class="book-search-icon" aria-hidden="true">⌕</span>
+        <input id="bible-book-query" type="search" class="book-search-input" autocomplete="off" data-i18n-placeholder="bible.searchBooks" placeholder="Search for a book of the Bible…">
+      </div>
+      <div id="bible-book-results" class="book-suggestions" hidden></div>
+
       <!-- screen 1: pick a testament -->
       <div id="bible-screen-testaments" class="card-grid bible-screen"></div>
 
@@ -413,10 +420,12 @@
     <section id="view-search" class="view">
       <p class="eyebrow" data-i18n="search.eyebrow">search scripture</p>
       <h1 class="view-title" data-i18n="search.title">Find a passage</h1>
+      <p class="view-lede" data-i18n="search.lede">Type a reference like “John 3:16” to look it up — or start typing the name of a book to jump straight into it.</p>
       <form id="search-form" class="tool-form">
-        <input id="search-query" type="text" data-i18n-placeholder="search.placeholder" placeholder="John 3:16, or Romans 8" required>
+        <input id="search-query" type="text" autocomplete="off" data-i18n-placeholder="search.placeholder" placeholder="John 3:16, Romans 8, or a book name" required>
         <button type="submit">Search</button>
       </form>
+      <div id="search-book-results" class="book-suggestions" hidden></div>
       <div id="search-result" class="result-card" hidden>
         <blockquote id="search-text" class="result-quote"></blockquote>
         <p id="search-ref" class="result-ref"></p>
@@ -428,6 +437,24 @@
     <section id="view-devotional" class="view">
       <p class="eyebrow" data-i18n="devotional.eyebrow">devotional</p>
       <h1 class="view-title" data-i18n="devotional.title">Generate a devotional</h1>
+      <p class="view-lede" data-i18n="devotional.lengthHint">Choose how much you’d like to read, then enter a topic or verse.</p>
+
+      <!-- pick a shorter or longer devotional before generating -->
+      <div class="devo-length" role="group" data-i18n-aria="devotional.lengthLabel" aria-label="Devotional length">
+        <button type="button" class="devo-len-opt" data-devo-length="short">
+          <span class="devo-len-name" data-i18n="devotional.lenShort">Shorter</span>
+          <span class="devo-len-desc" data-i18n="devotional.lenShortDesc">A few sentences</span>
+        </button>
+        <button type="button" class="devo-len-opt" data-devo-length="medium">
+          <span class="devo-len-name" data-i18n="devotional.lenMedium">Standard</span>
+          <span class="devo-len-desc" data-i18n="devotional.lenMediumDesc">A few paragraphs</span>
+        </button>
+        <button type="button" class="devo-len-opt" data-devo-length="long">
+          <span class="devo-len-name" data-i18n="devotional.lenLong">Longer</span>
+          <span class="devo-len-desc" data-i18n="devotional.lenLongDesc">A full study</span>
+        </button>
+      </div>
+
       <form id="devotional-form" class="tool-form">
         <input id="devotional-topic" type="text" data-i18n-placeholder="devotional.placeholder" placeholder="patience, forgiveness, Philippians 4:6" required>
         <button type="submit">Generate</button>
