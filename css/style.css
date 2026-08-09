@@ -1068,23 +1068,25 @@ html[lang="my"] .dropcap,
 @keyframes verseInRTL { from { transform: translateX(70px);  opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes karaokeSweep { from { background-position: 100% 0; } to { background-position: 0 0; } }
 
-/* the scripture reference under each verse on the splash */
+/* the scripture reference under each verse on the splash.
+   Visible by default; the animation only adds a gentle slide, so the reference
+   always shows even if the animation is throttled or never runs. */
 .verse-cite {
   position: relative;
   z-index: 1;
   margin: 0;
   text-align: center;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--gold-dark);
-  opacity: 0;
+  opacity: 0.9;
 }
-.verse-cite-en { margin-top: -4px; animation: citeFade 0.8s ease-out 1.6s both; }
-.verse-cite-gr { margin-top: 6px; letter-spacing: 0.08em; animation: citeFade 0.8s ease-out 4.6s both; }
-@keyframes citeFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 0.85; transform: translateY(0); } }
+.verse-cite-en { margin-top: 2px; animation: citeRise 0.8s ease-out 1.4s both; }
+.verse-cite-gr { margin-top: 8px; letter-spacing: 0.08em; animation: citeRise 0.8s ease-out 4.4s both; }
+@keyframes citeRise { from { transform: translateY(8px); } to { transform: translateY(0); } }
 
 /* cross assembly */
 .cross-stage {
