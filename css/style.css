@@ -3314,6 +3314,144 @@ button.verse-num:hover { text-decoration: underline; }
 }
 .tl-event-ref:hover { border-color: var(--gold); background: var(--gold-tint); }
 
+/* ============================================================
+   Cross-reference arc diagram
+   ============================================================ */
+.xref-viz {
+  position: relative;
+  margin: 4px 0 6px;
+  border-radius: var(--radius-lg);
+  background: #0c0e15;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.xref-canvas { display: block; width: 100%; cursor: crosshair; touch-action: pan-y; }
+.xref-hover {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(20, 22, 31, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.xref-hover[hidden] { display: none; }
+.xref-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: #c7cce0;
+  font-size: 14px;
+}
+.xref-loading[hidden] { display: none; }
+.xref-axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 2px 4px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.xref-caption { margin: 0 0 14px; font-size: 13px; color: var(--ink-muted); }
+.xref-selected {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.xref-selected[hidden] { display: none; }
+.xref-sel-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.xref-sel-title { font-family: var(--font-display); font-weight: 600; font-size: 18px; }
+.xref-sel-count { font-size: 13px; color: var(--ink-muted); }
+.xref-sel-open {
+  margin-left: auto;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: #fff;
+  cursor: pointer;
+}
+:root[data-theme="dark"] .xref-sel-open { background: #5a4fa6; border-color: #5a4fa6; }
+.xref-sel-list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 220px; overflow-y: auto; }
+.xref-sel-chip {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+.xref-sel-chip:hover { border-color: var(--gold); background: var(--gold-tint); }
+
+/* ============================================================
+   Timeline: source link, subheads, detailed dated list
+   ============================================================ */
+.timeline-source { margin: 0 0 18px; }
+.timeline-source a { color: var(--gold-dark); font-weight: 600; text-decoration: none; }
+.timeline-source a:hover { text-decoration: underline; }
+.timeline-subhead {
+  margin: 26px 0 14px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+}
+.timeline-detailed {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tl-row {
+  display: grid;
+  grid-template-columns: 96px 18px 1fr;
+  align-items: start;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.tl-row:last-child { border-bottom: 0; }
+.tl-row-date { font-size: 13px; font-weight: 600; color: var(--gold-dark); padding-top: 1px; }
+.tl-row-dot {
+  width: 9px; height: 9px;
+  margin: 5px auto 0;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-tint);
+}
+.tl-row-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tl-row-title { font-size: 15px; line-height: 1.45; color: var(--ink); }
+.tl-row-ref {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold-dark);
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.tl-row-ref:hover { border-color: var(--gold); background: var(--gold-tint); }
+@media (max-width: 460px) {
+  .tl-row { grid-template-columns: 72px 14px 1fr; }
+  .tl-row-date { font-size: 12px; }
+}
+
 /* new-believer plan: which-translation note */
 .plan-note {
   margin: 0 0 18px;

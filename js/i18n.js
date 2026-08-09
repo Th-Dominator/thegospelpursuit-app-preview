@@ -165,6 +165,14 @@ var TRANSLATIONS = {
 
     'crossref.eyebrow': 'cross-references',
     'crossref.title': 'Cross-references',
+    'crossref.vizLede': 'There is no other book like it on earth. Every one of the 1,189 chapters runs along the bottom; each arc above joins two chapters that reference one another — 341,272 cross-references in all. Hover or tap a chapter to light up its connections.',
+    'crossref.vizLoading': 'Drawing the connections…',
+    'crossref.vizError': 'Couldn’t load the cross-reference map.',
+    'crossref.vizHint': 'Hover a chapter to see its cross-references; tap it to list and open them.',
+    'crossref.refCount': '{n} cross-references',
+    'crossref.connCount': 'connects to {n} chapters',
+    'crossref.openChapter': 'Open in the reader',
+    'crossref.lookupHeading': 'Look up a verse’s cross-references',
     'crossref.lede': 'Enter any verse and see the passages that speak to it — prophecies, echoes, quotations, and parallels across the whole Bible. Tap one to open it in the reader.',
     'crossref.placeholder': 'John 3:16, Isaiah 53:5, Romans 8:28',
     'crossref.submit': 'Find',
@@ -176,7 +184,10 @@ var TRANSLATIONS = {
 
     'timeline.eyebrow': 'bible timeline',
     'timeline.title': 'Timeline of the whole Bible',
-    'timeline.lede': 'The story of Scripture from creation to the early church, era by era. Dates are approximate and, for the earliest events, debated — they’re here to give shape to the story.',
+    'timeline.lede': 'The story of Scripture from creation to the early church. Dates are approximate and, for the earliest events, debated — they’re here to give shape to the story.',
+    'timeline.source': 'See the full dated timeline at BibleHub →',
+    'timeline.datedHeading': 'Key dated events',
+    'timeline.erasHeading': 'The story, era by era',
 
     'definitions.eyebrow': 'definitions',
     'definitions.title': 'Definitions',

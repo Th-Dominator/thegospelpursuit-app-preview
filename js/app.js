@@ -342,8 +342,10 @@
     // entering the Road always opens on the world map
     if (name === 'apologetics') { apoloStage = null; renderApologetics(); }
     // the timeline and definitions build their static content on first view
-    if (name === 'timeline') renderBibleTimeline();
+    if (name === 'timeline') { renderDetailedTimeline(); renderBibleTimeline(); }
     if (name === 'definitions') renderCommonTerms();
+    // the cross-reference arc diagram loads its data on first view
+    if (name === 'crossref') xrefViz.open();
     // keep the fixed progress bar from lingering over other views
     applyReadingPrefs();
     closeSidebar();
@@ -4421,6 +4423,89 @@
     });
   }
 
+  /* ---------- detailed dated timeline (dates from BibleHub) ----------
+     Major milestones with approximate BC/AD dates, shown at the top of the
+     timeline tab. Each links into the reader. The full ~600-event list lives
+     at biblehub.com/timeline (linked in the view). */
+  var DETAILED_TIMELINE = [
+    { date: 'c. 4000 BC', title: 'Creation', ref: 'Genesis 1' },
+    { date: 'c. 3000 BC', title: 'The fall of man', ref: 'Genesis 3' },
+    { date: 'c. 2500 BC', title: 'The Great Flood', ref: 'Genesis 7' },
+    { date: 'Before 2100 BC', title: 'The tower of Babel', ref: 'Genesis 11' },
+    { date: '2091 BC', title: 'God calls Abram', ref: 'Genesis 12' },
+    { date: '2066 BC', title: 'Isaac is born', ref: 'Genesis 21' },
+    { date: '2006 BC', title: 'Jacob and Esau are born', ref: 'Genesis 25' },
+    { date: '1898 BC', title: 'Joseph sold into slavery', ref: 'Genesis 37' },
+    { date: '1876 BC', title: 'Jacob’s family settles in Egypt', ref: 'Genesis 46' },
+    { date: '1526 BC', title: 'Birth of Moses', ref: 'Exodus 2' },
+    { date: '1446 BC', title: 'The Exodus from Egypt', ref: 'Exodus 12' },
+    { date: '1446 BC', title: 'The Ten Commandments at Sinai', ref: 'Exodus 20' },
+    { date: '1406 BC', title: 'Death of Moses', ref: 'Deuteronomy 34' },
+    { date: '1406 BC', title: 'The fall of Jericho', ref: 'Joshua 6' },
+    { date: 'c. 1375 BC', title: 'The era of the judges begins', ref: 'Judges 2' },
+    { date: 'c. 1100 BC', title: 'Birth of Samuel', ref: '1 Samuel 1' },
+    { date: '1043 BC', title: 'Saul becomes king', ref: '1 Samuel 10' },
+    { date: '1024 BC', title: 'David kills Goliath', ref: '1 Samuel 17' },
+    { date: '1010 BC', title: 'David becomes king', ref: '2 Samuel 5' },
+    { date: '1000 BC', title: 'The ark brought to Jerusalem', ref: '2 Samuel 6' },
+    { date: '967 BC', title: 'Solomon becomes king', ref: '1 Kings 2' },
+    { date: '966 BC', title: 'Building of the temple begins', ref: '1 Kings 6' },
+    { date: '931 BC', title: 'The kingdom divides', ref: '1 Kings 12' },
+    { date: 'c. 863 BC', title: 'Elijah on Mount Carmel', ref: '1 Kings 18' },
+    { date: '766 BC', title: 'The prophet Amos', ref: 'Amos 1' },
+    { date: '739 BC', title: 'Isaiah’s vision and call', ref: 'Isaiah 6' },
+    { date: '722 BC', title: 'Assyria destroys the northern kingdom', ref: '2 Kings 17' },
+    { date: '701 BC', title: 'Sennacherib threatens Jerusalem', ref: '2 Kings 18' },
+    { date: '627 BC', title: 'The call of Jeremiah', ref: 'Jeremiah 1' },
+    { date: '621 BC', title: 'The lost Book of the Law is found', ref: '2 Kings 22' },
+    { date: '605 BC', title: 'Daniel taken to Babylon', ref: 'Daniel 1' },
+    { date: '593 BC', title: 'Ezekiel’s vision by the Chebar', ref: 'Ezekiel 1' },
+    { date: '586 BC', title: 'The fall of Jerusalem; the temple destroyed', ref: '2 Kings 25' },
+    { date: '539 BC', title: 'Daniel in the lions’ den; Babylon falls', ref: 'Daniel 6' },
+    { date: '537 BC', title: 'The exiles return under Cyrus', ref: 'Ezra 1' },
+    { date: '515 BC', title: 'The second temple is completed', ref: 'Ezra 6' },
+    { date: '478 BC', title: 'Esther becomes queen', ref: 'Esther 2' },
+    { date: '458 BC', title: 'Ezra returns to Jerusalem', ref: 'Ezra 7' },
+    { date: '444 BC', title: 'Nehemiah rebuilds the walls', ref: 'Nehemiah 2' },
+    { date: '430 BC', title: 'Malachi, the last Old Testament prophet', ref: 'Malachi 1' },
+    { date: '5 BC', title: 'The birth of Jesus', ref: 'Luke 2' },
+    { date: '26 AD', title: 'The baptism of Jesus', ref: 'Matthew 3' },
+    { date: '27 AD', title: 'The Sermon on the Mount', ref: 'Matthew 5' },
+    { date: '29 AD', title: 'Jesus feeds the five thousand', ref: 'John 6' },
+    { date: '30 AD', title: 'The triumphal entry', ref: 'John 12' },
+    { date: '30 AD', title: 'The crucifixion', ref: 'Luke 23' },
+    { date: '30 AD', title: 'The resurrection', ref: 'Luke 24' },
+    { date: '30 AD', title: 'The Holy Spirit comes at Pentecost', ref: 'Acts 2' },
+    { date: '34 AD', title: 'The conversion of Saul (Paul)', ref: 'Acts 9' },
+    { date: '48 AD', title: 'Paul’s first missionary journey', ref: 'Acts 13' },
+    { date: '48 AD', title: 'The council at Jerusalem', ref: 'Acts 15' },
+    { date: '57 AD', title: 'Paul writes to the Romans', ref: 'Romans 1' },
+    { date: '62 AD', title: 'Paul preaches in Rome', ref: 'Acts 28' },
+    { date: '95 AD', title: 'John’s Revelation on Patmos', ref: 'Revelation 1' }
+  ];
+
+  function renderDetailedTimeline() {
+    var wrap = document.getElementById('timeline-detailed');
+    if (!wrap || wrap.dataset.built) return;
+    wrap.dataset.built = '1';
+    DETAILED_TIMELINE.forEach(function (ev) {
+      var row = el('div', 'tl-row');
+      row.appendChild(txt('span', 'tl-row-date', ev.date));
+      row.appendChild(txt('span', 'tl-row-dot', ''));
+      var main = el('div', 'tl-row-main');
+      main.appendChild(txt('span', 'tl-row-title', ev.title));
+      var loc = ev.ref ? parseRef(ev.ref) : null;
+      if (loc) {
+        var b = txt('button', 'tl-row-ref', ev.ref);
+        b.type = 'button';
+        b.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
+        main.appendChild(b);
+      }
+      row.appendChild(main);
+      wrap.appendChild(row);
+    });
+  }
+
   /* ---------- investigate Christianity (in the Road) ----------
      Curated lines of inquiry; each lazy-loads a full, fair case from the
      existing evangelism-prep endpoint. */
@@ -4470,6 +4555,239 @@
     });
   }
   renderInvestigate();
+
+  /* ---------- cross-reference arc diagram ----------
+     Recreates the classic "Visualizing the Bible" arc chart: all 1,189 chapters
+     along the bottom, and an arc for every strong chapter-to-chapter cross
+     reference. Data (js/xref-data.js) is loaded on first open. Rendered to a
+     canvas: all arcs are drawn once to an offscreen base; hovering/selecting a
+     chapter re-blits the base and overlays that chapter's arcs brightly. */
+  var xrefViz = (function () {
+    var built = false, data = null, dmax = 1, N = 0;
+    var canvas, ctx, base, viz, hoverEl, captionEl, selectedEl, loadingEl;
+    var chapters = [], bookStart = [];
+    var W = 0, H = 0, dpr = 1, padX = 10, baseY = 0, maxBar = 0, span = 0;
+    var xs = null, arcs = null, degree = null;
+    var hovered = -1, selected = -1, rafPending = false;
+
+    function grab() {
+      viz = document.getElementById('xref-viz');
+      canvas = document.getElementById('xref-canvas');
+      hoverEl = document.getElementById('xref-hover');
+      captionEl = document.getElementById('xref-caption');
+      selectedEl = document.getElementById('xref-selected');
+      loadingEl = document.getElementById('xref-loading');
+    }
+
+    function buildChapterIndex() {
+      chapters = []; bookStart = [];
+      BIBLE_BOOKS.forEach(function (g) {
+        g.books.forEach(function (b) {
+          bookStart.push(chapters.length);
+          for (var c = 1; c <= b.chapters; c++) chapters.push({ book: b.name, chapter: c });
+        });
+      });
+      N = chapters.length;
+    }
+
+    function decode() {
+      var s = data.pairs, n = s.length / 4;
+      arcs = new Int16Array(n * 2);
+      for (var i = 0; i < n; i++) {
+        arcs[i * 2] = parseInt(s.substr(i * 4, 2), 36);
+        arcs[i * 2 + 1] = parseInt(s.substr(i * 4 + 2, 2), 36);
+      }
+      degree = data.degree;
+      dmax = 1;
+      for (var d = 0; d < degree.length; d++) if (degree[d] > dmax) dmax = degree[d];
+    }
+
+    function layout() {
+      var rect = viz.getBoundingClientRect();
+      W = Math.max(320, Math.floor(rect.width));
+      H = Math.round(Math.min(440, Math.max(260, W * 0.46)));
+      dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+      ctx = canvas.getContext('2d');
+      baseY = Math.round(H * 0.72);
+      maxBar = H - baseY - 6;
+      span = W - padX * 2;
+      xs = new Float32Array(N);
+      for (var i = 0; i < N; i++) xs[i] = padX + (N > 1 ? (i / (N - 1)) * span : 0);
+    }
+
+    function arc(c, a, z, alpha, width, hue) {
+      var x1 = xs[a], x2 = xs[z], mid = (x1 + x2) / 2, dist = Math.abs(x2 - x1);
+      c.beginPath();
+      c.moveTo(x1, baseY);
+      c.quadraticCurveTo(mid, baseY - dist, x2, baseY);
+      c.strokeStyle = 'hsla(' + hue + ',72%,62%,' + alpha + ')';
+      c.lineWidth = width;
+      c.stroke();
+    }
+
+    function hueFor(a, z) { return Math.round(360 * ((a + z) / 2) / N); }
+
+    function drawBars(c) {
+      for (var i = 0; i < N; i++) {
+        var h = (degree[i] / dmax) * maxBar;
+        c.fillStyle = 'rgba(150,155,180,0.55)';
+        c.fillRect(xs[i] - 0.35, baseY + 1, 0.8, h);
+      }
+    }
+
+    function renderBase() {
+      base = document.createElement('canvas');
+      base.width = canvas.width; base.height = canvas.height;
+      var b = base.getContext('2d');
+      b.setTransform(dpr, 0, 0, dpr, 0, 0);
+      b.clearRect(0, 0, W, H);
+      var n = arcs.length / 2;
+      for (var i = 0; i < n; i++) {
+        var a = arcs[i * 2], z = arcs[i * 2 + 1];
+        arc(b, a, z, 0.05, 0.5, hueFor(a, z));
+      }
+      // the horizontal baseline
+      b.strokeStyle = 'rgba(255,255,255,0.55)';
+      b.lineWidth = 1;
+      b.beginPath(); b.moveTo(padX, baseY + 0.5); b.lineTo(W - padX, baseY + 0.5); b.stroke();
+      drawBars(b);
+      // OT | NT divider
+      var ntStart = xs[bookStart[39]];
+      b.strokeStyle = 'rgba(255,255,255,0.25)';
+      b.setLineDash([3, 4]);
+      b.beginPath(); b.moveTo(ntStart, 8); b.lineTo(ntStart, baseY); b.stroke();
+      b.setLineDash([]);
+    }
+
+    // draw the base, then overlay the highlighted chapter's arcs
+    function paint(hi) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(base, 0, 0);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (hi < 0) return;
+      var n = arcs.length / 2, count = 0;
+      for (var i = 0; i < n; i++) {
+        var a = arcs[i * 2], z = arcs[i * 2 + 1];
+        if (a === hi || z === hi) { arc(ctx, a, z, 0.85, 1.1, hueFor(a, z)); count++; }
+      }
+      // a marker on the chosen chapter
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(xs[hi], baseY, 3, 0, Math.PI * 2); ctx.fill();
+      return count;
+    }
+
+    function chapterAt(clientX) {
+      var rect = canvas.getBoundingClientRect();
+      var x = clientX - rect.left;
+      var i = Math.round((x - padX) / span * (N - 1));
+      return Math.max(0, Math.min(N - 1, i));
+    }
+
+    function connections(hi) {
+      var set = {}, n = arcs.length / 2;
+      for (var i = 0; i < n; i++) {
+        var a = arcs[i * 2], z = arcs[i * 2 + 1];
+        if (a === hi) set[z] = true; else if (z === hi) set[a] = true;
+      }
+      return Object.keys(set).map(Number).sort(function (p, q) { return p - q; });
+    }
+
+    function label(i) { return chapters[i].book + ' ' + chapters[i].chapter; }
+
+    function showHover(i, clientX) {
+      if (!hoverEl) return;
+      hoverEl.hidden = false;
+      hoverEl.textContent = label(i) + ' · ' + t('crossref.refCount', { n: degree[i] });
+      var rect = viz.getBoundingClientRect();
+      var x = clientX - rect.left;
+      hoverEl.style.left = Math.max(8, Math.min(rect.width - 8, x)) + 'px';
+    }
+
+    function renderSelected(hi) {
+      if (!selectedEl) return;
+      var conns = connections(hi);
+      selectedEl.textContent = '';
+      selectedEl.hidden = false;
+      var head = el('div', 'xref-sel-head');
+      head.appendChild(txt('span', 'xref-sel-title', label(hi)));
+      head.appendChild(txt('span', 'xref-sel-count', t('crossref.connCount', { n: conns.length })));
+      var open = txt('button', 'xref-sel-open', t('crossref.openChapter'));
+      open.type = 'button';
+      open.addEventListener('click', function () { openReaderAt(chapters[hi].book, chapters[hi].chapter); });
+      head.appendChild(open);
+      selectedEl.appendChild(head);
+      var list = el('div', 'xref-sel-list');
+      conns.forEach(function (c) {
+        var b = txt('button', 'xref-sel-chip', label(c));
+        b.type = 'button';
+        b.addEventListener('click', function () { openReaderAt(chapters[c].book, chapters[c].chapter); });
+        list.appendChild(b);
+      });
+      selectedEl.appendChild(list);
+    }
+
+    function wire() {
+      canvas.addEventListener('pointermove', function (e) {
+        var i = chapterAt(e.clientX);
+        if (i === hovered) { showHover(i, e.clientX); return; }
+        hovered = i;
+        showHover(i, e.clientX);
+        if (!rafPending) {
+          rafPending = true;
+          window.requestAnimationFrame(function () { rafPending = false; paint(hovered >= 0 ? hovered : selected); });
+        }
+      });
+      canvas.addEventListener('pointerleave', function () {
+        hovered = -1;
+        if (hoverEl) hoverEl.hidden = true;
+        paint(selected);
+      });
+      canvas.addEventListener('click', function (e) {
+        selected = chapterAt(e.clientX);
+        paint(selected);
+        renderSelected(selected);
+      });
+      var t0 = null;
+      window.addEventListener('resize', function () {
+        if (!built || document.getElementById('view-crossref').classList.contains('is-active') === false) return;
+        clearTimeout(t0);
+        t0 = setTimeout(function () { layout(); renderBase(); paint(selected); }, 200);
+      });
+    }
+
+    function build() {
+      buildChapterIndex();
+      decode();
+      layout();
+      renderBase();
+      paint(-1);
+      wire();
+      built = true;
+      if (loadingEl) loadingEl.hidden = true;
+    }
+
+    function ensureData(cb) {
+      if (window.TGP_XREF) { data = window.TGP_XREF; cb(); return; }
+      var sc = document.createElement('script');
+      sc.src = 'js/xref-data.js';
+      sc.onload = function () { data = window.TGP_XREF; cb(); };
+      sc.onerror = function () { if (loadingEl) loadingEl.textContent = t('crossref.vizError'); };
+      document.head.appendChild(sc);
+    }
+
+    return {
+      open: function () {
+        grab();
+        if (!canvas) return;
+        if (built) { return; }
+        if (loadingEl) { loadingEl.hidden = false; }
+        ensureData(function () { build(); });
+      }
+    };
+  })();
 
   /* ---------- start ---------- */
 

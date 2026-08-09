@@ -471,6 +471,21 @@
     <section id="view-crossref" class="view">
       <p class="eyebrow" data-i18n="crossref.eyebrow">cross-references</p>
       <h1 class="view-title" data-i18n="crossref.title">Cross-references</h1>
+      <p class="view-lede" data-i18n="crossref.vizLede">There is no other book like it on earth. Every one of the 1,189 chapters runs along the bottom; each arc above joins two chapters that reference one another — <strong>341,272 cross-references</strong> in all. Hover or tap a chapter to light up its connections.</p>
+
+      <div id="xref-viz" class="xref-viz">
+        <canvas id="xref-canvas" class="xref-canvas"></canvas>
+        <div id="xref-hover" class="xref-hover" hidden></div>
+        <p id="xref-loading" class="xref-loading" data-i18n="crossref.vizLoading">Drawing the connections…</p>
+      </div>
+      <div class="xref-axis" aria-hidden="true">
+        <span class="xref-axis-ot" data-i18n="bible.oldTestament">Old Testament</span>
+        <span class="xref-axis-nt" data-i18n="bible.newTestament">New Testament</span>
+      </div>
+      <p id="xref-caption" class="xref-caption" data-i18n="crossref.vizHint">Hover a chapter to see its cross-references; tap it to list and open them.</p>
+      <div id="xref-selected" class="xref-selected" hidden></div>
+
+      <h2 class="timeline-subhead" data-i18n="crossref.lookupHeading">Look up a verse’s cross-references</h2>
       <p class="view-lede" data-i18n="crossref.lede">Enter any verse and see the passages that speak to it — prophecies, echoes, quotations, and parallels across the whole Bible. Tap one to open it in the reader.</p>
       <form id="crossref-form" class="tool-form">
         <input id="crossref-query" type="text" autocomplete="off" data-i18n-placeholder="crossref.placeholder" placeholder="John 3:16, Isaiah 53:5, Romans 8:28" required>
@@ -487,7 +502,13 @@
     <section id="view-timeline" class="view">
       <p class="eyebrow" data-i18n="timeline.eyebrow">bible timeline</p>
       <h1 class="view-title" data-i18n="timeline.title">Timeline of the whole Bible</h1>
-      <p class="view-lede" data-i18n="timeline.lede">The story of Scripture from creation to the early church, era by era. Dates are approximate and, for the earliest events, debated — they’re here to give shape to the story.</p>
+      <p class="view-lede" data-i18n="timeline.lede">The story of Scripture from creation to the early church. Dates are approximate and, for the earliest events, debated — they’re here to give shape to the story.</p>
+      <p class="timeline-source"><a href="https://biblehub.com/timeline/" target="_blank" rel="noopener" data-i18n="timeline.source">See the full dated timeline at BibleHub →</a></p>
+
+      <h2 class="timeline-subhead" data-i18n="timeline.datedHeading">Key dated events</h2>
+      <div id="timeline-detailed" class="timeline-detailed"></div>
+
+      <h2 class="timeline-subhead" data-i18n="timeline.erasHeading">The story, era by era</h2>
       <div id="timeline-eras" class="bible-timeline"></div>
     </section>
 
