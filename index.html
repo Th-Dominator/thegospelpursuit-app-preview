@@ -404,6 +404,65 @@
       </form>
       <div id="apologetics-result" class="result-card prose" hidden></div>
       <p id="apologetics-status" class="status"></p>
+
+      <!-- ===================== APOLOGIST MODE ===================== -->
+      <div class="apolo-feature" id="apologist-mode">
+        <h2 class="settings-heading" data-i18n="apologist.heading">Apologist Mode</h2>
+        <p class="settings-hint" data-i18n="apologist.intro">A live training drill. Face a real objection, then answer it in your own words — type or speak — and get scored, specific feedback. The difficulty rises as you improve.</p>
+
+        <div class="apologist-controls">
+          <label class="apologist-field">
+            <span data-i18n="apologist.perspectiveLabel">Perspective</span>
+            <select id="apologist-perspective">
+              <option value="" data-i18n="apologist.perspectiveAny">Surprise me</option>
+            </select>
+          </label>
+          <div class="apologist-level">
+            <span class="apologist-level-label" data-i18n="apologist.difficulty">Difficulty</span>
+            <span id="apologist-level-dots" class="apologist-dots" aria-hidden="true"></span>
+            <span id="apologist-level-text" class="apologist-level-text"></span>
+          </div>
+          <button type="button" id="apologist-new" class="apologist-btn" data-i18n="apologist.newObjection">New objection</button>
+        </div>
+
+        <div id="apologist-arena" class="apologist-arena" hidden>
+          <div class="apologist-objection-card">
+            <span class="apologist-obj-tag" id="apologist-obj-perspective"></span>
+            <p class="apologist-obj-text" id="apologist-obj-text"></p>
+          </div>
+
+          <label class="apologist-response-label" for="apologist-response" data-i18n="apologist.yourAnswer">Your answer</label>
+          <textarea id="apologist-response" class="apologist-response" rows="6" data-i18n-placeholder="apologist.answerPlaceholder" placeholder="Answer the objection in your own words…"></textarea>
+          <div class="apologist-actions">
+            <button type="button" id="apologist-mic" class="apologist-mic" hidden>
+              <span class="apologist-mic-dot"></span>
+              <span data-i18n="apologist.speak">Speak</span>
+            </button>
+            <button type="button" id="apologist-submit" class="apologist-btn" data-i18n="apologist.evaluate">Evaluate my answer</button>
+          </div>
+          <p id="apologist-mic-note" class="apologist-mic-note" hidden data-i18n="apologist.micUnsupported">Voice input isn’t available in this browser — you can type your answer.</p>
+
+          <div id="apologist-feedback" class="apologist-feedback" hidden></div>
+          <p id="apologist-status" class="status"></p>
+        </div>
+      </div>
+
+      <!-- ===================== OBJECTIONS & APOLOGETICS ===================== -->
+      <div class="apolo-feature" id="objections-apologetics">
+        <h2 class="settings-heading" data-i18n="objections.heading">Objections &amp; Apologetics</h2>
+        <p class="settings-hint" data-i18n="objections.intro">Real objections, grouped by the perspective that actually raises them and stated at their strongest. Open one for a fair, detailed analysis — or ask your own.</p>
+
+        <form id="objections-form" class="tool-form">
+          <input id="objections-input" type="text" data-i18n-placeholder="objections.placeholder" placeholder="type any objection to analyze…">
+          <select id="objections-perspective" class="objections-perspective-select">
+            <option value="" data-i18n="objections.perspectiveNone">Perspective (optional)</option>
+          </select>
+          <button type="submit" data-i18n="objections.analyze">Analyze</button>
+        </form>
+        <div id="objections-custom" class="apolo-objection-body" hidden></div>
+
+        <div id="objections-list" class="objections-list"></div>
+      </div>
     </section>
 
     <!-- TIPS FOR NEW BELIEVERS -->
@@ -551,6 +610,7 @@
 <script src="js/config.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/apologetics-data.js"></script>
+<script src="js/apologetics-objections.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

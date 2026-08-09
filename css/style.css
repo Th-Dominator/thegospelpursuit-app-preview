@@ -2222,6 +2222,209 @@ button.verse-num:hover { text-decoration: underline; }
 .apolo-topic-body { padding: 0 14px 14px; }
 .apolo-topic .road-station-answer { margin-bottom: 0; }
 
+/* ============ Apologist Mode + Objections & Apologetics ============ */
+.apolo-feature {
+  margin-top: 34px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+}
+
+/* --- Apologist Mode controls --- */
+.apologist-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  margin: 14px 0 6px;
+}
+.apologist-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-soft); }
+.apologist-field select {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.18));
+  background: var(--surface, #fff);
+  color: var(--ink);
+  font-size: 14px;
+}
+.apologist-level { display: flex; align-items: center; gap: 8px; }
+.apologist-level-label { font-size: 13px; color: var(--ink-soft); }
+.apologist-dots { display: inline-flex; gap: 4px; }
+.apologist-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--line, rgba(0, 0, 0, 0.18));
+}
+.apologist-dot.is-on { background: var(--gold-dark, #96660a); }
+.apologist-level-text { font-size: 13px; font-weight: 600; color: var(--gold-dark, #96660a); }
+.apologist-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: none;
+  background: var(--gold-dark, #96660a);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.apologist-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* --- Apologist arena --- */
+.apologist-arena { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+.apologist-objection-card {
+  border-left: 4px solid var(--gold-dark, #96660a);
+  background: var(--surface-2, rgba(0, 0, 0, 0.03));
+  border-radius: 0 12px 12px 0;
+  padding: 14px 16px;
+}
+.apologist-obj-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gold-dark, #96660a);
+  margin-bottom: 6px;
+}
+.apologist-obj-text { margin: 0; font-size: 16px; line-height: 1.6; color: var(--ink); }
+.apologist-response-label { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.apologist-response {
+  width: 100%;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.18));
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--surface, #fff);
+  resize: vertical;
+  box-sizing: border-box;
+}
+.apologist-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.apologist-mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.18));
+  background: var(--surface, #fff);
+  color: var(--ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+.apologist-mic-dot { width: 10px; height: 10px; border-radius: 50%; background: #b23b3b; }
+.apologist-mic.is-live { border-color: #b23b3b; color: #b23b3b; }
+.apologist-mic.is-live .apologist-mic-dot { animation: apolo-pulse 1s infinite; }
+@keyframes apolo-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.apologist-mic-note { font-size: 12px; color: var(--ink-muted); margin: 0; }
+
+/* --- evaluation report --- */
+.apologist-feedback { margin-top: 6px; }
+.apologist-report { display: flex; flex-direction: column; gap: 16px; }
+.apologist-overall {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 92px; height: 92px;
+  border-radius: 50%;
+  border: 4px solid var(--gold-dark, #96660a);
+  color: var(--ink);
+}
+.apologist-overall.is-high { border-color: #1c7a4b; }
+.apologist-overall.is-mid { border-color: #c58a0c; }
+.apologist-overall.is-low { border-color: #b23b3b; }
+.apologist-overall-num { font-size: 30px; font-weight: 800; line-height: 1; }
+.apologist-overall-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); }
+.apologist-scores { display: flex; flex-direction: column; gap: 8px; }
+.score-row { display: grid; grid-template-columns: minmax(120px, 1.4fr) 3fr auto; align-items: center; gap: 10px; }
+.score-label { font-size: 13px; color: var(--ink); }
+.score-track { height: 8px; border-radius: 999px; background: var(--line, rgba(0, 0, 0, 0.12)); overflow: hidden; }
+.score-fill { height: 100%; border-radius: 999px; background: var(--gold-dark, #96660a); transition: width 0.4s ease; }
+.score-fill.is-high { background: #1c7a4b; }
+.score-fill.is-mid { background: #c58a0c; }
+.score-fill.is-low { background: #b23b3b; }
+.score-num { font-size: 13px; font-weight: 700; color: var(--ink-soft); min-width: 28px; text-align: right; }
+.apologist-block {
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--surface-2, rgba(0, 0, 0, 0.03));
+  border-left: 4px solid var(--line, rgba(0, 0, 0, 0.18));
+}
+.apologist-block.is-strong { border-left-color: #1c7a4b; }
+.apologist-block.is-weak { border-left-color: #b23b3b; }
+.apologist-block.is-missing { border-left-color: #c58a0c; }
+.apologist-block.is-model { border-left-color: var(--gold-dark, #96660a); }
+.apologist-block.is-study { border-left-color: #3a6ea5; }
+.apologist-block-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+.apologist-block-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink); white-space: pre-wrap; }
+.apologist-encouragement {
+  margin: 0;
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--gold-dark, #96660a);
+}
+
+/* --- Objections & Apologetics list --- */
+.objections-perspective-select {
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.18));
+  background: var(--surface, #fff);
+  color: var(--ink);
+  font-size: 14px;
+}
+.objections-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.objection-group {
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  overflow: hidden;
+}
+.objection-group-head {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.objection-group-head::-webkit-details-marker { display: none; }
+.objection-group-icon { font-size: 22px; flex: 0 0 auto; }
+.objection-group-titles { display: flex; flex-direction: column; gap: 2px; }
+.objection-group-name { font-weight: 700; font-size: 16px; color: var(--ink); }
+.objection-group-blurb { font-size: 13px; color: var(--ink-soft); }
+.objection-group-body { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.apolo-objection {
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+  border-radius: 10px;
+  background: var(--surface-2, rgba(0, 0, 0, 0.02));
+  overflow: hidden;
+}
+.apolo-objection-head {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  padding: 11px 14px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+  font-weight: 500;
+}
+.apolo-objection-head::-webkit-details-marker { display: none; }
+.apolo-objection-head::before { content: '❝'; color: var(--gold-dark, #96660a); flex: 0 0 auto; }
+.apolo-objection-body { padding: 0 14px 12px; }
+
 .settings-fineprint {
   font-size: 12px;
   color: var(--ink-muted);

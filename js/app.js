@@ -2604,6 +2604,8 @@
   }
 
   function renderApologetics() {
+    // keep the Apologist-mode difficulty label in step with the language
+    if (typeof updateApologistLevelUI === 'function') updateApologistLevelUI();
     var road = document.getElementById('apologetics-road');
     if (!road || typeof APOLO_THEMES === 'undefined') return;
     road.textContent = '';
@@ -2699,6 +2701,329 @@
     saveApolo({ done: [] });
     renderApologetics();
   });
+
+  /* ============ Apologist Mode ============
+     A live drill: the backend presents a real objection at the student's
+     current difficulty, the student answers by typing or speaking, and the
+     backend returns scored, specific feedback. The difficulty is stored in
+     localStorage and nudged up as the student improves. */
+  var APOLOGIST_LEVEL_KEY = 'tgp.apologistLevel';
+  var apologistState = { objection: null, recog: null, listening: false, stopMic: null };
+
+  function apologistLevel() {
+    var n = parseInt(window.localStorage.getItem(APOLOGIST_LEVEL_KEY), 10);
+    return (n >= 1 && n <= 5) ? n : 1;
+  }
+  function setApologistLevel(n) {
+    n = Math.max(1, Math.min(5, parseInt(n, 10) || 1));
+    try { window.localStorage.setItem(APOLOGIST_LEVEL_KEY, String(n)); } catch (e) { /* view-only */ }
+    updateApologistLevelUI();
+  }
+  function updateApologistLevelUI() {
+    var dots = document.getElementById('apologist-level-dots');
+    var text = document.getElementById('apologist-level-text');
+    if (!dots || !text) return;
+    var lvl = apologistLevel();
+    dots.textContent = '';
+    for (var i = 1; i <= 5; i++) dots.appendChild(el('span', 'apologist-dot' + (i <= lvl ? ' is-on' : '')));
+    text.textContent = t('apologist.levelName' + lvl);
+  }
+
+  // both the Apologist-mode and Objections perspective pickers share the catalogue
+  function populatePerspectiveSelects() {
+    if (typeof APOLO_PERSPECTIVES === 'undefined') return;
+    ['apologist-perspective', 'objections-perspective'].forEach(function (id) {
+      var sel = document.getElementById(id);
+      if (!sel) return;
+      var placeholder = sel.querySelector('option');
+      sel.textContent = '';
+      if (placeholder) sel.appendChild(placeholder);
+      APOLO_PERSPECTIVES.forEach(function (p) {
+        var o = el('option');
+        o.value = p.label;
+        o.textContent = (p.icon ? p.icon + '  ' : '') + p.label;
+        sel.appendChild(o);
+      });
+    });
+  }
+
+  // BCP-47 tag for the speech recognizer; most of our codes work as-is
+  function speechLangTag(code) { return code === 'en' ? 'en-US' : code; }
+
+  function setupApologistMic() {
+    var mic = document.getElementById('apologist-mic');
+    var note = document.getElementById('apologist-mic-note');
+    var ta = document.getElementById('apologist-response');
+    if (!mic || !ta) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { mic.hidden = true; if (note) note.hidden = false; return; }
+    mic.hidden = false;
+
+    function stopMic() {
+      if (apologistState.recog) { try { apologistState.recog.stop(); } catch (e) { /* ignore */ } }
+      apologistState.listening = false;
+      mic.classList.remove('is-live');
+    }
+    apologistState.stopMic = stopMic;
+
+    mic.addEventListener('click', function () {
+      if (apologistState.listening) { stopMic(); return; }
+      var recog = new SR();
+      recog.lang = speechLangTag(currentLang);
+      recog.interimResults = true;
+      recog.continuous = true;
+      var base = ta.value ? ta.value.replace(/\s*$/, '') + ' ' : '';
+      var finalText = '';
+      recog.onresult = function (e) {
+        var interim = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          var r = e.results[i];
+          if (r.isFinal) finalText += r[0].transcript; else interim += r[0].transcript;
+        }
+        ta.value = base + finalText + interim;
+      };
+      recog.onerror = function () { stopMic(); };
+      recog.onend = function () { apologistState.listening = false; mic.classList.remove('is-live'); };
+      apologistState.recog = recog;
+      apologistState.listening = true;
+      mic.classList.add('is-live');
+      try { recog.start(); } catch (e) { stopMic(); }
+    });
+  }
+
+  function loadNewObjection() {
+    var arena = document.getElementById('apologist-arena');
+    var status = document.getElementById('apologist-status');
+    var btn = document.getElementById('apologist-new');
+    if (!arena || !btn) return;
+    if (apologistState.stopMic) apologistState.stopMic();
+    var persp = (document.getElementById('apologist-perspective') || {}).value || '';
+    btn.disabled = true;
+    btn.textContent = t('apologist.loading');
+    var fb = document.getElementById('apologist-feedback');
+    fb.hidden = true; fb.textContent = '';
+    status.textContent = '';
+    request('apologist-objection', { difficulty: apologistLevel(), perspective: persp })
+      .then(function (data) {
+        apologistState.objection = data;
+        document.getElementById('apologist-obj-perspective').textContent =
+          (data.perspective || persp || '') + (data.topic ? ' · ' + data.topic : '');
+        document.getElementById('apologist-obj-text').textContent = data.objection || '';
+        document.getElementById('apologist-response').value = '';
+        arena.hidden = false;
+      })
+      .catch(function (err) { status.textContent = err.message; })
+      .then(function () { btn.disabled = false; btn.textContent = t('apologist.newObjection'); });
+  }
+
+  var APOLOGIST_SCORES = [
+    ['biblical', 'apologist.scoreBiblical'],
+    ['context', 'apologist.scoreContext'],
+    ['historical', 'apologist.scoreHistorical'],
+    ['logical', 'apologist.scoreLogical'],
+    ['fairness', 'apologist.scoreFairness'],
+    ['communication', 'apologist.scoreComm']
+  ];
+  function scoreClass(n) { return n >= 75 ? 'is-high' : (n >= 50 ? 'is-mid' : 'is-low'); }
+
+  function submitEvaluation() {
+    if (apologistState.stopMic) apologistState.stopMic();
+    var ta = document.getElementById('apologist-response');
+    var status = document.getElementById('apologist-status');
+    var resp = (ta.value || '').trim();
+    if (!apologistState.objection) { status.textContent = t('apologist.needObjection'); return; }
+    if (!resp) { status.textContent = t('apologist.needAnswer'); return; }
+    var fb = document.getElementById('apologist-feedback');
+    var btn = document.getElementById('apologist-submit');
+    btn.disabled = true;
+    status.textContent = '';
+    fb.hidden = false; fb.textContent = '';
+    fb.appendChild(txt('p', 'verse-panel-note', t('apologist.grading')));
+    request('apologist-evaluate', {
+      objection: apologistState.objection.objection,
+      perspective: apologistState.objection.perspective,
+      difficulty: apologistState.objection.difficulty || apologistLevel(),
+      response: resp
+    })
+      .then(function (data) {
+        fb.textContent = '';
+        fb.appendChild(renderEvaluation(data));
+        if (data.nextDifficulty) setApologistLevel(data.nextDifficulty);
+      })
+      .catch(function (err) {
+        fb.textContent = '';
+        fb.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+      })
+      .then(function () { btn.disabled = false; });
+  }
+
+  function renderEvaluation(data) {
+    var wrap = el('div', 'apologist-report');
+
+    var overall = data.overall || 0;
+    var head = el('div', 'apologist-overall ' + scoreClass(overall));
+    head.appendChild(txt('span', 'apologist-overall-num', String(overall)));
+    head.appendChild(txt('span', 'apologist-overall-label', t('apologist.overall')));
+    wrap.appendChild(head);
+
+    var scores = data.scores || {};
+    var bars = el('div', 'apologist-scores');
+    APOLOGIST_SCORES.forEach(function (pair) {
+      var n = scores[pair[0]] || 0;
+      var row = el('div', 'score-row');
+      row.appendChild(txt('span', 'score-label', t(pair[1])));
+      var track = el('div', 'score-track');
+      var fill = el('div', 'score-fill ' + scoreClass(n));
+      fill.style.width = n + '%';
+      track.appendChild(fill);
+      row.appendChild(track);
+      row.appendChild(txt('span', 'score-num', String(n)));
+      bars.appendChild(row);
+    });
+    wrap.appendChild(bars);
+
+    appendReportBlock(wrap, 'apologist.strongest', data.strongest, 'is-strong');
+    appendReportBlock(wrap, 'apologist.weakest', data.weakest, 'is-weak');
+    appendReportBlock(wrap, 'apologist.missing', data.missing, 'is-missing');
+    appendReportBlock(wrap, 'apologist.stronger', data.stronger, 'is-model');
+
+    if (Array.isArray(data.study) && data.study.length) {
+      var box = el('div', 'apologist-block is-study');
+      box.appendChild(txt('h4', 'apologist-block-title', t('apologist.study')));
+      box.appendChild(buildNamedList(data.study.map(function (s) { return { name: s.topic, note: s.note }; })));
+      wrap.appendChild(box);
+    }
+    if ((data.encouragement || '').trim()) {
+      wrap.appendChild(txt('p', 'apologist-encouragement', data.encouragement.trim()));
+    }
+    return wrap;
+  }
+  function appendReportBlock(wrap, labelKey, val, cls) {
+    val = (val || '').trim();
+    if (!val) return;
+    var box = el('div', 'apologist-block ' + (cls || ''));
+    box.appendChild(txt('h4', 'apologist-block-title', t(labelKey)));
+    box.appendChild(txt('p', 'apologist-block-text', val));
+    wrap.appendChild(box);
+  }
+
+  /* ============ Objections & Apologetics ============
+     Real objections grouped by the perspective that raises them; opening one
+     asks the `objection-study` endpoint for a full, fair analysis. A free-form
+     box analyzes any objection the user types. */
+  var OBJECTION_SECTIONS = [
+    ['objectionStated', 'objections.stated', 'prose'],
+    ['assumptions', 'objections.assumptions', 'list'],
+    ['shortResponse', 'objections.short', 'prose'],
+    ['detailedResponse', 'objections.detailed', 'prose'],
+    ['biblicalContext', 'objections.biblical', 'prose'],
+    ['logicalAnalysis', 'objections.logical', 'prose'],
+    ['historicalEvidence', 'objections.historical', 'prose'],
+    ['archaeologicalEvidence', 'objections.archaeological', 'prose'],
+    ['languageEvidence', 'objections.language', 'prose'],
+    ['strongestCounter', 'objections.counter', 'prose'],
+    ['counterResponse', 'objections.counterResponse', 'prose'],
+    ['uncertainty', 'objections.uncertainty', 'prose'],
+    ['sources', 'objections.sources', 'list']
+  ];
+
+  function renderObjectionStudy(data) {
+    if (!data) return null;
+    var wrap = el('div', 'verse-context');
+    var openFirst = true;
+    OBJECTION_SECTIONS.forEach(function (s) {
+      var content = s[2] === 'list' ? buildBulletList(data[s[0]]) : buildProseSection(data[s[0]]);
+      if (!content) return;
+      var det = el('details', 'ctx-section');
+      if (openFirst) { det.open = true; openFirst = false; }
+      var sum = el('summary', 'ctx-summary');
+      sum.appendChild(txt('span', 'ctx-title', t(s[1])));
+      det.appendChild(sum);
+      var body = el('div', 'ctx-body');
+      body.appendChild(content);
+      det.appendChild(body);
+      wrap.appendChild(det);
+    });
+    return wrap.children.length ? wrap : null;
+  }
+
+  function loadObjectionStudy(body, objection, perspective) {
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('objections.analyzing')));
+    request('objection-study', { objection: objection, perspective: perspective || '' })
+      .then(function (data) {
+        body.textContent = '';
+        body.appendChild(renderObjectionStudy(data) || txt('p', 'verse-panel-note', t('objections.none')));
+      })
+      .catch(function (err) {
+        body.textContent = '';
+        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+      });
+  }
+
+  function renderObjectionsList() {
+    var list = document.getElementById('objections-list');
+    if (!list || typeof APOLO_PERSPECTIVES === 'undefined') return;
+    list.textContent = '';
+    APOLO_PERSPECTIVES.forEach(function (p) {
+      var group = el('details', 'objection-group');
+      var sum = el('summary', 'objection-group-head');
+      sum.appendChild(txt('span', 'objection-group-icon', p.icon || '☩'));
+      var titles = el('span', 'objection-group-titles');
+      titles.appendChild(txt('span', 'objection-group-name', p.label));
+      if (p.blurb) titles.appendChild(txt('span', 'objection-group-blurb', p.blurb));
+      sum.appendChild(titles);
+      group.appendChild(sum);
+      var gbody = el('div', 'objection-group-body');
+      p.objections.forEach(function (obj) {
+        var row = el('details', 'apolo-objection');
+        var head = el('summary', 'apolo-objection-head');
+        head.appendChild(txt('span', 'apolo-objection-q', obj));
+        row.appendChild(head);
+        var body = el('div', 'apolo-objection-body');
+        row.appendChild(body);
+        var loaded = false;
+        row.addEventListener('toggle', function () {
+          if (row.open && !loaded) { loaded = true; loadObjectionStudy(body, obj, p.label); }
+        });
+        gbody.appendChild(row);
+      });
+      group.appendChild(gbody);
+      list.appendChild(group);
+    });
+  }
+
+  // one-time wiring for both apologetics features
+  (function setupApologeticsFeatures() {
+    populatePerspectiveSelects();
+    setupApologistMic();
+    updateApologistLevelUI();
+    var newBtn = document.getElementById('apologist-new');
+    if (newBtn) newBtn.addEventListener('click', loadNewObjection);
+    var submitBtn = document.getElementById('apologist-submit');
+    if (submitBtn) submitBtn.addEventListener('click', submitEvaluation);
+    var objForm = document.getElementById('objections-form');
+    if (objForm) objForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = document.getElementById('objections-input');
+      var q = (input.value || '').trim();
+      if (!q) return;
+      var persp = (document.getElementById('objections-perspective') || {}).value || '';
+      var box = document.getElementById('objections-custom');
+      box.hidden = false; box.textContent = '';
+      box.appendChild(txt('p', 'verse-panel-note', t('objections.analyzing')));
+      request('objection-study', { objection: q, perspective: persp })
+        .then(function (data) {
+          box.textContent = '';
+          box.appendChild(renderObjectionStudy(data) || txt('p', 'verse-panel-note', t('objections.none')));
+        })
+        .catch(function (err) {
+          box.textContent = '';
+          box.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+        });
+    });
+    renderObjectionsList();
+  })();
 
   /* ---------- tips for new believers ---------- */
 
