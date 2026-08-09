@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- set the colour theme before the stylesheet paints, so there's no flash.
+     Defaults to dark; a saved choice wins. -->
+<script>(function(){try{var t=localStorage.getItem('tgp.theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 <title>The Gospel Pursuit — scripture, devotionals, and apologetics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -155,62 +158,141 @@
   <div class="app-main">
   <main class="wrap">
 
-    <!-- HOME / VERSE OF THE DAY -->
-    <section id="view-home" class="view is-active">
-      <p class="eyebrow" data-i18n="home.eyebrow">verse of the day</p>
-      <blockquote id="verse-quote" class="verse-quote" data-i18n="home.verseLoading">Loading today's verse&hellip;</blockquote>
-      <p id="verse-ref" class="verse-ref"></p>
+    <!-- HOME / TODAY -->
+    <section id="view-home" class="view is-active today-view">
 
-      <div class="rule"></div>
-
-      <!-- your walk: streak, totals, and badges -->
-      <section id="home-dashboard" class="home-dash">
-        <h2 class="dash-heading" data-i18n="dash.heading">Your walk</h2>
-        <div class="dash-stats">
-          <div class="dash-stat">
-            <span class="dash-num"><span class="dash-flame" aria-hidden="true">🔥</span><span class="js-streak-count">0</span></span>
-            <span class="dash-label" data-i18n="dash.streak">day streak</span>
-          </div>
-          <div class="dash-stat">
-            <span class="dash-num" id="dash-days">0</span>
-            <span class="dash-label" data-i18n="dash.daysActive">days in the Word</span>
-          </div>
-          <div class="dash-stat">
-            <span class="dash-num" id="dash-chapters">0</span>
-            <span class="dash-label" data-i18n="dash.chapters">chapters read</span>
-          </div>
+      <!-- 1. header: date + greeting, with the theme toggle -->
+      <header class="today-head">
+        <div class="today-head-text">
+          <p class="today-date" id="today-date"></p>
+          <h1 class="today-greeting" id="today-greeting" data-i18n="home.greetingMorning">Good morning</h1>
         </div>
-        <h3 class="dash-subheading" data-i18n="dash.badges">Badges</h3>
-        <p class="badge-summary js-badge-summary"></p>
-        <button type="button" class="dash-badges-link" data-view="badges" data-i18n="dash.viewBadges">See all your badges</button>
+        <div class="seg theme-seg" role="group" data-i18n-aria="theme.label" aria-label="Theme">
+          <button type="button" class="seg-opt" data-theme-choice="dark" aria-pressed="true" data-i18n="theme.dark">Dark</button>
+          <button type="button" class="seg-opt" data-theme-choice="light" aria-pressed="false" data-i18n="theme.light">Light</button>
+        </div>
+      </header>
+
+      <!-- 2. verse of the day -->
+      <article class="today-card verse-card">
+        <span class="verse-hairline" aria-hidden="true"></span>
+        <p class="today-kicker" data-i18n="home.eyebrow">verse of the day</p>
+        <blockquote id="verse-quote" class="verse-quote" data-i18n="home.verseLoading">Loading today's verse&hellip;</blockquote>
+        <p id="verse-ref" class="verse-ref"></p>
+        <div class="verse-actions">
+          <button type="button" id="verse-save" class="today-btn today-btn-secondary" data-i18n="home.save">Save</button>
+          <button type="button" id="verse-share" class="today-btn today-btn-ghost" data-i18n="home.share">Share</button>
+        </div>
+      </article>
+
+      <!-- 3. your walk: streak strip + encouragement -->
+      <section class="today-section walk-section">
+        <div class="today-section-head">
+          <h2 class="today-section-title" data-i18n="dash.heading">Your walk</h2>
+          <span class="walk-streak-count"><span class="js-streak-count">0</span>&nbsp;<span data-i18n="dash.streakChip">day streak</span></span>
+        </div>
+        <div class="today-card walk-card">
+          <div class="walk-flame" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2c1 3-3 4-3 7a3 3 0 006 0c1.5 1 2 3 2 4.5A5 5 0 019.5 22 6 6 0 016 15c0-3 2-4 3-6 .5 1 1 1.5 1.5 1-1-3 .5-6 1.5-8z"></path>
+            </svg>
+          </div>
+          <div class="walk-week" id="walk-week"></div>
+        </div>
+        <p class="walk-encourage" id="walk-encourage"></p>
+        <div class="walk-stats">
+          <span class="walk-stat"><span class="walk-stat-num" id="dash-days">0</span> <span data-i18n="dash.daysActive">days in the Word</span></span>
+          <span class="walk-stat"><span class="walk-stat-num" id="dash-chapters">0</span> <span data-i18n="dash.chapters">chapters read</span></span>
+          <button type="button" class="walk-badges-link dash-badges-link" data-view="badges"><span class="js-badge-summary"></span></button>
+        </div>
       </section>
 
-      <div class="card-grid">
-        <button class="feature-card" data-view="bible">
-          <span class="feature-label" data-i18n="home.bibleLabel">The Bible</span>
-          <span class="feature-hint" data-i18n="home.bibleHint">Read any book, chapter by chapter</span>
-        </button>
-        <button class="feature-card" data-view="search">
-          <span class="feature-label" data-i18n="home.searchLabel">Search scripture</span>
-          <span class="feature-hint" data-i18n="home.searchHint">Look up any passage or reference</span>
-        </button>
-        <button class="feature-card" data-view="devotional">
-          <span class="feature-label" data-i18n="home.devotionalLabel">Generate a devotional</span>
-          <span class="feature-hint" data-i18n="home.devotionalHint">A short reflection on any topic</span>
-        </button>
-        <button class="feature-card" data-view="plans">
-          <span class="feature-label" data-i18n="home.plansLabel">Bible plans</span>
-          <span class="feature-hint" data-i18n="home.plansHint">Read through scripture, a day at a time</span>
-        </button>
-        <button class="feature-card" data-view="apologetics">
-          <span class="feature-label" data-i18n="home.apologeticsLabel">The Road to Apologetics</span>
-          <span class="feature-hint" data-i18n="home.apologeticsHint">Reasoned answers to hard questions</span>
-        </button>
-        <button class="feature-card" data-view="tips">
-          <span class="feature-label" data-i18n="home.tipsLabel">Tips for new believers</span>
-          <span class="feature-hint" data-i18n="home.tipsHint">Where to start when faith is new</span>
-        </button>
-      </div>
+      <!-- 4. explore: 2-column grid of link cards -->
+      <section class="today-section explore-section">
+        <h2 class="today-section-title" data-i18n="home.exploreTitle">Explore</h2>
+        <div class="explore-grid">
+
+          <button class="explore-card" data-view="bible">
+            <span class="explore-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 5c2-1.2 5-1.2 8 0v14c-3-1.2-6-1.2-8 0V5z"></path>
+                <path d="M20 5c-2-1.2-5-1.2-8 0v14c3-1.2 6-1.2 8 0V5z"></path>
+              </svg>
+            </span>
+            <span class="explore-text">
+              <span class="explore-title" data-i18n="home.bibleLabel">The Bible</span>
+              <span class="explore-hint" data-i18n="home.bibleHint">Read any book, chapter by chapter</span>
+            </span>
+          </button>
+
+          <button class="explore-card" data-view="devotional">
+            <span class="explore-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z"></path>
+              </svg>
+            </span>
+            <span class="explore-text">
+              <span class="explore-title" data-i18n="home.devotionalLabel">Generate a devotional</span>
+              <span class="explore-hint" data-i18n="home.devotionalHint">A short reflection on any topic</span>
+            </span>
+          </button>
+
+          <button class="explore-card" data-view="apologetics">
+            <span class="today-tag" id="explore-apolo-level" hidden></span>
+            <span class="explore-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z"></path>
+              </svg>
+            </span>
+            <span class="explore-text">
+              <span class="explore-title" data-i18n="home.apologeticsLabel">The Road to Apologetics</span>
+              <span class="explore-hint" data-i18n="home.apologeticsHint">Reasoned answers to hard questions</span>
+            </span>
+          </button>
+
+          <button class="explore-card" data-view="search">
+            <span class="explore-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                <path d="M20 20l-5-5"></path>
+              </svg>
+            </span>
+            <span class="explore-text">
+              <span class="explore-title" data-i18n="home.searchLabel">Search scripture</span>
+              <span class="explore-hint" data-i18n="home.searchHint">Look up any passage or reference</span>
+            </span>
+          </button>
+
+          <button class="explore-card" data-view="plans">
+            <span class="explore-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                <path d="M3 10h18"></path>
+                <path d="M8 3v4M16 3v4"></path>
+                <path d="M8.5 15.5l2 2 4-4.5"></path>
+              </svg>
+            </span>
+            <span class="explore-text">
+              <span class="explore-title" data-i18n="home.plansLabel">Bible plans</span>
+              <span class="explore-hint" data-i18n="home.plansHint">Read through scripture, a day at a time</span>
+            </span>
+          </button>
+
+          <button class="explore-card" data-view="tips">
+            <span class="explore-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M15 9l-2 6-6 2 2-6 6-2z"></path>
+              </svg>
+            </span>
+            <span class="explore-text">
+              <span class="explore-title" data-i18n="home.tipsLabel">Tips for new believers</span>
+              <span class="explore-hint" data-i18n="home.tipsHint">Where to start when faith is new</span>
+            </span>
+          </button>
+
+        </div>
+      </section>
     </section>
 
     <!-- BADGES -->

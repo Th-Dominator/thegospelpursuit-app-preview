@@ -88,6 +88,8 @@
     renderTips();
     renderProgressUI();
     renderNotifUI();
+    renderTodayHeader();
+    updateSaveButton();
     if (!document.getElementById('notif-panel').hidden) renderNotifList();
     retranslateForms();
   }
@@ -315,6 +317,7 @@
     loadingScreen.hidden = true;
     rays.hidden = true;
     appShell.hidden = false;
+    renderTodayHeader();
     loadDailyVerse();
     renderProgressUI();
     renderNotifUI();
@@ -339,7 +342,7 @@
     window.scrollTo(0, 0);
   }
 
-  document.querySelectorAll('.nav-link, .feature-card, .dash-badges-link').forEach(function (el) {
+  document.querySelectorAll('.nav-link, .feature-card, .explore-card, .dash-badges-link').forEach(function (el) {
     el.addEventListener('click', function () {
       showView(el.dataset.view);
     });
@@ -415,9 +418,13 @@
 
   /* ---------- verse of the day ---------- */
 
+  // the verse currently on screen, so Save/Share have something to act on
+  var currentVerse = { text: '', reference: '' };
+
   function renderVerse(text, reference) {
     var quote = document.getElementById('verse-quote');
     var trimmed = (text || '').trim();
+    currentVerse = { text: trimmed, reference: (reference || '').trim() };
     quote.textContent = '';
 
     if (trimmed) {
@@ -431,6 +438,7 @@
     }
 
     document.getElementById('verse-ref').textContent = reference || '';
+    updateSaveButton();
   }
 
   function loadDailyVerse() {
@@ -443,6 +451,159 @@
       .catch(function () {
         renderVerse('', '');
       });
+  }
+
+  /* ---------- saved verses (local) + share ---------- */
+
+  var SAVED_KEY = 'tgp.savedVerses';
+  function loadSaved() {
+    try { return JSON.parse(window.localStorage.getItem(SAVED_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function saveSaved(list) {
+    try { window.localStorage.setItem(SAVED_KEY, JSON.stringify(list)); } catch (e) { /* view-only */ }
+  }
+  // a verse is identified by its reference; the daily verse rarely lacks one
+  function verseKey(v) { return (v.reference || v.text || '').trim(); }
+  function isVerseSaved(v) {
+    var key = verseKey(v);
+    return !!key && loadSaved().some(function (s) { return verseKey(s) === key; });
+  }
+  function updateSaveButton() {
+    var btn = document.getElementById('verse-save');
+    if (!btn) return;
+    var has = currentVerse.text && currentVerse.reference;
+    btn.disabled = !has;
+    var saved = has && isVerseSaved(currentVerse);
+    btn.classList.toggle('is-done', !!saved);
+    btn.textContent = t(saved ? 'home.saved' : 'home.save');
+  }
+  function toggleSaveVerse() {
+    if (!currentVerse.text) return;
+    var list = loadSaved();
+    var key = verseKey(currentVerse);
+    var at = -1;
+    for (var i = 0; i < list.length; i++) { if (verseKey(list[i]) === key) { at = i; break; } }
+    if (at === -1) list.unshift({ text: currentVerse.text, reference: currentVerse.reference, savedAt: Date.now() });
+    else list.splice(at, 1);
+    saveSaved(list);
+    updateSaveButton();
+  }
+  function shareVerse() {
+    if (!currentVerse.text) return;
+    var quote = '“' + currentVerse.text + '”';
+    var body = currentVerse.reference ? quote + ' — ' + currentVerse.reference : quote;
+    if (navigator.share) {
+      navigator.share({ text: body, title: 'The Gospel Pursuit' }).catch(function () { /* dismissed */ });
+      return;
+    }
+    var btn = document.getElementById('verse-share');
+    var restore = function () { if (btn) btn.textContent = t('home.share'); };
+    var flash = function () { if (btn) { btn.textContent = t('home.copied'); setTimeout(restore, 1600); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(body).then(flash, restore);
+    }
+  }
+
+  /* ---------- theme (dark / light) ---------- */
+
+  var THEME_KEY = 'tgp.theme';
+  function currentTheme() {
+    try {
+      var s = window.localStorage.getItem(THEME_KEY);
+      return (s === 'light' || s === 'dark') ? s : 'dark';
+    } catch (e) { return 'dark'; }
+  }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { window.localStorage.setItem(THEME_KEY, theme); } catch (e) { /* view-only */ }
+    document.querySelectorAll('[data-theme-choice]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.themeChoice === theme));
+    });
+  }
+
+  /* ---------- Today header: date + greeting ---------- */
+
+  function renderTodayHeader() {
+    var now = new Date();
+    var dateEl = document.getElementById('today-date');
+    if (dateEl) {
+      try {
+        dateEl.textContent = now.toLocaleDateString(currentLang, { weekday: 'long', month: 'long', day: 'numeric' });
+      } catch (e) {
+        dateEl.textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+      }
+    }
+    var greetEl = document.getElementById('today-greeting');
+    if (greetEl) {
+      var h = now.getHours();
+      var key = h < 12 ? 'home.greetingMorning' : (h < 18 ? 'home.greetingAfternoon' : 'home.greetingEvening');
+      greetEl.setAttribute('data-i18n', key); // keeps it right across a language switch
+      greetEl.textContent = t(key);
+    }
+  }
+
+  /* ---------- Your Walk: 7-day strip + encouragement ---------- */
+
+  function renderWalkWeek() {
+    var wrap = document.getElementById('walk-week');
+    if (!wrap) return;
+    var p = loadProgress();
+    wrap.textContent = '';
+
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var todayMs = today.getTime();
+    // start the strip on Monday, matching the design (M T W T F S S)
+    var dow = today.getDay();               // 0 Sun … 6 Sat
+    var toMonday = (dow === 0 ? -6 : 1 - dow);
+    var monday = new Date(today); monday.setDate(today.getDate() + toMonday);
+
+    // the streak covers the p.streak consecutive days ending on p.lastDay
+    var firstMs = null, lastMs = null;
+    if (p.lastDay && p.streak > 0) {
+      var ld = new Date(p.lastDay + 'T00:00:00'); ld.setHours(0, 0, 0, 0);
+      lastMs = ld.getTime();
+      var fd = new Date(ld); fd.setDate(ld.getDate() - (p.streak - 1));
+      firstMs = fd.getTime();
+    }
+
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(monday); d.setDate(monday.getDate() + i);
+      var ms = d.getTime();
+      var cell = el('div', 'walk-day');
+      var label;
+      try { label = d.toLocaleDateString(currentLang, { weekday: 'narrow' }); }
+      catch (e) { label = d.toLocaleDateString(undefined, { weekday: 'narrow' }); }
+      cell.appendChild(txt('span', 'walk-day-label', label));
+      cell.appendChild(el('span', 'walk-day-dot'));
+
+      var isFuture = ms > todayMs;
+      var isDone = firstMs !== null && !isFuture && ms >= firstMs && ms <= lastMs;
+      if (isDone) cell.classList.add('is-done');
+      if (ms === todayMs) cell.classList.add('is-today');
+      wrap.appendChild(cell);
+    }
+  }
+
+  function renderWalkEncourage() {
+    var msgEl = document.getElementById('walk-encourage');
+    if (!msgEl) return;
+    var p = loadProgress();
+    if (!p.streak) msgEl.textContent = t('home.walkNew');
+    else if (p.streak === 1) msgEl.textContent = t('home.walkDay1');
+    else msgEl.textContent = t('home.walkStreak', { n: p.streak });
+  }
+
+  function renderExploreApoloTag() {
+    var tag = document.getElementById('explore-apolo-level');
+    if (!tag) return;
+    var c = apoloCounts();
+    if (c.done > 0) {
+      tag.hidden = false;
+      tag.textContent = t('apologetics.levelLabel', { n: c.done });
+    } else {
+      tag.hidden = true;
+    }
   }
 
   /* ---------- the bible ---------- */
@@ -3318,6 +3479,9 @@
   function renderProgressUI() {
     var p = loadProgress();
     document.querySelectorAll('.js-streak-count').forEach(function (n) { n.textContent = String(p.streak); });
+    renderWalkWeek();
+    renderWalkEncourage();
+    renderExploreApoloTag();
     var days = document.getElementById('dash-days');
     if (days) days.textContent = String(p.daysActive);
     var chapters = document.getElementById('dash-chapters');
@@ -3366,6 +3530,15 @@
   document.querySelectorAll('.js-streak-open').forEach(function (btn) {
     btn.addEventListener('click', function () { showView('home'); });
   });
+
+  // theme toggle (Today header) + verse Save / Share
+  document.querySelectorAll('[data-theme-choice]').forEach(function (btn) {
+    btn.addEventListener('click', function () { applyTheme(btn.dataset.themeChoice); });
+  });
+  var saveBtn = document.getElementById('verse-save');
+  if (saveBtn) saveBtn.addEventListener('click', toggleSaveVerse);
+  var shareBtn = document.getElementById('verse-share');
+  if (shareBtn) shareBtn.addEventListener('click', shareVerse);
   document.getElementById('notif-close').addEventListener('click', closeNotif);
   document.getElementById('notif-scrim').addEventListener('click', closeNotif);
   document.getElementById('notif-clear').addEventListener('click', function () {
@@ -3586,6 +3759,7 @@
 
   /* ---------- start ---------- */
 
+  applyTheme(currentTheme());   // the <head> set the attribute; this syncs the toggle + storage
   resetBibleBrowser();
   renderVersionOptions();
   wireSettings();

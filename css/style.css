@@ -1,6 +1,8 @@
 :root {
+  /* ---- Light (warm) theme — the app's original identity, now the "Light" option ---- */
   --bg: #FAF8F3;
   --surface: #FFFFFF;
+  --surface-2: #FBF7EF;
   --border: #E3DDCE;
   --ink: #232B36;
   --ink-soft: #5B6472;
@@ -8,11 +10,86 @@
   --gold: #A9814C;
   --gold-dark: #7C5C34;
   --gold-tint: #F3ECDD;
+  --divider: var(--border);
+  --error: #A3352A;
+
+  /* Today-screen semantic accents — resolve to the warm palette here */
+  --today-kicker: var(--gold-dark);
+  --today-tile-bg: var(--gold-tint);
+  --today-tile-icon: var(--gold-dark);
+  --today-hairline-mid: var(--gold);
+  --today-dot-done: var(--gold);
+  --today-dot-today-ring: var(--gold-dark);
+  --today-dot-future: var(--border);
+  --today-tag-bg: var(--gold);
+  --today-tag-text: #fff;
+
   --font-display: 'Fraunces', serif;
   --font-body: 'Inter', sans-serif;
   --radius: 10px;
+  --radius-lg: 14px;
   --sidebar-w: 248px;
+  color-scheme: light;
 }
+
+/* ---- Dark (Nocturne) theme — the default, adapted from the design system.
+   Every legacy token is re-pointed here, so the whole app follows along and the
+   2000+ lines below stay untouched. ---- */
+:root[data-theme="dark"] {
+  --bg: #14161f;
+  --surface: #1e2030;
+  --surface-2: #262a3b;
+  --border: #33374a;
+  --ink: #eceef6;
+  --ink-soft: #c3c8dc;
+  --ink-muted: #9297ac;
+  --gold: #a99cf2;       /* the accent (blurple) takes the gold's place */
+  --gold-dark: #c6bcff;  /* a brighter accent, for text on the dark ground */
+  --gold-tint: #2a2747;  /* a low, saturated accent tint for active/hover fills */
+  --divider: color-mix(in srgb, #eceef6 14%, transparent);
+  --error: #ff8f80;
+
+  --today-kicker: #d2cefd;
+  --today-tile-bg: #3a3466;
+  --today-tile-icon: #d2cefd;
+  --today-hairline-mid: #a99cf2;
+  --today-dot-done: #9d90e6;
+  --today-dot-today-ring: #c6bcff;
+  --today-dot-future: #33374a;
+  --today-tag-bg: #3a3466;
+  --today-tag-text: #eae6ff;
+
+  color-scheme: dark;
+}
+
+/* Dark-theme fixes: a handful of controls hardcode white text on var(--ink),
+   which assumes --ink is dark. On the dark ground --ink is light, so those fills
+   are re-pointed to a solid accent that white text still reads on. */
+:root[data-theme="dark"] .tool-form button,
+:root[data-theme="dark"] .verse-panel-btn,
+:root[data-theme="dark"] .quiz-diff.is-active,
+:root[data-theme="dark"] .plan-day-read,
+:root[data-theme="dark"] .apologist-btn,
+:root[data-theme="dark"] .plan-day-read {
+  background: #5a4fa6;
+  color: #fff;
+  border-color: #5a4fa6;
+}
+:root[data-theme="dark"] .tool-form button:hover,
+:root[data-theme="dark"] .verse-panel-btn:hover,
+:root[data-theme="dark"] .plan-day-read:hover { background: #6d61c0; border-color: #6d61c0; }
+:root[data-theme="dark"] .road-station.is-current .road-station-num,
+:root[data-theme="dark"] .road-station.is-done .road-station-num {
+  background: #5a4fa6; color: #fff; border-color: #5a4fa6;
+}
+:root[data-theme="dark"] .road-hero-badge,
+:root[data-theme="dark"] .tip-num { background: linear-gradient(135deg, #7a6fd0, #5a4fa6); color: #fff; }
+:root[data-theme="dark"] .dash-badges-link:hover { background: #5a4fa6; color: #fff; }
+:root[data-theme="dark"] .toast { background: #262a3b; color: var(--ink); box-shadow: 0 10px 34px rgba(0,0,0,0.55); }
+:root[data-theme="dark"] .status.is-error { color: var(--error); }
+/* the "Get Started" button on the (now dark) splash */
+:root[data-theme="dark"] .btn-enter { background: var(--gold-dark); color: #14161f; }
+:root[data-theme="dark"] .btn-enter:hover:not(:disabled) { background: #d9d1ff; }
 
 * { box-sizing: border-box; }
 
@@ -2460,4 +2537,276 @@ button.verse-num:hover { text-decoration: underline; }
 }
 .settings-principle-icon { font-size: 20px; color: var(--gold-dark, #96660a); line-height: 1.4; flex: 0 0 auto; }
 .settings-principle-text { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink); font-style: italic; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE TODAY SCREEN — daily verse, streak, and an explore grid.
+   Adapted from the "Today Section" handoff; themed through the tokens above so
+   it reads native in both the dark (default) and light palettes.
+   ══════════════════════════════════════════════════════════════════════ */
+.today-view { padding-top: 44px; }
+
+/* 1. header — date + greeting, theme toggle on the right */
+.today-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+.today-date {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin: 0 0 4px;
+}
+.today-greeting {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.15;
+  margin: 0;
+}
+
+/* segmented theme toggle */
+.theme-seg {
+  flex: 0 0 auto;
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.theme-seg .seg-opt {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  padding: 7px 15px;
+  cursor: pointer;
+  line-height: 1.2;
+}
+.theme-seg .seg-opt + .seg-opt { border-left: 1px solid var(--border); }
+.theme-seg .seg-opt:hover { color: var(--ink); }
+.theme-seg .seg-opt[aria-pressed="true"] {
+  color: var(--gold-dark);
+  background: var(--gold-tint);
+}
+
+/* shared card shell for the Today screen */
+.today-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+/* 2. verse of the day */
+.verse-card { position: relative; overflow: hidden; }
+.verse-hairline {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--today-hairline-mid) 50%, transparent);
+}
+.today-kicker {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--today-kicker);
+  margin: 0 0 14px;
+}
+.verse-card .verse-quote {
+  font-size: 22px;
+  line-height: 1.5;
+  font-weight: 400;
+  margin: 0 0 12px;
+}
+.verse-card .dropcap {
+  font-size: 46px;
+  padding-right: 6px;
+  padding-top: 4px;
+}
+.verse-card .verse-ref { font-size: 13px; }
+.verse-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+.today-btn {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 9px 16px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.today-btn-secondary { border-color: var(--border); }
+.today-btn-secondary:hover { border-color: var(--gold); background: var(--gold-tint); }
+.today-btn-ghost { color: var(--gold-dark); padding-inline: 10px; }
+.today-btn-ghost:hover { background: var(--gold-tint); }
+.today-btn.is-done { color: var(--today-kicker); border-color: var(--today-dot-done); }
+
+/* section wrapper (Your Walk, Explore) */
+.today-section { margin-top: 28px; }
+.today-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.today-section-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0;
+}
+.walk-streak-count { font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
+
+/* 3. your walk — flame + 7-day strip */
+.walk-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+}
+.walk-flame {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--today-tile-bg);
+  color: var(--today-tile-icon);
+}
+.walk-week {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+.walk-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.walk-day-label { font-size: 10px; font-weight: 500; color: var(--ink-muted); }
+.walk-day-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--today-dot-future);
+  box-sizing: border-box;
+}
+.walk-day.is-done .walk-day-dot { background: var(--today-dot-done); }
+.walk-day.is-today .walk-day-dot {
+  background: transparent;
+  border: 2px solid var(--today-dot-today-ring);
+}
+.walk-day.is-today .walk-day-label { color: var(--today-kicker); }
+.walk-encourage {
+  margin: 14px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.walk-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.walk-stat-num { font-weight: 600; color: var(--ink); }
+.walk-badges-link {
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--gold-dark);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.walk-badges-link:hover { text-decoration: underline; }
+
+/* 4. explore grid */
+.explore-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.explore-card {
+  position: relative;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.explore-card:hover { border-color: var(--gold); }
+.explore-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  background: var(--today-tile-bg);
+  color: var(--today-tile-icon);
+}
+.explore-text { display: block; }
+.explore-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+.explore-hint {
+  display: block;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.today-tag {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: 7px;
+  background: var(--today-tag-bg);
+  color: var(--today-tag-text);
+}
+.today-tag[hidden] { display: none; }
+
+@media (max-width: 420px) {
+  .today-greeting { font-size: 26px; }
+  .today-card { padding: 18px; }
+  .verse-card .verse-quote { font-size: 20px; }
+  .walk-flame { width: 46px; height: 46px; }
+}
 
