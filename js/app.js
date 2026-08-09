@@ -184,14 +184,17 @@
     'setting-search-context': { name: 'searchContext', fallback: 'verse' },
     'setting-devotional-length': { name: 'devotionalLength', fallback: 'medium' },
     'setting-plan-pace': { name: 'planPace', fallback: 'steady' },
-    'setting-apologetics-tone': { name: 'apologeticsTone', fallback: 'gentle' }
+    'setting-apologetics-tone': { name: 'apologeticsTone', fallback: 'gentle' },
+    'setting-bible-difficulty': { name: 'bibleDifficulty', fallback: 'intermediate' }
   };
 
   // on/off preferences (boolean-valued)
   var TOGGLE_FIELDS = {
     'setting-red-letters': { name: 'redLetters', fallback: false },
     'setting-verse-picker': { name: 'showVersePicker', fallback: true },
-    'setting-progress-bar': { name: 'showProgressBar', fallback: true }
+    'setting-progress-bar': { name: 'showProgressBar', fallback: true },
+    'setting-bible-accuracy': { name: 'bibleAccuracy', fallback: true },
+    'setting-bible-sources': { name: 'bibleSources', fallback: false }
   };
 
   var settings = loadSettings();

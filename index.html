@@ -497,6 +497,37 @@
         </label>
       </section>
 
+      <!-- bible study, accuracy & anti-bias -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.bibleStudyHeading">Bible study &amp; accuracy</h2>
+        <p class="settings-hint" data-i18n="settings.bibleStudyHint">How the AI approaches the Bible everywhere in this section — verse studies, chapter and book overviews, archaeology, geography, timelines, and quizzes.</p>
+
+        <div class="settings-principle">
+          <span class="settings-principle-icon" aria-hidden="true">☩</span>
+          <p class="settings-principle-text" data-i18n="settings.biblePrinciple">The AI’s job is not to make the Bible agree with its answer. Its job is to help you determine what the biblical author is communicating, place it within the whole canon, distinguish evidence from interpretation, and clearly identify where reasonable scholars or Christian traditions disagree.</p>
+        </div>
+
+        <label class="settings-toggle">
+          <input type="checkbox" id="setting-bible-accuracy">
+          <span class="settings-toggle-text" data-i18n="settings.bibleAccuracyLabel">Accuracy &amp; anti-bias mode — separate evidence from interpretation and name where views differ</span>
+        </label>
+
+        <label class="settings-toggle">
+          <input type="checkbox" id="setting-bible-sources">
+          <span class="settings-toggle-text" data-i18n="settings.bibleSourcesLabel">Show the sources &amp; evidence behind each claim</span>
+        </label>
+
+        <label class="settings-field">
+          <span class="settings-label" data-i18n="settings.bibleDifficultyLabel">Study difficulty</span>
+          <select id="setting-bible-difficulty">
+            <option value="beginner" data-i18n="settings.bibleDiffBeginner">Beginner — plain language, terms explained</option>
+            <option value="intermediate" data-i18n="settings.bibleDiffIntermediate">Intermediate — clear but substantive</option>
+            <option value="advanced" data-i18n="settings.bibleDiffAdvanced">Advanced — assumes biblical literacy</option>
+            <option value="scholar" data-i18n="settings.bibleDiffScholar">Scholar — original languages & debates</option>
+          </select>
+        </label>
+      </section>
+
       <!-- reading -->
       <section class="settings-group">
         <h2 class="settings-heading" data-i18n="settings.readingHeading">Reading</h2>
