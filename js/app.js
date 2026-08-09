@@ -438,6 +438,43 @@
   // set once the devotional-length chips are wired, so Settings can re-sync them
   var devoLengthPaint = null;
 
+  /* ---------- generation cache ----------
+     The expandable panels ("drop-downs") each ask the backend to generate
+     reference content — a chapter guide, a verse's context, a quiz, and so on.
+     That content is the same every time, so we memoise it: identical calls share
+     a single in-flight promise (no duplicate work when you hover then click) and,
+     once resolved, the panel reopens instantly. The key includes the language and
+     settings, so changing either regenerates. Failures are not cached, so the
+     next open retries cleanly. */
+  var genCache = {};
+  function genKey(path, body) {
+    return path + '|' + currentLang + '|' + JSON.stringify(settings) + '|' + JSON.stringify(body || {});
+  }
+  function requestCached(path, body) {
+    var key = genKey(path, body);
+    if (genCache[key]) return genCache[key];
+    var p = request(path, body).catch(function (err) {
+      delete genCache[key];   // let the next open try again
+      throw err;
+    });
+    genCache[key] = p;
+    return p;
+  }
+
+  /* Warm a drop-down before it opens: the moment the pointer or keyboard focus
+     lands on it, kick off its generation so the content is ready (or already on
+     its way) by the time it expands. Safe to call repeatedly — the cache de-dupes
+     and each loader guards its own state. `trigger` does the actual warming. */
+  function warmOnIntent(el, trigger) {
+    if (!el || el.dataset.warmed) return;
+    el.dataset.warmed = '1';
+    var target = el.querySelector('summary') || el;
+    var warm = function () { try { trigger(); } catch (e) { /* best effort */ } };
+    target.addEventListener('pointerenter', warm);
+    target.addEventListener('focusin', warm);
+    target.addEventListener('touchstart', warm, { passive: true });
+  }
+
   /* ---------- verse of the day ---------- */
 
   // the verse currently on screen, so Save/Share have something to act on
@@ -1108,6 +1145,18 @@
       var btn = txt('button', 'verse-action', t(action.key));
       btn.type = 'button';
       btn.addEventListener('click', function () { choose(action.name, action.fill); });
+      // warm the generated panels on hover so their content is ready on click
+      var warmPath = action.name === 'context' ? 'verse-context'
+        : (action.name === 'resources' ? 'verse-resources' : null);
+      if (warmPath) {
+        warmOnIntent(btn, function () {
+          if (!bibleState.book) return;
+          requestCached(warmPath, {
+            book: bibleState.book.name, chapter: bibleState.chapter,
+            verse: verse.number, version: currentVersion()
+          });
+        });
+      }
       buttons[action.name] = btn;
       actions.appendChild(btn);
     });
@@ -2055,7 +2104,7 @@
     };
     Object.keys(extra).forEach(function (k) { body[k] = extra[k]; });
 
-    request(path, body)
+    requestCached(path, body)
       .then(function (data) {
         var node = build(data);
         container.textContent = '';
@@ -2155,7 +2204,7 @@
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('bible.guideBusy')));
 
-    request('chapter-insight', { book: bibleState.book.name, chapter: bibleState.chapter })
+    requestCached('chapter-insight', { book: bibleState.book.name, chapter: bibleState.chapter })
       .then(function (data) {
         // a late reply for a chapter we've since left shouldn't overwrite the new one
         if (chapterGuideKey !== key) return;
@@ -2179,6 +2228,8 @@
   document.getElementById('chapter-guide').addEventListener('toggle', function () {
     if (this.open) loadChapterGuide();
   });
+  // warm it on hover/focus so the guide is generating before it's opened
+  warmOnIntent(document.getElementById('chapter-guide'), loadChapterGuide);
 
   /* The whole-book overview that sits above the chapter grid. Keyed by book
      so it refetches when you switch books but not when reopened on the same. */
@@ -2203,7 +2254,7 @@
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
 
-    request('book-insight', { book: bibleState.book.name })
+    requestCached('book-insight', { book: bibleState.book.name })
       .then(function (data) {
         if (bookGuideKey !== key) return;
         body.textContent = '';
@@ -2225,6 +2276,7 @@
   document.getElementById('book-guide').addEventListener('toggle', function () {
     if (this.open) loadBookGuide();
   });
+  warmOnIntent(document.getElementById('book-guide'), loadBookGuide);
 
   /* ---------- single-verse study view ---------- */
 
@@ -2413,7 +2465,7 @@
     focusKeys.context = key;
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('bible.contextBusy')));
-    request('verse-context', {
+    requestCached('verse-context', {
       book: bibleState.book.name, chapter: bibleState.chapter,
       verse: bibleState.verse, version: currentVersion()
     })
@@ -2438,7 +2490,7 @@
     focusKeys.chapter = key;
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('bible.guideBusy')));
-    request('chapter-insight', { book: bibleState.book.name, chapter: bibleState.chapter })
+    requestCached('chapter-insight', { book: bibleState.book.name, chapter: bibleState.chapter })
       .then(function (data) {
         if (focusKeys.chapter !== key) return;
         var rich = renderChapterOverview(data);
@@ -2464,7 +2516,7 @@
     focusKeys.book = key;
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
-    request('book-insight', { book: bibleState.book.name })
+    requestCached('book-insight', { book: bibleState.book.name })
       .then(function (data) {
         if (focusKeys.book !== key) return;
         var rich = renderBookOverview(data);
@@ -2492,6 +2544,10 @@
   document.getElementById('verse-focus-book').addEventListener('toggle', function () {
     if (this.open) loadFocusBook();
   });
+  // warm each study panel on hover/focus so it's generating before it opens
+  warmOnIntent(document.getElementById('verse-focus-context'), loadFocusContext);
+  warmOnIntent(document.getElementById('verse-focus-chapter'), loadFocusChapter);
+  warmOnIntent(document.getElementById('verse-focus-book'), loadFocusBook);
 
   /* ---------- jumping into the reader from anywhere (plans) ---------- */
 
@@ -3022,13 +3078,15 @@
     level.addEventListener('toggle', function () {
       if (level.open && !loaded) { loaded = true; loadApoloAnswer(body, id, q, level); }
     });
+    // warm the answer on hover (network only — opening is what clears the lesson)
+    warmOnIntent(level, function () { requestCached('evangelism-prep', { scenario: q }); });
     return level;
   }
 
   function loadApoloAnswer(body, id, q, level) {
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('apologetics.preparing')));
-    request('evangelism-prep', { scenario: q })
+    requestCached('evangelism-prep', { scenario: q })
       .then(function (data) {
         body.textContent = '';
         body.appendChild(txt('div', 'road-station-answer prose', cleanAIText(((data && data.prep) || '').trim())));
@@ -3330,7 +3388,7 @@
   function loadObjectionStudy(body, objection, perspective) {
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('objections.analyzing')));
-    request('objection-study', { objection: objection, perspective: perspective || '' })
+    requestCached('objection-study', { objection: objection, perspective: perspective || '' })
       .then(function (data) {
         body.textContent = '';
         body.appendChild(renderObjectionStudy(data) || txt('p', 'verse-panel-note', t('objections.none')));
@@ -3366,6 +3424,9 @@
         row.addEventListener('toggle', function () {
           if (row.open && !loaded) { loaded = true; loadObjectionStudy(body, obj, p.label); }
         });
+        (function (objection, perspective) {
+          warmOnIntent(row, function () { requestCached('objection-study', { objection: objection, perspective: perspective || '' }); });
+        })(obj, p.label);
         gbody.appendChild(row);
       });
       group.appendChild(gbody);
