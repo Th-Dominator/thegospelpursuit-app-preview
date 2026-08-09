@@ -97,6 +97,18 @@
         <span class="nav-icon" aria-hidden="true">⌕</span>
         <span class="nav-text" data-i18n="nav.search">Search scripture</span>
       </button>
+      <button class="nav-link" data-view="crossref">
+        <span class="nav-icon" aria-hidden="true">⇄</span>
+        <span class="nav-text" data-i18n="nav.crossref">Cross-references</span>
+      </button>
+      <button class="nav-link" data-view="timeline">
+        <span class="nav-icon" aria-hidden="true">⌛</span>
+        <span class="nav-text" data-i18n="nav.timeline">Bible timeline</span>
+      </button>
+      <button class="nav-link" data-view="definitions">
+        <span class="nav-icon" aria-hidden="true">📖</span>
+        <span class="nav-text" data-i18n="nav.definitions">Definitions</span>
+      </button>
       <button class="nav-link" data-view="devotional">
         <span class="nav-icon" aria-hidden="true">❧</span>
         <span class="nav-text" data-i18n="nav.devotional">Devotional</span>
@@ -356,6 +368,26 @@
             <select id="bible-version"></select>
           </label>
         </div>
+
+        <!-- listen: reads the chapter aloud with the browser's speech voice -->
+        <div id="bible-audio" class="bible-audio" hidden>
+          <button type="button" id="bible-listen" class="bible-audio-btn bible-audio-play">
+            <span class="bible-audio-icon" aria-hidden="true">▶</span>
+            <span id="bible-listen-label" data-i18n="bible.listen">Listen</span>
+          </button>
+          <button type="button" id="bible-listen-stop" class="bible-audio-btn bible-audio-stop" hidden data-i18n="bible.stop">Stop</button>
+          <label class="bible-audio-rate">
+            <span data-i18n="bible.speed">Speed</span>
+            <select id="bible-audio-rate">
+              <option value="0.8">0.8×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.25">1.25×</option>
+              <option value="1.5">1.5×</option>
+            </select>
+          </label>
+          <span id="bible-audio-note" class="bible-audio-note" hidden data-i18n="bible.audioUnsupported">Audio isn’t available in this browser.</span>
+        </div>
+
         <details id="chapter-guide" class="chapter-guide">
           <summary class="chapter-guide-summary">
             <span class="chapter-guide-title" data-i18n="bible.chapterGuide">Chapter guide</span>
@@ -431,6 +463,44 @@
         <p id="search-ref" class="result-ref"></p>
       </div>
       <p id="search-status" class="status"></p>
+    </section>
+
+    <!-- CROSS-REFERENCES -->
+    <section id="view-crossref" class="view">
+      <p class="eyebrow" data-i18n="crossref.eyebrow">cross-references</p>
+      <h1 class="view-title" data-i18n="crossref.title">Cross-references</h1>
+      <p class="view-lede" data-i18n="crossref.lede">Enter any verse and see the passages that speak to it — prophecies, echoes, quotations, and parallels across the whole Bible. Tap one to open it in the reader.</p>
+      <form id="crossref-form" class="tool-form">
+        <input id="crossref-query" type="text" autocomplete="off" data-i18n-placeholder="crossref.placeholder" placeholder="John 3:16, Isaiah 53:5, Romans 8:28" required>
+        <button type="submit" data-i18n="crossref.submit">Find</button>
+      </form>
+      <div id="crossref-result" class="result-card" hidden>
+        <p id="crossref-for" class="crossref-for"></p>
+        <div id="crossref-list" class="crossref-list"></div>
+      </div>
+      <p id="crossref-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- BIBLE TIMELINE -->
+    <section id="view-timeline" class="view">
+      <p class="eyebrow" data-i18n="timeline.eyebrow">bible timeline</p>
+      <h1 class="view-title" data-i18n="timeline.title">Timeline of the whole Bible</h1>
+      <p class="view-lede" data-i18n="timeline.lede">The story of Scripture from creation to the early church, era by era. Dates are approximate and, for the earliest events, debated — they’re here to give shape to the story.</p>
+      <div id="timeline-eras" class="bible-timeline"></div>
+    </section>
+
+    <!-- DEFINITIONS -->
+    <section id="view-definitions" class="view">
+      <p class="eyebrow" data-i18n="definitions.eyebrow">definitions</p>
+      <h1 class="view-title" data-i18n="definitions.title">Definitions</h1>
+      <p class="view-lede" data-i18n="definitions.lede">Look up any biblical or theological term — grace, covenant, atonement, the Trinity — in plain language, with its roots and a key verse.</p>
+      <form id="definitions-form" class="tool-form">
+        <input id="definitions-term" type="text" autocomplete="off" data-i18n-placeholder="definitions.placeholder" placeholder="grace, justification, covenant…" required>
+        <button type="submit" data-i18n="definitions.submit">Define</button>
+      </form>
+      <div id="definitions-common" class="definitions-common"></div>
+      <div id="definitions-result" class="result-card prose" hidden></div>
+      <p id="definitions-status" class="status" role="status" aria-live="polite"></p>
     </section>
 
     <!-- DEVOTIONAL -->
@@ -516,6 +586,13 @@
       <div id="apologetics-road" class="apologetics-road"></div>
 
       <button type="button" id="apologetics-reset" class="plan-reset" data-i18n="apologetics.resetProgress">Reset my progress</button>
+
+      <!-- ===================== INVESTIGATE CHRISTIANITY ===================== -->
+      <div class="apolo-feature" id="investigate-christianity">
+        <h2 class="settings-heading" data-i18n="investigate.heading">Investigate Christianity</h2>
+        <p class="settings-hint" data-i18n="investigate.intro">Weigh the evidence for yourself, the way you’d examine any claim. Each line of investigation opens a fair, detailed case — the evidence, the strongest objections, and what it does and doesn’t prove.</p>
+        <div id="investigate-list" class="objections-list"></div>
+      </div>
 
       <!-- free-form sandbox -->
       <h2 class="settings-heading road-ask-heading" data-i18n="apologetics.askHeading">Ask your own question</h2>

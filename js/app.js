@@ -335,10 +335,15 @@
     });
     // entering the Bible always starts back at the two testaments
     if (name === 'bible') resetBibleBrowser();
+    // any narration stops when you leave the Bible
+    if (name !== 'bible' && typeof bibleAudio !== 'undefined') bibleAudio.reset();
     // entering Bible plans always starts at the plan chooser
     if (name === 'plans') showPlansScreen('grid');
     // entering the Road always opens on the world map
     if (name === 'apologetics') { apoloStage = null; renderApologetics(); }
+    // the timeline and definitions build their static content on first view
+    if (name === 'timeline') renderBibleTimeline();
+    if (name === 'definitions') renderCommonTerms();
     // keep the fixed progress bar from lingering over other views
     applyReadingPrefs();
     closeSidebar();
@@ -752,6 +757,8 @@
       var q = document.getElementById('bible-book-query');
       if (q) q.value = '';
     }
+    // leaving the chapter reader stops any narration in progress
+    if (name !== 'reader' && typeof bibleAudio !== 'undefined') bibleAudio.reset();
     updateBibleCrumbs();
     applyReadingPrefs();
   }
@@ -1079,9 +1086,131 @@
     });
     populateVersePicker(verses);
     applyReadingPrefs();
+    bibleAudio.reset();               // a fresh chapter starts fresh audio
+    bibleAudio.show(verses.length > 0);
     // let the new cards lay out before the progress bar measures them
     if (window.requestAnimationFrame) window.requestAnimationFrame(updateReadingProgress);
   }
+
+  /* ---------- listen: read the chapter aloud (Web Speech API) ----------
+     Reads each verse in turn using the browser's own voices — no network, no
+     backend. Highlights the verse being spoken, follows the language setting,
+     and degrades to a quiet note where speech synthesis isn't available. */
+  var bibleAudio = (function () {
+    var synth = window.speechSynthesis;
+    var supported = !!synth && typeof window.SpeechSynthesisUtterance === 'function';
+    var bar, playBtn, playIcon, playLabel, stopBtn, rateSel, note;
+    var order = [], idx = 0, playing = false, paused = false;
+
+    function els() {
+      if (bar) return;
+      bar = document.getElementById('bible-audio');
+      playBtn = document.getElementById('bible-listen');
+      playIcon = playBtn && playBtn.querySelector('.bible-audio-icon');
+      playLabel = document.getElementById('bible-listen-label');
+      stopBtn = document.getElementById('bible-listen-stop');
+      rateSel = document.getElementById('bible-audio-rate');
+      note = document.getElementById('bible-audio-note');
+    }
+
+    function langTag() {
+      var c = currentLang;
+      return c === 'en' ? 'en-US' : (c === 'zh' ? 'zh-CN' : (c === 'zh-TW' ? 'zh-TW' : c));
+    }
+    function pickVoice(tag) {
+      var voices = synth.getVoices() || [];
+      var base = tag.split('-')[0];
+      var exact = voices.filter(function (v) { return v.lang && v.lang.toLowerCase() === tag.toLowerCase(); })[0];
+      return exact || voices.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf(base) === 0; })[0] || null;
+    }
+
+    function markVerse(on, n) {
+      var cards = document.querySelectorAll('#bible-verses .verse-card');
+      for (var i = 0; i < cards.length; i++) cards[i].classList.remove('is-speaking');
+      if (on && typeof n === 'number' && cards[n]) {
+        cards[n].classList.add('is-speaking');
+        cards[n].scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    }
+
+    function setPlayingUI(state) {
+      els();
+      if (playIcon) playIcon.textContent = state ? '⏸' : '▶';
+      if (playLabel) playLabel.textContent = state ? t('bible.pause') : (paused ? t('bible.resume') : t('bible.listen'));
+      if (stopBtn) stopBtn.hidden = !(state || paused);
+    }
+
+    function speakFrom(i) {
+      if (i >= order.length) { finish(); return; }
+      idx = i;
+      var u = new window.SpeechSynthesisUtterance(order[i].text);
+      var tag = langTag();
+      u.lang = tag;
+      var v = pickVoice(tag);
+      if (v) u.voice = v;
+      u.rate = parseFloat(rateSel && rateSel.value) || 1;
+      u.onstart = function () { markVerse(true, order[i].cardIndex); };
+      u.onend = function () {
+        if (!playing) return;         // cancelled
+        speakFrom(i + 1);
+      };
+      synth.speak(u);
+    }
+
+    function finish() {
+      playing = false; paused = false;
+      markVerse(false);
+      setPlayingUI(false);
+      if (playLabel) playLabel.textContent = t('bible.listen');
+      if (stopBtn) stopBtn.hidden = true;
+    }
+
+    function build() {
+      order = [];
+      var cards = document.querySelectorAll('#bible-verses .verse-card');
+      for (var i = 0; i < cards.length; i++) {
+        var body = cards[i].querySelector('.verse-body');
+        var text = body ? body.textContent.trim() : '';
+        if (text) order.push({ text: text, cardIndex: i });
+      }
+    }
+
+    function start() {
+      build();
+      if (!order.length) return;
+      synth.cancel();
+      playing = true; paused = false;
+      setPlayingUI(true);
+      speakFrom(0);
+    }
+
+    return {
+      wire: function () {
+        els();
+        if (!bar) return;
+        if (!supported) {
+          if (playBtn) playBtn.hidden = true;
+          if (rateSel) rateSel.parentNode.hidden = true;
+          if (note) note.hidden = false;
+          return;
+        }
+        playBtn.addEventListener('click', function () {
+          if (!playing && !paused) { start(); return; }
+          if (playing && !paused) { synth.pause(); paused = true; playing = false; setPlayingUI(false); return; }
+          if (paused) { synth.resume(); paused = false; playing = true; setPlayingUI(true); }
+        });
+        stopBtn.addEventListener('click', function () { synth.cancel(); finish(); });
+        rateSel.addEventListener('change', function () {
+          // apply the new speed by restarting from the current verse
+          if (playing || paused) { synth.cancel(); playing = true; paused = false; setPlayingUI(true); speakFrom(idx); }
+        });
+        // some browsers load voices asynchronously
+        if (typeof synth.onvoiceschanged !== 'undefined') synth.onvoiceschanged = function () {};
+      },
+      show: function (on) { els(); if (bar) bar.hidden = !on; },
+      reset: function () { if (supported) window.speechSynthesis.cancel(); playing = false; paused = false; idx = 0; setPlayingUI(false); markVerse(false); }
+    };
+  })();
 
   function populateVersePicker(verses) {
     var select = document.getElementById('bible-verse-select');
@@ -2686,7 +2815,22 @@
     return out;
   }
 
+  /* A curated 30-day introduction for someone new to faith: the gospel first
+     (John, Mark, the cross and resurrection), then how to live it out. One
+     chapter a day, each a self-contained step. */
+  var NEW_BELIEVER_READINGS = [
+    ['John', 1], ['John', 3], ['Mark', 1], ['Luke', 15], ['John', 14],
+    ['Psalms', 23], ['Psalms', 51], ['Luke', 23], ['Luke', 24], ['John', 20],
+    ['Romans', 3], ['Romans', 5], ['Romans', 6], ['Romans', 8], ['Romans', 12],
+    ['Ephesians', 2], ['Philippians', 2], ['Philippians', 4], ['Colossians', 3],
+    ['Matthew', 5], ['Matthew', 6], ['Matthew', 7], ['1 Corinthians', 13],
+    ['Galatians', 5], ['James', 1], ['1 John', 1], ['1 John', 4],
+    ['1 Peter', 1], ['Acts', 2], ['Revelation', 21]
+  ];
+
   var PLANS = [
+    { id: 'newbeliever', labelKey: 'plans.newBeliever', hintKey: 'plans.newBelieverHint',
+      build: function () { return NEW_BELIEVER_READINGS.map(function (r) { return [{ book: r[0], chapter: r[1] }]; }); } },
     { id: 'year', labelKey: 'plans.year', hintKey: 'plans.yearHint',
       build: function () { return chunkInto(canonList(), 365); } },
     { id: 'chrono', labelKey: 'plans.chrono', hintKey: 'plans.chronoHint',
@@ -4095,12 +4239,239 @@
     }
   });
 
+  /* ---------- cross-references ----------
+     Enter a verse; reuse the verse-context endpoint (which already returns
+     crossRefs) and show just the linked references. */
+  (function wireCrossref() {
+    var form = document.getElementById('crossref-form');
+    if (!form) return;
+    var input = document.getElementById('crossref-query');
+    var result = document.getElementById('crossref-result');
+    var forEl = document.getElementById('crossref-for');
+    var list = document.getElementById('crossref-list');
+    var status = document.getElementById('crossref-status');
+    var btn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var q = input.value.trim();
+      if (!q) return;
+      var loc = parseRef(q);
+      if (!loc) { result.hidden = true; setStatus(status, t('crossref.badRef'), true); return; }
+      btn.disabled = true; btn.textContent = t('crossref.busy');
+      setStatus(status, t('crossref.busyStatus'), false);
+      requestCached('verse-context', { book: loc.book, chapter: loc.chapter, verse: loc.verse, version: currentVersion() })
+        .then(function (data) {
+          list.textContent = '';
+          var node = buildCrossRefs((data && data.crossRefs) || []);
+          forEl.textContent = t('crossref.for', { ref: loc.book + ' ' + loc.chapter + ':' + loc.verse });
+          if (node) { list.appendChild(node); result.hidden = false; setStatus(status, '', false); }
+          else { result.hidden = true; setStatus(status, t('crossref.none'), false); }
+        })
+        .catch(function (err) { result.hidden = true; setStatus(status, err.message, true); })
+        .then(function () { btn.disabled = false; btn.textContent = t('crossref.submit'); });
+    });
+  })();
+
+  /* ---------- definitions ---------- */
+  wireForm({
+    formId: 'definitions-form',
+    resultId: 'definitions-result',
+    statusId: 'definitions-status',
+    path: 'define-term',
+    submitKey: 'definitions.submit',
+    busyKey: 'definitions.busy',
+    busyStatusKey: 'definitions.busyStatus',
+    collect: textField('definitions-term', 'term'),
+    render: function (data, result) { result.textContent = cleanAIText((data.definition || '').trim()); }
+  });
+
+  var COMMON_TERMS = [
+    'Grace', 'Faith', 'Gospel', 'Covenant', 'Justification', 'Sanctification',
+    'Atonement', 'Redemption', 'Repentance', 'Salvation', 'Trinity', 'Incarnation',
+    'Righteousness', 'Mercy', 'Holiness', 'Resurrection', 'Kingdom of God', 'Messiah'
+  ];
+  function renderCommonTerms() {
+    var wrap = document.getElementById('definitions-common');
+    if (!wrap || wrap.dataset.built) return;
+    wrap.dataset.built = '1';
+    wrap.appendChild(txt('p', 'definitions-common-label', t('definitions.commonHeading')));
+    var row = el('div', 'definitions-chips');
+    COMMON_TERMS.forEach(function (term) {
+      var b = txt('button', 'definitions-chip', term);
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        var input = document.getElementById('definitions-term');
+        input.value = term;
+        document.getElementById('definitions-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      });
+      row.appendChild(b);
+    });
+    wrap.appendChild(row);
+  }
+
+  /* ---------- whole-Bible timeline (curated) ----------
+     A fixed, reliable overview from creation to the new creation. Dates are
+     approximate; the earliest are debated. Each event links into the reader. */
+  var BIBLE_TIMELINE = [
+    { era: 'Beginnings', dates: 'Before recorded history', events: [
+      { title: 'Creation of the heavens and the earth', ref: 'Genesis 1' },
+      { title: 'The fall of humanity', ref: 'Genesis 3' },
+      { title: 'Noah and the flood', ref: 'Genesis 7' },
+      { title: 'The tower of Babel', ref: 'Genesis 11' }
+    ]},
+    { era: 'The Patriarchs', dates: 'c. 2100–1800 BC', events: [
+      { title: 'God calls Abraham', ref: 'Genesis 12' },
+      { title: 'The covenant with Abraham', ref: 'Genesis 15' },
+      { title: 'Isaac, Jacob, and the twelve tribes', ref: 'Genesis 28' },
+      { title: 'Joseph rises in Egypt', ref: 'Genesis 41' }
+    ]},
+    { era: 'Exodus & Wilderness', dates: 'c. 1446 or 1250 BC', events: [
+      { title: 'Moses and the burning bush', ref: 'Exodus 3' },
+      { title: 'The Passover and the Exodus from Egypt', ref: 'Exodus 12' },
+      { title: 'The Ten Commandments at Sinai', ref: 'Exodus 20' },
+      { title: 'Forty years in the wilderness', ref: 'Numbers 14' }
+    ]},
+    { era: 'Conquest & Judges', dates: 'c. 1400–1050 BC', events: [
+      { title: 'Joshua leads Israel into Canaan', ref: 'Joshua 1' },
+      { title: 'The fall of Jericho', ref: 'Joshua 6' },
+      { title: 'The era of the judges', ref: 'Judges 2' },
+      { title: 'Ruth and Boaz', ref: 'Ruth 1' }
+    ]},
+    { era: 'The United Kingdom', dates: 'c. 1050–930 BC', events: [
+      { title: 'Saul, Israel’s first king', ref: '1 Samuel 10' },
+      { title: 'David anointed king', ref: '1 Samuel 16' },
+      { title: 'Solomon’s wisdom and reign', ref: '1 Kings 3' },
+      { title: 'The temple in Jerusalem is built', ref: '1 Kings 6' }
+    ]},
+    { era: 'The Divided Kingdom', dates: '930–586 BC', events: [
+      { title: 'The kingdom splits: Israel and Judah', ref: '1 Kings 12' },
+      { title: 'Elijah confronts the prophets of Baal', ref: '1 Kings 18' },
+      { title: 'Assyria destroys the northern kingdom (722 BC)', ref: '2 Kings 17' },
+      { title: 'The prophets warn and comfort', ref: 'Isaiah 1' }
+    ]},
+    { era: 'Exile', dates: '586–538 BC', events: [
+      { title: 'Babylon destroys Jerusalem and the temple', ref: '2 Kings 25' },
+      { title: 'Daniel in Babylon', ref: 'Daniel 1' },
+      { title: 'Ezekiel’s visions among the exiles', ref: 'Ezekiel 1' }
+    ]},
+    { era: 'Return & Restoration', dates: '538–430 BC', events: [
+      { title: 'Cyrus lets the exiles return', ref: 'Ezra 1' },
+      { title: 'The temple is rebuilt', ref: 'Ezra 6' },
+      { title: 'Nehemiah rebuilds Jerusalem’s walls', ref: 'Nehemiah 2' },
+      { title: 'Esther saves her people', ref: 'Esther 4' },
+      { title: 'Malachi, the last Old Testament prophet', ref: 'Malachi 1' }
+    ]},
+    { era: 'Between the Testaments', dates: 'c. 430–5 BC', events: [
+      { title: 'Roughly 400 years with no recorded prophet' },
+      { title: 'Greek then Roman rule over Judea' },
+      { title: 'The Maccabean revolt and rededicated temple' }
+    ]},
+    { era: 'The Life of Jesus', dates: 'c. 5 BC–30 AD', events: [
+      { title: 'The birth of Jesus', ref: 'Luke 2' },
+      { title: 'Jesus begins his ministry', ref: 'Mark 1' },
+      { title: 'The Sermon on the Mount', ref: 'Matthew 5' },
+      { title: 'The crucifixion', ref: 'Luke 23' },
+      { title: 'The resurrection', ref: 'Luke 24' }
+    ]},
+    { era: 'The Early Church', dates: 'c. 30–95 AD', events: [
+      { title: 'Pentecost and the birth of the church', ref: 'Acts 2' },
+      { title: 'The gospel spreads beyond Jerusalem', ref: 'Acts 8' },
+      { title: 'Paul’s missionary journeys and letters', ref: 'Acts 13' },
+      { title: 'The gospel reaches Rome', ref: 'Acts 28' }
+    ]},
+    { era: 'The Consummation', dates: 'Still to come', events: [
+      { title: 'The return of Christ and the final judgment', ref: 'Revelation 20' },
+      { title: 'A new heaven and a new earth', ref: 'Revelation 21' }
+    ]}
+  ];
+
+  function renderBibleTimeline() {
+    var wrap = document.getElementById('timeline-eras');
+    if (!wrap || wrap.dataset.built) return;
+    wrap.dataset.built = '1';
+    BIBLE_TIMELINE.forEach(function (era) {
+      var card = el('div', 'tl-era');
+      var head = el('div', 'tl-era-head');
+      head.appendChild(txt('span', 'tl-era-name', era.era));
+      head.appendChild(txt('span', 'tl-era-dates', era.dates));
+      card.appendChild(head);
+      var events = el('div', 'tl-era-events');
+      era.events.forEach(function (ev) {
+        var row = el('div', 'tl-era-event');
+        row.appendChild(txt('span', 'tl-event-dot', ''));
+        row.appendChild(txt('span', 'tl-event-title', ev.title));
+        var loc = ev.ref ? parseRef(ev.ref) : null;
+        if (loc) {
+          var b = txt('button', 'tl-event-ref', ev.ref);
+          b.type = 'button';
+          b.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
+          row.appendChild(b);
+        }
+        events.appendChild(row);
+      });
+      card.appendChild(events);
+      wrap.appendChild(card);
+    });
+  }
+
+  /* ---------- investigate Christianity (in the Road) ----------
+     Curated lines of inquiry; each lazy-loads a full, fair case from the
+     existing evangelism-prep endpoint. */
+  var INVESTIGATE_TOPICS = [
+    'Is there good evidence that God exists?',
+    'Did Jesus of Nazareth really exist as a historical figure?',
+    'What is the historical evidence for the resurrection of Jesus?',
+    'Can the New Testament documents be trusted as history?',
+    'Did Jesus actually claim to be God?',
+    'Does the fine-tuning of the universe point to a designer?',
+    'Where does objective morality come from?',
+    'How reliable are the eyewitness sources behind the Gospels?',
+    'What do non-Christian sources say about Jesus?',
+    'Do the Messianic prophecies carry real evidential weight?',
+    'How did the universe begin, and what does that imply?',
+    'If God is real and good, why is there so much suffering?'
+  ];
+  function renderInvestigate() {
+    var list = document.getElementById('investigate-list');
+    if (!list || list.dataset.built) return;
+    list.dataset.built = '1';
+    INVESTIGATE_TOPICS.forEach(function (q) {
+      var row = el('details', 'apolo-objection');
+      var head = el('summary', 'apolo-objection-head');
+      head.appendChild(txt('span', 'apolo-objection-q', q));
+      row.appendChild(head);
+      var body = el('div', 'apolo-objection-body');
+      row.appendChild(body);
+      var loaded = false;
+      row.addEventListener('toggle', function () {
+        if (row.open && !loaded) {
+          loaded = true;
+          body.appendChild(txt('p', 'verse-panel-note', t('apologetics.preparing')));
+          requestCached('evangelism-prep', { scenario: q })
+            .then(function (data) {
+              body.textContent = '';
+              body.appendChild(txt('div', 'road-station-answer prose', cleanAIText(((data && data.prep) || '').trim())));
+            })
+            .catch(function (err) {
+              body.textContent = '';
+              body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+            });
+        }
+      });
+      warmOnIntent(row, function () { requestCached('evangelism-prep', { scenario: q }); });
+      list.appendChild(row);
+    });
+  }
+  renderInvestigate();
+
   /* ---------- start ---------- */
 
   applyTheme(currentTheme());   // the <head> set the attribute; this syncs the toggle + storage
   resetBibleBrowser();
   renderVersionOptions();
   wireSettings();
+  bibleAudio.wire();
   initPush();
   applyReadingPrefs();
 
