@@ -503,7 +503,6 @@
       <p class="eyebrow" data-i18n="timeline.eyebrow">bible timeline</p>
       <h1 class="view-title" data-i18n="timeline.title">Timeline of the whole Bible</h1>
       <p class="view-lede" data-i18n="timeline.lede">The story of Scripture from creation to the early church. Dates are approximate and, for the earliest events, debated — they’re here to give shape to the story.</p>
-      <p class="timeline-source"><a href="https://biblehub.com/timeline/" target="_blank" rel="noopener" data-i18n="timeline.source">See the full dated timeline at BibleHub →</a></p>
 
       <h2 class="timeline-subhead" data-i18n="timeline.datedHeading">Key dated events</h2>
       <div id="timeline-detailed" class="timeline-detailed"></div>
@@ -553,7 +552,21 @@
         <button type="submit">Generate</button>
       </form>
       <div id="devotional-result" class="result-card prose" hidden></div>
+      <button type="button" id="devotional-save" class="devo-save-btn" hidden data-i18n="devotional.save">Save to My Devotionals</button>
       <p id="devotional-status" class="status"></p>
+
+      <!-- write your own devotional -->
+      <h2 class="devo-subhead" data-i18n="devotional.ownHeading">Write your own devotional</h2>
+      <p class="view-lede" data-i18n="devotional.ownLede">Compose a devotional in your own words — give it a title, then your reflection. It’s saved on this device.</p>
+      <form id="devotional-own-form" class="devo-own-form">
+        <input id="devo-own-title" type="text" autocomplete="off" data-i18n-placeholder="devotional.ownTitlePh" placeholder="Title (e.g. Trusting God with tomorrow)" required>
+        <textarea id="devo-own-body" rows="7" data-i18n-placeholder="devotional.ownBodyPh" placeholder="Write your reflection, prayer, and the verse it’s built on…" required></textarea>
+        <button type="submit" data-i18n="devotional.ownSave">Save devotional</button>
+      </form>
+
+      <!-- saved devotionals -->
+      <h2 class="devo-subhead" data-i18n="devotional.mineHeading">My devotionals</h2>
+      <div id="devotional-mine" class="devo-mine"></div>
     </section>
 
     <!-- BIBLE PLANS -->
@@ -584,6 +597,27 @@
         <div id="plan-days" class="plan-days"></div>
 
         <button type="button" id="plan-reset" class="plan-reset" data-i18n="plans.resetPlan">Reset this plan</button>
+        <button type="button" id="plan-delete" class="plan-reset plan-delete" hidden data-i18n="plans.deletePlan">Delete this plan</button>
+      </div>
+
+      <!-- screen 3: build your own plan -->
+      <div id="plan-builder" class="plans-screen" hidden>
+        <button type="button" id="plan-build-back" class="bible-back" data-i18n="plans.allPlans">All plans</button>
+        <h2 class="plan-detail-title" data-i18n="plans.buildTitle">Build your own plan</h2>
+        <p class="view-lede" data-i18n="plans.buildLede">Pick what to read and how long to take. We’ll split it into even daily portions and keep your place.</p>
+        <form id="plan-build-form" class="devo-own-form plan-build-form">
+          <input id="plan-build-title" type="text" autocomplete="off" data-i18n-placeholder="plans.buildTitlePh" placeholder="Name your plan (e.g. My summer in the Gospels)" required>
+          <label class="bible-control">
+            <span class="bible-control-label" data-i18n="plans.buildScope">What to read</span>
+            <select id="plan-build-scope"></select>
+          </label>
+          <label class="bible-control">
+            <span class="bible-control-label" data-i18n="plans.buildDays">Over how many days</span>
+            <input id="plan-build-days" type="number" min="1" max="1189" value="30">
+          </label>
+          <button type="submit" data-i18n="plans.buildCreate">Create plan</button>
+        </form>
+        <p id="plan-build-status" class="status" role="status" aria-live="polite"></p>
       </div>
 
       <p id="plans-status" class="status" role="status" aria-live="polite"></p>
@@ -703,6 +737,10 @@
       <h1 class="view-title" data-i18n="tips.title">Tips for new believers</h1>
       <p class="view-lede" data-i18n="tips.lede">If following Jesus is new to you, start here. A few simple things help faith take root and grow.</p>
       <div id="tips-list" class="tips-list"></div>
+
+      <h2 class="tips-subhead" data-i18n="tips.studyHeading">How to study the Bible</h2>
+      <p class="view-lede" data-i18n="tips.studyLede">Reading is where it starts; studying is how it sinks in. Here’s a simple method anyone can use.</p>
+      <div id="study-list" class="tips-list"></div>
     </section>
 
     <!-- SETTINGS -->

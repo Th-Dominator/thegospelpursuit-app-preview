@@ -1746,6 +1746,39 @@ button.verse-num:hover { text-decoration: underline; }
 .faq-a { padding: 0 14px 12px 30px; display: flex; flex-direction: column; gap: 8px; }
 .faq-a-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink-soft); }
 
+/* ---------- bible plans: catalog, categories, builder ---------- */
+.plan-cat-head {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  margin: 26px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--divider);
+}
+.plan-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.plan-build-card {
+  border-style: dashed;
+  border-color: var(--gold);
+  background: var(--gold-tint);
+}
+.plan-build-card .feature-label { color: var(--gold-dark); }
+.plan-delete { margin-left: 10px; }
+.plan-delete:hover { border-color: #d9534f; color: #d9534f; }
+.plan-build-form select,
+.plan-build-form input[type="number"] {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+}
+
 /* ---------- bible plans: detail + day list ---------- */
 
 .plan-detail-title {
@@ -1953,6 +1986,12 @@ button.verse-num:hover { text-decoration: underline; }
 /* ---------- tips for new believers ---------- */
 
 .tips-list { display: flex; flex-direction: column; gap: 12px; }
+.tips-subhead {
+  margin: 34px 0 6px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+}
 .tip-card {
   display: flex;
   gap: 16px;
@@ -2168,6 +2207,26 @@ button.verse-num:hover { text-decoration: underline; }
 .toast-icon { font-size: 20px; line-height: 1.2; flex: none; }
 .toast-title { margin: 0; font-size: 14px; font-weight: 600; }
 .toast-body { margin: 2px 0 0; font-size: 13px; opacity: 0.85; }
+
+/* ---------- badge celebration: green flash + confetti ---------- */
+.celebrate-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 45%, rgba(90, 230, 150, 0.85), rgba(28, 122, 75, 0.75) 60%, rgba(20, 90, 55, 0.6));
+  transition: opacity 0.18s ease-out;
+}
+.celebrate-flash.is-on { opacity: 1; }
+.celebrate-confetti {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 95;
+  pointer-events: none;
+}
 
 /* ---------- home dashboard: streak totals + badges ---------- */
 
@@ -2939,6 +2998,95 @@ button.verse-num:hover { text-decoration: underline; }
   .devo-len-opt { flex-direction: row; align-items: baseline; gap: 8px; }
 }
 
+/* save / write-your-own / saved devotionals */
+.devo-save-btn {
+  margin: 10px 0 0;
+  padding: 10px 16px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--gold-tint);
+  color: var(--gold-dark);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.devo-save-btn:hover:not(:disabled) { background: var(--gold); color: #1a1205; }
+.devo-save-btn:disabled { opacity: 0.7; cursor: default; }
+.devo-subhead {
+  margin: 34px 0 6px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+}
+.devo-own-form { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 0; }
+.devo-own-form input,
+.devo-own-form textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+}
+.devo-own-form textarea { resize: vertical; line-height: 1.6; }
+.devo-own-form input:focus, .devo-own-form textarea:focus { outline: none; border-color: var(--gold); }
+.devo-own-form button {
+  align-self: flex-start;
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--gold-dark);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.devo-own-form button:hover { filter: brightness(1.06); }
+.devo-mine { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.devo-mine-empty { color: var(--ink-muted); font-size: 15px; }
+.devo-saved {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.devo-saved-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.devo-saved-head::-webkit-details-marker { display: none; }
+.devo-saved-title { font-weight: 600; font-size: 16px; }
+.devo-saved-tag {
+  flex: none;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gold-dark);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.devo-saved-body { padding: 0 14px 14px; }
+.devo-saved-text { white-space: pre-wrap; margin-bottom: 12px; }
+.devo-saved-delete {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.devo-saved-delete:hover { border-color: #d9534f; color: #d9534f; }
+
 /* ============================================================
    The Road to Apologetics — Candy-Crush world map + retro lessons
    ============================================================ */
@@ -3322,6 +3470,20 @@ button.verse-num:hover { text-decoration: underline; }
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
+.definitions-picker { margin: 0 0 14px; }
+.definitions-select {
+  width: 100%;
+  max-width: 360px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.definitions-select:focus { outline: none; border-color: var(--gold); }
 .definitions-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .definitions-chip {
   padding: 7px 14px;
@@ -3532,9 +3694,37 @@ button.verse-num:hover { text-decoration: underline; }
   cursor: pointer;
 }
 .tl-row-ref:hover { border-color: var(--gold); background: var(--gold-tint); }
+
+/* period bands + a continuous spine through the dots (BibleHub-style) */
+.tl-period { margin: 0; }
+.tl-period-name {
+  margin: 20px 0 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 7px 12px;
+  background: var(--gold-tint);
+  border-left: 4px solid var(--gold);
+  border-radius: 8px;
+}
+.tl-period:first-child .tl-period-name { margin-top: 0; }
+.tl-period-rows { position: relative; }
+.tl-period-rows::before {
+  content: '';
+  position: absolute;
+  top: 14px; bottom: 14px;
+  left: 108px;
+  width: 2px;
+  background: var(--divider);
+}
+.tl-period-rows .tl-row-dot { position: relative; z-index: 1; }
 @media (max-width: 460px) {
   .tl-row { grid-template-columns: 72px 14px 1fr; }
   .tl-row-date { font-size: 12px; }
+  .tl-period-rows::before { left: 82px; }
 }
 
 /* new-believer plan: which-translation note */

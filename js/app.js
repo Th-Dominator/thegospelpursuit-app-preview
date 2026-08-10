@@ -345,6 +345,7 @@
     // the timeline and definitions build their static content on first view
     if (name === 'timeline') { renderDetailedTimeline(); renderBibleTimeline(); }
     if (name === 'definitions') renderCommonTerms();
+    if (name === 'devotional') renderMyDevotionals();
     // the cross-reference arc diagram loads its data on first view
     if (name === 'crossref') xrefViz.open();
     // the badge collection is huge — build it only when its tab is opened
@@ -2875,15 +2876,154 @@
     ['1 Peter', 1], ['Acts', 2], ['Revelation', 21]
   ];
 
-  var PLANS = [
-    { id: 'newbeliever', labelKey: 'plans.newBeliever', hintKey: 'plans.newBelieverHint',
-      build: function () { return NEW_BELIEVER_READINGS.map(function (r) { return [{ book: r[0], chapter: r[1] }]; }); } },
-    { id: 'year', labelKey: 'plans.year', hintKey: 'plans.yearHint',
-      build: function () { return chunkInto(canonList(), 365); } },
-    { id: 'chrono', labelKey: 'plans.chrono', hintKey: 'plans.chronoHint',
-      build: function () { return chunkInto(orderedList(CHRONO_ORDER), 365); } },
-    { id: 'book', labelKey: 'plans.book', hintKey: 'plans.bookHint', book: true }
-  ];
+  // book-name helpers for the plan catalog
+  function booksInTestament(idx) {
+    var out = [];
+    if (BIBLE_BOOKS[idx]) BIBLE_BOOKS[idx].books.forEach(function (b) { out.push(b.name); });
+    return out;
+  }
+  function everyChapterOneDay(names) {
+    return orderedList(names).map(function (x) { return [x]; });
+  }
+  function daysPlan(names, days) { return chunkInto(orderedList(names), days); }
+
+  var GOSPELS = ['Matthew', 'Mark', 'Luke', 'John'];
+  var PENTATEUCH = ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'];
+  var WISDOM_BOOKS = ['Job', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon'];
+  var MAJOR_PROPHETS = ['Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel'];
+  var MINOR_PROPHETS = ['Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'];
+  var PAULINE = ['Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon'];
+  var GENERAL_EPISTLES = ['Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude'];
+
+  // The classic M'Cheyne shape: four readings a day, the whole Bible in a year.
+  // (Adapted: the Bible is split into four streams read in parallel.)
+  function mcheynePlan() {
+    var all = canonList();
+    var q = Math.ceil(all.length / 4);
+    var streams = [all.slice(0, q), all.slice(q, 2 * q), all.slice(2 * q, 3 * q), all.slice(3 * q)];
+    var days = 365;
+    var chunked = streams.map(function (s) { return chunkInto(s, days); });
+    var out = [];
+    for (var d = 0; d < days; d++) {
+      var day = [];
+      chunked.forEach(function (c) { if (c[d]) day = day.concat(c[d]); });
+      if (day.length) out.push(day);
+    }
+    return out;
+  }
+
+  /* The full plan catalog — 100+ reading plans in categories. The four original
+     plans keep their i18n labels and stable ids so saved progress carries over;
+     the generated plans use plain English labels (their day counts are computed
+     live). Categories are i18n keys so the section headings still translate. */
+  function buildPlansCatalog() {
+    var plans = [];
+    function add(id, category, label, hint, build) {
+      plans.push({ id: id, category: category, label: label, hint: hint, build: build });
+    }
+
+    // ---- Start here ----
+    plans.push({ id: 'newbeliever', category: 'plans.catStart', labelKey: 'plans.newBeliever', hintKey: 'plans.newBelieverHint',
+      build: function () { return NEW_BELIEVER_READINGS.map(function (r) { return [{ book: r[0], chapter: r[1] }]; }); } });
+
+    // ---- Whole Bible ----
+    plans.push({ id: 'year', category: 'plans.catWholeBible', labelKey: 'plans.year', hintKey: 'plans.yearHint',
+      build: function () { return chunkInto(canonList(), 365); } });
+    plans.push({ id: 'chrono', category: 'plans.catWholeBible', labelKey: 'plans.chrono', hintKey: 'plans.chronoHint',
+      build: function () { return chunkInto(orderedList(CHRONO_ORDER), 365); } });
+    [90, 120, 150, 180, 270, 540, 730].forEach(function (d) {
+      add('wb' + d, 'plans.catWholeBible', 'Whole Bible in ' + d + ' days', 'Canonical order', function () { return chunkInto(canonList(), d); });
+    });
+    add('mcheyne', 'plans.catWholeBible', "M'Cheyne Reading Plan", 'Four readings a day, whole Bible in a year', mcheynePlan);
+    add('fiveday', 'plans.catWholeBible', '5-Day Bible Reading Program', 'The whole Bible, built for five days a week', function () { return chunkInto(canonList(), 260); });
+    add('chrono180', 'plans.catWholeBible', 'Chronological in 180 days', 'In the order events happened', function () { return chunkInto(orderedList(CHRONO_ORDER), 180); });
+    add('chrono730', 'plans.catWholeBible', 'Chronological in 2 years', 'In the order events happened', function () { return chunkInto(orderedList(CHRONO_ORDER), 730); });
+
+    // ---- New Testament ----
+    [30, 45, 60, 90, 120, 180].forEach(function (d) {
+      add('nt' + d, 'plans.catNT', 'New Testament in ' + d + ' days', 'All 27 books', function () { return daysPlan(booksInTestament(1), d); });
+    });
+
+    // ---- Old Testament ----
+    [120, 180, 270, 365, 540].forEach(function (d) {
+      add('ot' + d, 'plans.catOT', 'Old Testament in ' + d + ' days', 'All 39 books', function () { return daysPlan(booksInTestament(0), d); });
+    });
+
+    // ---- Gospels & the life of Jesus ----
+    [21, 30, 40, 60].forEach(function (d) {
+      add('gospels' + d, 'plans.catGospels', 'The Gospels in ' + d + ' days', 'Matthew, Mark, Luke, John', function () { return daysPlan(GOSPELS, d); });
+    });
+    add('lifeofchrist', 'plans.catGospels', 'The Life of Christ', 'The four Gospels, one chapter a day', function () { return everyChapterOneDay(GOSPELS); });
+    add('john21', 'plans.catGospels', 'John in 21 days', 'One chapter a day', function () { return everyChapterOneDay(['John']); });
+    add('mark16', 'plans.catGospels', 'Mark in 16 days', 'The fast-paced Gospel, a chapter a day', function () { return everyChapterOneDay(['Mark']); });
+    add('luke24', 'plans.catGospels', 'Luke in 24 days', 'One chapter a day', function () { return everyChapterOneDay(['Luke']); });
+    add('matthew28', 'plans.catGospels', 'Matthew in 28 days', 'One chapter a day', function () { return everyChapterOneDay(['Matthew']); });
+
+    // ---- Psalms & wisdom ----
+    [30, 60, 90, 150].forEach(function (d) {
+      add('psalms' + d, 'plans.catWisdom', 'Psalms in ' + d + ' days', '150 psalms of prayer and praise', function () { return daysPlan(['Psalms'], d); });
+    });
+    add('proverbs31', 'plans.catWisdom', 'Proverbs in a month', 'A chapter of wisdom each day', function () { return everyChapterOneDay(['Proverbs']); });
+    add('wisdom90', 'plans.catWisdom', 'Wisdom & Poetry in 90 days', 'Job, Psalms, Proverbs, Ecclesiastes, Song', function () { return daysPlan(WISDOM_BOOKS, 90); });
+    add('ecclesiastes12', 'plans.catWisdom', 'Ecclesiastes in 12 days', 'One chapter a day', function () { return everyChapterOneDay(['Ecclesiastes']); });
+    add('job21', 'plans.catWisdom', 'Job in 3 weeks', 'Reading through suffering and hope', function () { return chunkInto(orderedList(['Job']), 21); });
+    add('psprov60', 'plans.catWisdom', 'Psalms & Proverbs in 60 days', 'Prayer and wisdom side by side', function () { return daysPlan(['Psalms', 'Proverbs'], 60); });
+
+    // ---- Sections & topics ----
+    add('pentateuch30', 'plans.catSections', 'The Torah in 30 days', 'Genesis through Deuteronomy', function () { return daysPlan(PENTATEUCH, 30); });
+    add('pentateuch60', 'plans.catSections', 'The Torah in 60 days', 'The five books of Moses', function () { return daysPlan(PENTATEUCH, 60); });
+    add('majorprophets60', 'plans.catSections', 'The Major Prophets in 60 days', 'Isaiah to Daniel', function () { return daysPlan(MAJOR_PROPHETS, 60); });
+    add('minorprophets24', 'plans.catSections', 'The Minor Prophets in 24 days', 'Hosea to Malachi', function () { return daysPlan(MINOR_PROPHETS, 24); });
+    add('pauline45', 'plans.catSections', "Paul's Letters in 45 days", 'Romans through Philemon', function () { return daysPlan(PAULINE, 45); });
+    add('general21', 'plans.catSections', 'The General Epistles in 21 days', 'Hebrews through Jude', function () { return daysPlan(GENERAL_EPISTLES, 21); });
+    add('acts28', 'plans.catSections', 'Acts in 28 days', 'The birth of the church', function () { return everyChapterOneDay(['Acts']); });
+    add('genesis50', 'plans.catSections', 'Genesis in 50 days', 'Where the whole story begins', function () { return everyChapterOneDay(['Genesis']); });
+    add('romans16', 'plans.catSections', 'Romans in 16 days', "Paul's masterwork on the gospel", function () { return everyChapterOneDay(['Romans']); });
+    add('isaiah66', 'plans.catSections', 'Isaiah in 66 days', 'The gospel foretold', function () { return everyChapterOneDay(['Isaiah']); });
+    add('revelation22', 'plans.catSections', 'Revelation in 22 days', 'How the story ends', function () { return everyChapterOneDay(['Revelation']); });
+
+    // ---- One book at a time (all 66) ----
+    BIBLE_BOOKS.forEach(function (g) {
+      g.books.forEach(function (b) {
+        add('book:' + b.name, 'plans.catBooks', b.name, b.chapters + (b.chapters > 1 ? ' chapters, one a day' : ' chapter'),
+          (function (name) { return function () { return everyChapterOneDay([name]); }; })(b.name));
+      });
+    });
+
+    return plans;
+  }
+
+  var PLANS = buildPlansCatalog();
+
+  /* ---- custom, build-your-own plans (device-local) ---- */
+  var CUSTOM_PLANS_KEY = 'tgp.customPlans';
+  function loadCustomPlans() {
+    try { var a = JSON.parse(window.localStorage.getItem(CUSTOM_PLANS_KEY)); return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function saveCustomPlans(a) {
+    try { window.localStorage.setItem(CUSTOM_PLANS_KEY, JSON.stringify(a)); } catch (e) { /* view-only */ }
+  }
+  // turn a saved custom plan's scope into a flat chapter list
+  function customScopeList(scope) {
+    if (scope === 'wholeBible') return canonList();
+    if (scope === 'nt') return orderedList(booksInTestament(1));
+    if (scope === 'ot') return orderedList(booksInTestament(0));
+    var f = findBook(scope);
+    if (f) { var out = []; for (var c = 1; c <= f.book.chapters; c++) out.push({ book: f.book.name, chapter: c }); return out; }
+    return canonList();
+  }
+  // custom plans as plan objects the rest of the code understands
+  function customPlanObjects() {
+    return loadCustomPlans().map(function (cp) {
+      return { id: cp.id, category: 'plans.catCustom', label: cp.title, custom: true, scope: cp.scope, days: cp.days,
+        build: (function (c) { return function () { return chunkInto(customScopeList(c.scope), c.days); }; })(cp) };
+    });
+  }
+  function allPlans() { return customPlanObjects().concat(PLANS); }
+  // label / hint that works for both i18n plans and literal-label plans
+  function planLabel(plan) { return plan.labelKey ? t(plan.labelKey) : (plan.label || ''); }
+  function planHint(plan) { return plan.hintKey ? t(plan.hintKey) : (plan.hint || ''); }
 
   var PLANS_KEY = 'tgp.plans';
   function loadPlanProgress() {
@@ -2899,25 +3039,53 @@
   function showPlansScreen(name) {
     document.getElementById('plans-grid').hidden = name !== 'grid';
     document.getElementById('plan-detail').hidden = name !== 'detail';
+    var builder = document.getElementById('plan-builder');
+    if (builder) builder.hidden = name !== 'builder';
   }
+
+  var PLAN_CATEGORY_ORDER = [
+    'plans.catCustom', 'plans.catStart', 'plans.catWholeBible', 'plans.catNT',
+    'plans.catOT', 'plans.catGospels', 'plans.catWisdom', 'plans.catSections', 'plans.catBooks'
+  ];
 
   function renderPlans() {
     var grid = document.getElementById('plans-grid');
     if (!grid) return;
     grid.textContent = '';
 
-    PLANS.forEach(function (plan) {
-      var card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'feature-card';
-      card.appendChild(txt('span', 'feature-label', t(plan.labelKey)));
+    // a card that opens the build-your-own form
+    var builder = document.createElement('button');
+    builder.type = 'button';
+    builder.className = 'feature-card plan-build-card';
+    builder.appendChild(txt('span', 'feature-label', '＋ ' + t('plans.buildOwn')));
+    builder.appendChild(txt('span', 'feature-hint', t('plans.buildOwnHint')));
+    builder.addEventListener('click', openPlanBuilder);
+    grid.appendChild(builder);
 
-      var hint = t(plan.hintKey);
-      if (!plan.book) hint += ' · ' + t('plans.dayCount', { n: plan.build().length });
-      card.appendChild(txt('span', 'feature-hint', hint));
+    // group plans by category, in a fixed order
+    var byCat = {};
+    allPlans().forEach(function (plan) {
+      (byCat[plan.category] = byCat[plan.category] || []).push(plan);
+    });
 
-      card.addEventListener('click', function () { openPlan(plan); });
-      grid.appendChild(card);
+    PLAN_CATEGORY_ORDER.forEach(function (cat) {
+      var items = byCat[cat];
+      if (!items || !items.length) return;
+      grid.appendChild(txt('h2', 'plan-cat-head', t(cat)));
+      var row = el('div', 'plan-cat-grid');
+      items.forEach(function (plan) {
+        var card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'feature-card';
+        card.appendChild(txt('span', 'feature-label', planLabel(plan)));
+        var hint = planHint(plan);
+        var days = plan.build().length;
+        hint += (hint ? ' · ' : '') + t('plans.dayCount', { n: days });
+        card.appendChild(txt('span', 'feature-hint', hint));
+        card.addEventListener('click', function () { openPlan(plan); });
+        row.appendChild(card);
+      });
+      grid.appendChild(row);
     });
 
     setStatus(document.getElementById('plans-status'), '', false);
@@ -2941,7 +3109,7 @@
   function openPlan(plan) {
     currentPlan = plan;
     showPlansScreen('detail');
-    document.getElementById('plan-detail-title').textContent = t(plan.labelKey);
+    document.getElementById('plan-detail-title').textContent = planLabel(plan);
     // the new-believer plan carries a note on which translation to start with
     var note = document.getElementById('plan-note');
     if (note) {
@@ -2950,6 +3118,9 @@
     }
     document.getElementById('plan-book-field').hidden = !plan.book;
     if (plan.book) fillPlanBookSelect();
+    // custom plans can be deleted; built-in ones only reset
+    var del = document.getElementById('plan-delete');
+    if (del) del.hidden = !plan.custom;
     renderPlanDays();
     window.scrollTo(0, 0);
   }
@@ -3063,6 +3234,72 @@
     savePlanProgress(prog);
     renderPlanDays();
   });
+  document.getElementById('plan-delete').addEventListener('click', function () {
+    if (!currentPlan || !currentPlan.custom || !window.confirm(t('plans.deleteConfirm'))) return;
+    // drop the custom plan and its saved progress, then return to the grid
+    saveCustomPlans(loadCustomPlans().filter(function (cp) { return cp.id !== currentPlan.id; }));
+    var prog = loadPlanProgress();
+    delete prog[currentPlan.id];
+    savePlanProgress(prog);
+    currentPlan = null;
+    renderPlans();
+    showPlansScreen('grid');
+    window.scrollTo(0, 0);
+  });
+
+  /* ---- build-your-own plan ---- */
+  function fillPlanBuilderScope() {
+    var sel = document.getElementById('plan-build-scope');
+    if (!sel || sel.dataset.built) return;
+    sel.dataset.built = '1';
+    function opt(value, label) { var o = el('option'); o.value = value; o.textContent = label; return o; }
+    sel.appendChild(opt('wholeBible', t('plans.scopeWhole')));
+    sel.appendChild(opt('nt', t('plans.scopeNT')));
+    sel.appendChild(opt('ot', t('plans.scopeOT')));
+    // every book, grouped by testament
+    BIBLE_BOOKS.forEach(function (g) {
+      var grp = el('optgroup');
+      grp.label = t(g.testamentKey);
+      g.books.forEach(function (b) { grp.appendChild(opt(b.name, b.name)); });
+      sel.appendChild(grp);
+    });
+  }
+  function openPlanBuilder() {
+    fillPlanBuilderScope();
+    showPlansScreen('builder');
+    var status = document.getElementById('plan-build-status');
+    if (status) status.textContent = '';
+    window.scrollTo(0, 0);
+  }
+  // how many chapters a chosen scope covers (to sanity-check the day count)
+  function scopeChapterCount(scope) { return customScopeList(scope).length; }
+
+  (function wirePlanBuilder() {
+    var back = document.getElementById('plan-build-back');
+    if (back) back.addEventListener('click', function () { showPlansScreen('grid'); window.scrollTo(0, 0); });
+    var form = document.getElementById('plan-build-form');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var status = document.getElementById('plan-build-status');
+      var title = document.getElementById('plan-build-title').value.trim();
+      var scope = document.getElementById('plan-build-scope').value;
+      var days = parseInt(document.getElementById('plan-build-days').value, 10);
+      if (!title) { setStatus(status, t('plans.buildNeedTitle'), true); return; }
+      if (!scope) { setStatus(status, t('plans.buildNeedScope'), true); return; }
+      var maxDays = scopeChapterCount(scope);
+      if (!(days >= 1)) { setStatus(status, t('plans.buildNeedDays'), true); return; }
+      if (days > maxDays) days = maxDays; // never more days than chapters
+      var cp = { id: 'custom:' + Date.now(), title: title, scope: scope, days: days };
+      var list = loadCustomPlans();
+      list.unshift(cp);
+      saveCustomPlans(list);
+      // reset the form and open the new plan
+      document.getElementById('plan-build-title').value = '';
+      renderPlans();
+      openPlan(customPlanObjects()[0]);
+    });
+  })();
 
   /* ---------- the road to apologetics: 200 questions, one badge each ---------- */
 
@@ -3759,13 +3996,16 @@
 
   /* ---------- tips for new believers ---------- */
 
-  var TIP_IDS = ['t1', 'trans', 't2', 't3', 't4', 't5', 't6', 't7', 't8'];
+  var TIP_IDS = ['t1', 'trans', 't2', 't3', 't4', 't5', 't6', 't7', 't8',
+    't9', 't10', 't11', 't12', 't13', 't14'];
+  // a simple study method, shown under the "How to study the Bible" subtitle
+  var STUDY_IDS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8'];
 
-  function renderTips() {
-    var list = document.getElementById('tips-list');
+  function renderTipList(listId, ids) {
+    var list = document.getElementById(listId);
     if (!list) return;
     list.textContent = '';
-    TIP_IDS.forEach(function (id, i) {
+    ids.forEach(function (id, i) {
       var card = el('article', 'tip-card');
       card.appendChild(txt('span', 'tip-num', String(i + 1)));
       var body = el('div', 'tip-body');
@@ -3774,6 +4014,11 @@
       card.appendChild(body);
       list.appendChild(card);
     });
+  }
+
+  function renderTips() {
+    renderTipList('tips-list', TIP_IDS);
+    renderTipList('study-list', STUDY_IDS);
   }
 
   /* ---------- progress: streak, badges, notifications ---------- */
@@ -4102,6 +4347,128 @@
     saveProgress(p);
     showToast(type, title, body);
     renderNotifUI();
+    if (type === 'badge') celebrateBadge();
+  }
+
+  /* ---- badge celebration: green flash + confetti from both sides + a trumpet
+     fanfare. All self-contained (no assets): the sound is synthesized with the
+     Web Audio API, the confetti drawn on a throwaway canvas. Honors
+     prefers-reduced-motion by toning the visuals down, and de-bounces so a
+     burst of badges doesn't stack a dozen overlays. */
+  var celebrateBusy = false;
+  var celebrateAudioCtx = null;
+  function celebrateBadge() {
+    if (celebrateBusy) return;
+    celebrateBusy = true;
+    setTimeout(function () { celebrateBusy = false; }, 1600);
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    playTrumpetFanfare();
+    flashGreen(reduce);
+    if (!reduce) blastConfetti();
+  }
+
+  function flashGreen(reduce) {
+    var flash = el('div', 'celebrate-flash');
+    document.body.appendChild(flash);
+    // force a reflow so the transition runs, then fade in and back out
+    void flash.offsetWidth;
+    flash.classList.add('is-on');
+    setTimeout(function () { flash.classList.remove('is-on'); }, reduce ? 240 : 420);
+    setTimeout(function () { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 1100);
+  }
+
+  function blastConfetti() {
+    var canvas = el('canvas', 'celebrate-confetti');
+    document.body.appendChild(canvas);
+    var ctx = canvas.getContext('2d');
+    var dpr = window.devicePixelRatio || 1;
+    var W = window.innerWidth, H = window.innerHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
+
+    var colors = ['#2fbf6b', '#8be0a8', '#e8c33a', '#ffffff', '#1c7a4b', '#f5c451'];
+    var parts = [];
+    function spawn(fromLeft) {
+      var n = 70;
+      for (var i = 0; i < n; i++) {
+        var ang = fromLeft ? (-Math.PI / 2.6 + Math.random() * 0.8) : (-Math.PI + Math.PI / 2.6 - Math.random() * 0.8);
+        var speed = 9 + Math.random() * 12;
+        parts.push({
+          x: fromLeft ? -10 : W + 10,
+          y: H * (0.55 + Math.random() * 0.35),
+          vx: Math.cos(ang) * speed * (fromLeft ? 1 : -1),
+          vy: Math.sin(ang) * speed,
+          size: 5 + Math.random() * 7,
+          color: colors[(Math.random() * colors.length) | 0],
+          rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.4,
+          life: 0
+        });
+      }
+    }
+    spawn(true); spawn(false);
+
+    var start = null;
+    function frame(ts) {
+      if (start === null) start = ts;
+      var elapsed = ts - start;
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        p.vy += 0.35;               // gravity
+        p.vx *= 0.99;               // drag
+        p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life++;
+        var alpha = Math.max(0, 1 - elapsed / 2200);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+        ctx.restore();
+      }
+      if (elapsed < 2300) { window.requestAnimationFrame(frame); }
+      else if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    }
+    window.requestAnimationFrame(frame);
+  }
+
+  // a short brass-like fanfare (G–C–E–G rising, then a held chord)
+  function playTrumpetFanfare() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!celebrateAudioCtx) celebrateAudioCtx = new AC();
+      var ac = celebrateAudioCtx;
+      if (ac.state === 'suspended') ac.resume();
+      var now = ac.currentTime;
+      var master = ac.createGain();
+      master.gain.value = 0.0001;
+      master.connect(ac.destination);
+
+      function note(freq, start, dur, peak) {
+        var t0 = now + start;
+        var osc1 = ac.createOscillator(); osc1.type = 'sawtooth'; osc1.frequency.value = freq;
+        var osc2 = ac.createOscillator(); osc2.type = 'square'; osc2.frequency.value = freq;
+        var g = ac.createGain();
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(peak, t0 + 0.03);   // sharp brass attack
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc1.connect(g); osc2.connect(g); g.connect(master);
+        osc1.start(t0); osc2.start(t0);
+        osc1.stop(t0 + dur + 0.05); osc2.stop(t0 + dur + 0.05);
+      }
+      master.gain.setValueAtTime(0.28, now);
+      var G4 = 392.0, C5 = 523.25, E5 = 659.25, G5 = 783.99;
+      note(G4, 0.00, 0.16, 0.5);
+      note(C5, 0.14, 0.16, 0.5);
+      note(E5, 0.28, 0.16, 0.5);
+      note(G5, 0.42, 0.55, 0.6);
+      // triumphant held chord
+      note(C5, 0.42, 0.6, 0.35);
+      note(E5, 0.42, 0.6, 0.35);
+      master.gain.setValueAtTime(0.28, now + 0.9);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 1.15);
+    } catch (e) { /* audio best-effort */ }
   }
 
   function showToast(type, title, body) {
@@ -4484,9 +4851,86 @@
       return { topic: topic, length: settings.devotionalLength || 'medium' };
     },
     render: function (data, result) {
-      result.textContent = cleanAIText((data.devotional || '').trim());
+      var text = cleanAIText((data.devotional || '').trim());
+      result.textContent = text;
+      // remember it so it can be saved, and reveal the Save button
+      var topic = document.getElementById('devotional-topic').value.trim();
+      lastAiDevotional = { title: topic || t('devotional.untitled'), body: text };
+      var saveBtn = document.getElementById('devotional-save');
+      if (saveBtn) { saveBtn.hidden = false; saveBtn.disabled = false; saveBtn.textContent = t('devotional.save'); }
     }
   });
+
+  /* ---- personal devotionals: save AI ones and write your own ---- */
+  var MY_DEVO_KEY = 'tgp.myDevotionals';
+  var lastAiDevotional = null;
+  function loadMyDevos() {
+    try { var a = JSON.parse(window.localStorage.getItem(MY_DEVO_KEY)); return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function saveMyDevos(list) {
+    try { window.localStorage.setItem(MY_DEVO_KEY, JSON.stringify(list)); } catch (e) { /* view-only */ }
+  }
+  function addMyDevo(devo) {
+    var list = loadMyDevos();
+    list.unshift({ id: Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      title: devo.title, body: devo.body, source: devo.source, ts: Date.now() });
+    if (list.length > 200) list = list.slice(0, 200);
+    saveMyDevos(list);
+    renderMyDevotionals();
+  }
+  function deleteMyDevo(id) {
+    saveMyDevos(loadMyDevos().filter(function (d) { return d.id !== id; }));
+    renderMyDevotionals();
+  }
+  function renderMyDevotionals() {
+    var wrap = document.getElementById('devotional-mine');
+    if (!wrap) return;
+    wrap.textContent = '';
+    var list = loadMyDevos();
+    if (!list.length) { wrap.appendChild(txt('p', 'devo-mine-empty', t('devotional.mineEmpty'))); return; }
+    list.forEach(function (d) {
+      var det = el('details', 'devo-saved');
+      var sum = el('summary', 'devo-saved-head');
+      sum.appendChild(txt('span', 'devo-saved-title', d.title));
+      sum.appendChild(txt('span', 'devo-saved-tag', t(d.source === 'own' ? 'devotional.tagOwn' : 'devotional.tagAi')));
+      det.appendChild(sum);
+      var body = el('div', 'devo-saved-body');
+      body.appendChild(txt('div', 'prose devo-saved-text', d.body));
+      var del = txt('button', 'devo-saved-delete', t('devotional.delete'));
+      del.type = 'button';
+      del.addEventListener('click', function () {
+        if (window.confirm(t('devotional.deleteConfirm'))) deleteMyDevo(d.id);
+      });
+      body.appendChild(del);
+      det.appendChild(body);
+      wrap.appendChild(det);
+    });
+  }
+  (function wireDevotionalSaves() {
+    var saveBtn = document.getElementById('devotional-save');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', function () {
+        if (!lastAiDevotional) return;
+        addMyDevo({ title: lastAiDevotional.title, body: lastAiDevotional.body, source: 'ai' });
+        saveBtn.disabled = true;
+        saveBtn.textContent = t('devotional.saved');
+      });
+    }
+    var ownForm = document.getElementById('devotional-own-form');
+    if (ownForm) {
+      ownForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var title = document.getElementById('devo-own-title').value.trim();
+        var bodyEl = document.getElementById('devo-own-body');
+        var body = bodyEl.value.trim();
+        if (!title || !body) return;
+        addMyDevo({ title: title, body: body, source: 'own' });
+        document.getElementById('devo-own-title').value = '';
+        bodyEl.value = '';
+      });
+    }
+  })();
 
   /* Devotional length chooser: the chips in the view mirror (and update) the
      saved "Length" setting, so a quick pick here sticks for next time too. */
@@ -4577,24 +5021,57 @@
   });
 
   var COMMON_TERMS = [
-    'Grace', 'Faith', 'Gospel', 'Covenant', 'Justification', 'Sanctification',
-    'Atonement', 'Redemption', 'Repentance', 'Salvation', 'Trinity', 'Incarnation',
-    'Righteousness', 'Mercy', 'Holiness', 'Resurrection', 'Kingdom of God', 'Messiah'
-  ];
+    'Adoption', 'Advocate', 'Angel', 'Anoint', 'Apostle', 'Ascension', 'Atonement',
+    'Baptism', 'Blasphemy', 'Blessing', 'Born again', 'Canon', 'Christ', 'Church',
+    'Circumcision', 'Communion', 'Confession', 'Conscience', 'Conversion', 'Covenant',
+    'Creation', 'Cross', 'Crucifixion', 'Curse', 'Deacon', 'Disciple', 'Doctrine',
+    'Election', 'Eternal life', 'Evangelism', 'Exodus', 'Faith', 'Fasting', 'Fear of the Lord',
+    'Fellowship', 'Forgiveness', 'Fruit of the Spirit', 'Gentile', 'Glory', 'Gospel',
+    'Grace', 'Heaven', 'Hell', 'Holiness', 'Holy Spirit', 'Hope', 'Idolatry', 'Incarnation',
+    'Intercession', 'Israel', 'Jesus', 'Judgment', 'Justification', 'Kingdom of God', 'Lamb of God',
+    'Law', 'Lord', 'Love', 'Mercy', 'Messiah', 'Miracle', 'New birth', 'Obedience',
+    'Offering', 'Parable', 'Passover', 'Peace', 'Pentecost', 'Prayer', 'Predestination',
+    'Priest', 'Prophecy', 'Prophet', 'Propitiation', 'Providence', 'Reconciliation',
+    'Redemption', 'Regeneration', 'Repentance', 'Resurrection', 'Revelation', 'Righteousness',
+    'Sabbath', 'Sacrament', 'Sacrifice', 'Saint', 'Salvation', 'Sanctification', 'Savior',
+    'Scripture', 'Second coming', 'Sin', 'Soul', 'Sovereignty', 'Temple', 'Temptation',
+    'Testament', 'Tithe', 'Transgression', 'Trinity', 'Truth', 'Wisdom', 'Worship', 'Wrath'
+  ].sort(function (a, b) { return a.localeCompare(b); });
+
+  function submitDefinition(term) {
+    var input = document.getElementById('definitions-term');
+    input.value = term;
+    document.getElementById('definitions-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  }
+
   function renderCommonTerms() {
     var wrap = document.getElementById('definitions-common');
     if (!wrap || wrap.dataset.built) return;
     wrap.dataset.built = '1';
     wrap.appendChild(txt('p', 'definitions-common-label', t('definitions.commonHeading')));
+
+    // a dropdown of every term, in alphabetical order
+    var picker = el('div', 'definitions-picker');
+    var sel = el('select', 'definitions-select');
+    sel.setAttribute('aria-label', t('definitions.commonHeading'));
+    var ph = el('option');
+    ph.value = ''; ph.textContent = t('definitions.pickTerm'); ph.disabled = true; ph.selected = true;
+    sel.appendChild(ph);
+    COMMON_TERMS.forEach(function (term) {
+      var o = el('option');
+      o.value = term; o.textContent = term;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', function () { if (sel.value) submitDefinition(sel.value); });
+    picker.appendChild(sel);
+    wrap.appendChild(picker);
+
+    // alphabetical quick-pick chips as well
     var row = el('div', 'definitions-chips');
     COMMON_TERMS.forEach(function (term) {
       var b = txt('button', 'definitions-chip', term);
       b.type = 'button';
-      b.addEventListener('click', function () {
-        var input = document.getElementById('definitions-term');
-        input.value = term;
-        document.getElementById('definitions-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      });
+      b.addEventListener('click', function () { submitDefinition(term); });
       row.appendChild(b);
     });
     wrap.appendChild(row);
@@ -4705,86 +5182,151 @@
     });
   }
 
-  /* ---------- detailed dated timeline (dates from BibleHub) ----------
-     Major milestones with approximate BC/AD dates, shown at the top of the
-     timeline tab. Each links into the reader. The full ~600-event list lives
-     at biblehub.com/timeline (linked in the view). */
+  /* ---------- detailed dated timeline ----------
+     Major milestones with approximate BC/AD dates, grouped into the classic
+     redemptive-history periods and rendered as a single vertical timeline with
+     period bands. Each event links into the reader. Dates follow the standard
+     conservative chronology; the earliest are debated. */
   var DETAILED_TIMELINE = [
-    { date: 'c. 4000 BC', title: 'Creation', ref: 'Genesis 1' },
-    { date: 'c. 3000 BC', title: 'The fall of man', ref: 'Genesis 3' },
-    { date: 'c. 2500 BC', title: 'The Great Flood', ref: 'Genesis 7' },
-    { date: 'Before 2100 BC', title: 'The tower of Babel', ref: 'Genesis 11' },
-    { date: '2091 BC', title: 'God calls Abram', ref: 'Genesis 12' },
-    { date: '2066 BC', title: 'Isaac is born', ref: 'Genesis 21' },
-    { date: '2006 BC', title: 'Jacob and Esau are born', ref: 'Genesis 25' },
-    { date: '1898 BC', title: 'Joseph sold into slavery', ref: 'Genesis 37' },
-    { date: '1876 BC', title: 'Jacob’s family settles in Egypt', ref: 'Genesis 46' },
-    { date: '1526 BC', title: 'Birth of Moses', ref: 'Exodus 2' },
-    { date: '1446 BC', title: 'The Exodus from Egypt', ref: 'Exodus 12' },
-    { date: '1446 BC', title: 'The Ten Commandments at Sinai', ref: 'Exodus 20' },
-    { date: '1406 BC', title: 'Death of Moses', ref: 'Deuteronomy 34' },
-    { date: '1406 BC', title: 'The fall of Jericho', ref: 'Joshua 6' },
-    { date: 'c. 1375 BC', title: 'The era of the judges begins', ref: 'Judges 2' },
-    { date: 'c. 1100 BC', title: 'Birth of Samuel', ref: '1 Samuel 1' },
-    { date: '1043 BC', title: 'Saul becomes king', ref: '1 Samuel 10' },
-    { date: '1024 BC', title: 'David kills Goliath', ref: '1 Samuel 17' },
-    { date: '1010 BC', title: 'David becomes king', ref: '2 Samuel 5' },
-    { date: '1000 BC', title: 'The ark brought to Jerusalem', ref: '2 Samuel 6' },
-    { date: '967 BC', title: 'Solomon becomes king', ref: '1 Kings 2' },
-    { date: '966 BC', title: 'Building of the temple begins', ref: '1 Kings 6' },
-    { date: '931 BC', title: 'The kingdom divides', ref: '1 Kings 12' },
-    { date: 'c. 863 BC', title: 'Elijah on Mount Carmel', ref: '1 Kings 18' },
-    { date: '766 BC', title: 'The prophet Amos', ref: 'Amos 1' },
-    { date: '739 BC', title: 'Isaiah’s vision and call', ref: 'Isaiah 6' },
-    { date: '722 BC', title: 'Assyria destroys the northern kingdom', ref: '2 Kings 17' },
-    { date: '701 BC', title: 'Sennacherib threatens Jerusalem', ref: '2 Kings 18' },
-    { date: '627 BC', title: 'The call of Jeremiah', ref: 'Jeremiah 1' },
-    { date: '621 BC', title: 'The lost Book of the Law is found', ref: '2 Kings 22' },
-    { date: '605 BC', title: 'Daniel taken to Babylon', ref: 'Daniel 1' },
-    { date: '593 BC', title: 'Ezekiel’s vision by the Chebar', ref: 'Ezekiel 1' },
-    { date: '586 BC', title: 'The fall of Jerusalem; the temple destroyed', ref: '2 Kings 25' },
-    { date: '539 BC', title: 'Daniel in the lions’ den; Babylon falls', ref: 'Daniel 6' },
-    { date: '537 BC', title: 'The exiles return under Cyrus', ref: 'Ezra 1' },
-    { date: '515 BC', title: 'The second temple is completed', ref: 'Ezra 6' },
-    { date: '478 BC', title: 'Esther becomes queen', ref: 'Esther 2' },
-    { date: '458 BC', title: 'Ezra returns to Jerusalem', ref: 'Ezra 7' },
-    { date: '444 BC', title: 'Nehemiah rebuilds the walls', ref: 'Nehemiah 2' },
-    { date: '430 BC', title: 'Malachi, the last Old Testament prophet', ref: 'Malachi 1' },
-    { date: '5 BC', title: 'The birth of Jesus', ref: 'Luke 2' },
-    { date: '26 AD', title: 'The baptism of Jesus', ref: 'Matthew 3' },
-    { date: '27 AD', title: 'The Sermon on the Mount', ref: 'Matthew 5' },
-    { date: '29 AD', title: 'Jesus feeds the five thousand', ref: 'John 6' },
-    { date: '30 AD', title: 'The triumphal entry', ref: 'John 12' },
-    { date: '30 AD', title: 'The crucifixion', ref: 'Luke 23' },
-    { date: '30 AD', title: 'The resurrection', ref: 'Luke 24' },
-    { date: '30 AD', title: 'The Holy Spirit comes at Pentecost', ref: 'Acts 2' },
-    { date: '34 AD', title: 'The conversion of Saul (Paul)', ref: 'Acts 9' },
-    { date: '48 AD', title: 'Paul’s first missionary journey', ref: 'Acts 13' },
-    { date: '48 AD', title: 'The council at Jerusalem', ref: 'Acts 15' },
-    { date: '57 AD', title: 'Paul writes to the Romans', ref: 'Romans 1' },
-    { date: '62 AD', title: 'Paul preaches in Rome', ref: 'Acts 28' },
-    { date: '95 AD', title: 'John’s Revelation on Patmos', ref: 'Revelation 1' }
+    { era: 'Creation & the Early World', events: [
+      { date: 'In the beginning', title: 'God creates the heavens and the earth', ref: 'Genesis 1' },
+      { date: 'The beginning', title: 'Adam and Eve in the garden', ref: 'Genesis 2' },
+      { date: 'The beginning', title: 'The fall of man', ref: 'Genesis 3' },
+      { date: 'Early world', title: 'Cain and Abel', ref: 'Genesis 4' },
+      { date: 'c. 2500 BC', title: 'The Great Flood and Noah’s ark', ref: 'Genesis 7' },
+      { date: 'After the flood', title: 'God’s covenant with Noah', ref: 'Genesis 9' },
+      { date: 'Before 2100 BC', title: 'The tower of Babel', ref: 'Genesis 11' }
+    ]},
+    { era: 'The Patriarchs', events: [
+      { date: '2091 BC', title: 'God calls Abram', ref: 'Genesis 12' },
+      { date: '2081 BC', title: 'God’s covenant with Abram', ref: 'Genesis 15' },
+      { date: '2067 BC', title: 'The covenant of circumcision', ref: 'Genesis 17' },
+      { date: 'c. 2067 BC', title: 'The destruction of Sodom and Gomorrah', ref: 'Genesis 19' },
+      { date: '2066 BC', title: 'Isaac is born', ref: 'Genesis 21' },
+      { date: 'c. 2050 BC', title: 'Abraham is tested to offer Isaac', ref: 'Genesis 22' },
+      { date: '2006 BC', title: 'Jacob and Esau are born', ref: 'Genesis 25' },
+      { date: 'c. 1929 BC', title: 'Jacob’s ladder at Bethel', ref: 'Genesis 28' },
+      { date: '1898 BC', title: 'Joseph sold into slavery', ref: 'Genesis 37' },
+      { date: '1885 BC', title: 'Joseph rises to power in Egypt', ref: 'Genesis 41' },
+      { date: '1876 BC', title: 'Jacob’s family settles in Egypt', ref: 'Genesis 46' }
+    ]},
+    { era: 'Egypt & the Exodus', events: [
+      { date: 'c. 1730 BC', title: 'Israel enslaved in Egypt', ref: 'Exodus 1' },
+      { date: '1526 BC', title: 'Birth of Moses', ref: 'Exodus 2' },
+      { date: '1446 BC', title: 'Moses and the burning bush', ref: 'Exodus 3' },
+      { date: '1446 BC', title: 'The plagues and the first Passover', ref: 'Exodus 12' },
+      { date: '1446 BC', title: 'Crossing the Red Sea', ref: 'Exodus 14' },
+      { date: '1446 BC', title: 'The Ten Commandments at Sinai', ref: 'Exodus 20' },
+      { date: 'c. 1445 BC', title: 'The tabernacle is built', ref: 'Exodus 40' },
+      { date: '1444 BC', title: 'The twelve spies and forty years of wandering', ref: 'Numbers 14' },
+      { date: '1406 BC', title: 'Moses’ final words; his death', ref: 'Deuteronomy 34' }
+    ]},
+    { era: 'Conquest & the Judges', events: [
+      { date: '1406 BC', title: 'Israel crosses the Jordan', ref: 'Joshua 3' },
+      { date: '1406 BC', title: 'The fall of Jericho', ref: 'Joshua 6' },
+      { date: 'c. 1375 BC', title: 'The era of the judges begins', ref: 'Judges 2' },
+      { date: 'c. 1191 BC', title: 'Gideon delivers Israel', ref: 'Judges 7' },
+      { date: 'c. 1075 BC', title: 'Samson and the Philistines', ref: 'Judges 16' },
+      { date: 'c. 1100 BC', title: 'Ruth and Boaz', ref: 'Ruth 1' },
+      { date: 'c. 1100 BC', title: 'Birth of Samuel', ref: '1 Samuel 1' }
+    ]},
+    { era: 'The United Kingdom', events: [
+      { date: '1043 BC', title: 'Saul becomes Israel’s first king', ref: '1 Samuel 10' },
+      { date: '1024 BC', title: 'Samuel anoints David', ref: '1 Samuel 16' },
+      { date: '1024 BC', title: 'David kills Goliath', ref: '1 Samuel 17' },
+      { date: '1010 BC', title: 'David becomes king', ref: '2 Samuel 5' },
+      { date: '1000 BC', title: 'The ark brought to Jerusalem', ref: '2 Samuel 6' },
+      { date: 'c. 1000 BC', title: 'God’s covenant with David', ref: '2 Samuel 7' },
+      { date: '967 BC', title: 'Solomon becomes king', ref: '1 Kings 2' },
+      { date: 'c. 967 BC', title: 'Solomon asks God for wisdom', ref: '1 Kings 3' },
+      { date: '966 BC', title: 'Building of the temple begins', ref: '1 Kings 6' }
+    ]},
+    { era: 'The Divided Kingdom', events: [
+      { date: '931 BC', title: 'The kingdom divides: Israel and Judah', ref: '1 Kings 12' },
+      { date: 'c. 863 BC', title: 'Elijah on Mount Carmel', ref: '1 Kings 18' },
+      { date: 'c. 848 BC', title: 'Elijah taken up; Elisha succeeds him', ref: '2 Kings 2' },
+      { date: '766 BC', title: 'The prophet Amos', ref: 'Amos 1' },
+      { date: 'c. 760 BC', title: 'Jonah sent to Nineveh', ref: 'Jonah 1' },
+      { date: '739 BC', title: 'Isaiah’s vision and call', ref: 'Isaiah 6' },
+      { date: '722 BC', title: 'Assyria destroys the northern kingdom', ref: '2 Kings 17' },
+      { date: '701 BC', title: 'Sennacherib threatens Jerusalem', ref: '2 Kings 18' },
+      { date: '627 BC', title: 'The call of Jeremiah', ref: 'Jeremiah 1' },
+      { date: '621 BC', title: 'The lost Book of the Law is found', ref: '2 Kings 22' }
+    ]},
+    { era: 'Exile', events: [
+      { date: '605 BC', title: 'Daniel taken to Babylon', ref: 'Daniel 1' },
+      { date: 'c. 600 BC', title: 'The fiery furnace', ref: 'Daniel 3' },
+      { date: '593 BC', title: 'Ezekiel’s vision by the Chebar', ref: 'Ezekiel 1' },
+      { date: '586 BC', title: 'Jerusalem falls; the temple destroyed', ref: '2 Kings 25' },
+      { date: 'c. 550 BC', title: 'Ezekiel’s valley of dry bones', ref: 'Ezekiel 37' },
+      { date: '539 BC', title: 'Daniel in the lions’ den; Babylon falls', ref: 'Daniel 6' }
+    ]},
+    { era: 'Return & Restoration', events: [
+      { date: '537 BC', title: 'The exiles return under Cyrus', ref: 'Ezra 1' },
+      { date: '515 BC', title: 'The second temple is completed', ref: 'Ezra 6' },
+      { date: '478 BC', title: 'Esther becomes queen', ref: 'Esther 2' },
+      { date: '458 BC', title: 'Ezra returns to Jerusalem', ref: 'Ezra 7' },
+      { date: '444 BC', title: 'Nehemiah rebuilds the walls', ref: 'Nehemiah 2' },
+      { date: '430 BC', title: 'Malachi, the last Old Testament prophet', ref: 'Malachi 1' }
+    ]},
+    { era: 'Between the Testaments', events: [
+      { date: 'c. 430–5 BC', title: 'Four centuries with no recorded prophet', ref: null }
+    ]},
+    { era: 'The Life of Christ', events: [
+      { date: '5 BC', title: 'The birth of Jesus', ref: 'Luke 2' },
+      { date: 'c. 4 BC', title: 'The visit of the magi', ref: 'Matthew 2' },
+      { date: '8 AD', title: 'The boy Jesus at the temple', ref: 'Luke 2' },
+      { date: '26 AD', title: 'The baptism of Jesus', ref: 'Matthew 3' },
+      { date: '26 AD', title: 'The temptation in the wilderness', ref: 'Matthew 4' },
+      { date: '27 AD', title: 'The Sermon on the Mount', ref: 'Matthew 5' },
+      { date: '29 AD', title: 'Jesus feeds the five thousand', ref: 'John 6' },
+      { date: '29 AD', title: 'The transfiguration', ref: 'Matthew 17' },
+      { date: '30 AD', title: 'The raising of Lazarus', ref: 'John 11' },
+      { date: '30 AD', title: 'The triumphal entry', ref: 'John 12' },
+      { date: '30 AD', title: 'The Last Supper', ref: 'Luke 22' },
+      { date: '30 AD', title: 'The crucifixion', ref: 'Luke 23' },
+      { date: '30 AD', title: 'The resurrection', ref: 'Luke 24' },
+      { date: '30 AD', title: 'The great commission and ascension', ref: 'Matthew 28' }
+    ]},
+    { era: 'The Early Church', events: [
+      { date: '30 AD', title: 'The Holy Spirit comes at Pentecost', ref: 'Acts 2' },
+      { date: 'c. 34 AD', title: 'Stephen, the first martyr', ref: 'Acts 7' },
+      { date: '34 AD', title: 'The conversion of Saul (Paul)', ref: 'Acts 9' },
+      { date: 'c. 40 AD', title: 'The gospel opens to the Gentiles', ref: 'Acts 10' },
+      { date: '48 AD', title: 'Paul’s first missionary journey', ref: 'Acts 13' },
+      { date: '49 AD', title: 'The council at Jerusalem', ref: 'Acts 15' },
+      { date: '57 AD', title: 'Paul writes to the Romans', ref: 'Romans 1' },
+      { date: '62 AD', title: 'Paul preaches in Rome', ref: 'Acts 28' },
+      { date: '95 AD', title: 'John’s Revelation on Patmos', ref: 'Revelation 1' }
+    ]}
   ];
 
   function renderDetailedTimeline() {
     var wrap = document.getElementById('timeline-detailed');
     if (!wrap || wrap.dataset.built) return;
     wrap.dataset.built = '1';
-    DETAILED_TIMELINE.forEach(function (ev) {
-      var row = el('div', 'tl-row');
-      row.appendChild(txt('span', 'tl-row-date', ev.date));
-      row.appendChild(txt('span', 'tl-row-dot', ''));
-      var main = el('div', 'tl-row-main');
-      main.appendChild(txt('span', 'tl-row-title', ev.title));
-      var loc = ev.ref ? parseRef(ev.ref) : null;
-      if (loc) {
-        var b = txt('button', 'tl-row-ref', ev.ref);
-        b.type = 'button';
-        b.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
-        main.appendChild(b);
-      }
-      row.appendChild(main);
-      wrap.appendChild(row);
+    DETAILED_TIMELINE.forEach(function (period) {
+      var band = el('div', 'tl-period');
+      band.appendChild(txt('h3', 'tl-period-name', period.era));
+      var rows = el('div', 'tl-period-rows');
+      period.events.forEach(function (ev) {
+        var row = el('div', 'tl-row');
+        row.appendChild(txt('span', 'tl-row-date', ev.date));
+        row.appendChild(txt('span', 'tl-row-dot', ''));
+        var main = el('div', 'tl-row-main');
+        main.appendChild(txt('span', 'tl-row-title', ev.title));
+        var loc = ev.ref ? parseRef(ev.ref) : null;
+        if (loc) {
+          var b = txt('button', 'tl-row-ref', ev.ref);
+          b.type = 'button';
+          b.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
+          main.appendChild(b);
+        }
+        row.appendChild(main);
+        rows.appendChild(row);
+      });
+      band.appendChild(rows);
+      wrap.appendChild(band);
     });
   }
 
