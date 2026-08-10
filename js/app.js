@@ -534,10 +534,10 @@
     try { window.localStorage.setItem(SAVED_KEY, JSON.stringify(list)); } catch (e) { /* view-only */ }
   }
   // a verse is identified by its reference; the daily verse rarely lacks one
-  function verseKey(v) { return (v.reference || v.text || '').trim(); }
+  function savedVerseKey(v) { return (v.reference || v.text || '').trim(); }
   function isVerseSaved(v) {
-    var key = verseKey(v);
-    return !!key && loadSaved().some(function (s) { return verseKey(s) === key; });
+    var key = savedVerseKey(v);
+    return !!key && loadSaved().some(function (s) { return savedVerseKey(s) === key; });
   }
   function updateSaveButton() {
     var btn = document.getElementById('verse-save');
@@ -551,9 +551,9 @@
   function toggleSaveVerse() {
     if (!currentVerse.text) return;
     var list = loadSaved();
-    var key = verseKey(currentVerse);
+    var key = savedVerseKey(currentVerse);
     var at = -1;
-    for (var i = 0; i < list.length; i++) { if (verseKey(list[i]) === key) { at = i; break; } }
+    for (var i = 0; i < list.length; i++) { if (savedVerseKey(list[i]) === key) { at = i; break; } }
     if (at === -1) list.unshift({ text: currentVerse.text, reference: currentVerse.reference, savedAt: Date.now() });
     else list.splice(at, 1);
     saveSaved(list);
