@@ -1472,6 +1472,17 @@ button.verse-num:hover { text-decoration: underline; }
 .ctx-ref-link:hover { color: var(--ink); }
 .ctx-ref-name { font-weight: 600; color: var(--ink); }
 .ctx-ref-note { color: var(--ink-soft); }
+/* the referenced verse quoted beneath its citation (cross-reference tab) */
+.xref-verse-text {
+  margin: 4px 0 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--gold);
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+  font-style: italic;
+}
+.xref-verse-text.is-loading { opacity: 0.6; font-style: normal; }
 
 /* Christ & the gospel: classification chips, supporting scripture, confidence */
 .ctx-christ { display: flex; flex-direction: column; gap: 12px; }
@@ -3147,6 +3158,80 @@ button.verse-num:hover { text-decoration: underline; }
 .apolo-level.is-cleared .apolo-level-stat { color: var(--apolo-star); font-weight: 600; }
 .apolo-level-body { padding: 0 14px 14px; }
 .apolo-level-body .road-station-answer { margin-bottom: 0; }
+
+/* ---- lesson difficulty toggle (retro segmented control) ---- */
+.apolo-difficulty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+.apolo-difficulty-label {
+  font-family: var(--apolo-pixel);
+  font-size: 9px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.apolo-difficulty-opts {
+  display: inline-flex;
+  border: 3px solid var(--ink);
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.apolo-diff-opt {
+  font-family: var(--apolo-pixel);
+  font-size: 9px;
+  padding: 10px 12px;
+  border: none;
+  border-right: 3px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .1s, color .1s;
+}
+.apolo-diff-opt:last-child { border-right: none; }
+.apolo-diff-opt:hover { background: var(--gold-tint); }
+.apolo-diff-opt.is-on { background: var(--apolo-star); color: #1a1205; }
+
+/* ---- follow-up questions beneath an answer ---- */
+.apolo-followups { margin-top: 16px; }
+.apolo-followups-label {
+  font-family: var(--apolo-pixel);
+  font-size: 9px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 10px;
+}
+.apolo-followup-chips { display: flex; flex-direction: column; gap: 8px; }
+.apolo-followup {
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: transform .06s, box-shadow .06s, border-color .1s;
+}
+.apolo-followup::before { content: '↳ '; color: var(--gold-dark); }
+.apolo-followup:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); border-color: var(--gold-dark); }
+.apolo-followup.is-open { border-color: var(--apolo-star); box-shadow: none; transform: none; opacity: 0.85; }
+.apolo-followup-answer {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--apolo-star);
+  background: var(--gold-tint);
+  border-radius: 0 10px 10px 0;
+}
+.apolo-followup-q { font-weight: 700; color: var(--ink); margin: 0 0 8px; }
 
 @media (max-width: 460px) {
   .apolo-node { width: 100%; }

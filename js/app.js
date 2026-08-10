@@ -320,6 +320,7 @@
     appShell.hidden = false;
     renderTodayHeader();
     loadDailyVerse();
+    checkBadges();        // register any badges already earned before this update
     renderProgressUI();
     renderNotifUI();
   }
@@ -346,6 +347,8 @@
     if (name === 'definitions') renderCommonTerms();
     // the cross-reference arc diagram loads its data on first view
     if (name === 'crossref') xrefViz.open();
+    // the badge collection is huge — build it only when its tab is opened
+    if (name === 'badges') renderBadgeGrid();
     // keep the fixed progress bar from lingering over other views
     applyReadingPrefs();
     closeSidebar();
@@ -1435,6 +1438,48 @@
       ul.appendChild(li);
     });
     return ul.children.length ? ul : null;
+  }
+
+  /* A reference like "Romans 8:28-30" → the book/chapter and verse span it
+     covers, so the cross-reference tab can show the actual words, not just the
+     citation. Returns null for chapter-only references (no verse to quote). */
+  function refVerseSpan(reference) {
+    var m = String(reference).trim().match(/^(.+?)\s+(\d+):(\d+)(?:\s*[-–]\s*(\d+))?/);
+    if (!m) return null;
+    var found = findBook(m[1]);
+    if (!found) return null;
+    var v1 = parseInt(m[3], 10);
+    return { book: found.book.name, chapter: parseInt(m[2], 10), v1: v1, v2: m[4] ? parseInt(m[4], 10) : v1 };
+  }
+
+  // fetch a referenced verse's text and drop it under its citation
+  function appendRefVerseText(li, reference) {
+    var span = refVerseSpan(reference);
+    if (!span) return;
+    var quote = txt('p', 'xref-verse-text is-loading', t('crossref.loadingVerse'));
+    li.appendChild(quote);
+    requestCached('bible-chapter', { book: span.book, chapter: span.chapter, version: currentVersion() })
+      .then(function (data) {
+        var verses = extractVerses(data);
+        var picked = verses.filter(function (v) { return v.number >= span.v1 && v.number <= span.v2; });
+        if (!picked.length) { if (quote.parentNode) quote.parentNode.removeChild(quote); return; }
+        quote.classList.remove('is-loading');
+        quote.textContent = picked.map(function (v) { return v.text; }).join(' ');
+      })
+      .catch(function () { if (quote.parentNode) quote.parentNode.removeChild(quote); });
+  }
+
+  // like buildCrossRefs, but quotes each referenced verse beneath its link
+  function buildCrossRefsWithText(refs) {
+    var ul = buildCrossRefs(refs);
+    if (!ul) return null;
+    var items = ul.querySelectorAll('.ctx-ref');
+    for (var i = 0; i < items.length; i++) {
+      var li = items[i];
+      var link = li.querySelector('.ctx-ref-link') || li.querySelector('.ctx-ref-name');
+      if (link) appendRefVerseText(li, link.textContent);
+    }
+    return ul;
   }
 
   // the seven kinds of connection to Christ the backend may tag a verse with
@@ -3048,6 +3093,36 @@
     saveApolo(s);
   }
 
+  /* ---- lesson difficulty: how deep the prepared answers are written ----
+     A device-local preference (beginner / intermediate / advanced) folded into
+     the scenario we send, so the same question can be answered simply for a
+     newcomer or robustly for a skeptic. */
+  var APOLO_DIFF_KEY = 'tgp.apoloDifficulty';
+  var APOLO_DIFFS = ['beginner', 'intermediate', 'advanced'];
+  function apoloDifficulty() {
+    var d = window.localStorage.getItem(APOLO_DIFF_KEY);
+    return APOLO_DIFFS.indexOf(d) !== -1 ? d : 'intermediate';
+  }
+  function setApoloDifficulty(d) {
+    if (APOLO_DIFFS.indexOf(d) === -1) d = 'intermediate';
+    try { window.localStorage.setItem(APOLO_DIFF_KEY, d); } catch (e) { /* view-only */ }
+    updateApoloDifficultyUI();
+  }
+  // the instruction appended to a question so the answer matches the chosen depth
+  function apoloDepthDirective(d) {
+    if (d === 'beginner') return ' Please answer at a beginner level: assume no background knowledge, define any terms in plain words, keep it short, warm, and encouraging.';
+    if (d === 'advanced') return ' Please answer at an advanced level: engage the strongest counter-arguments directly, cite specific thinkers, sources, and precise references, and reason rigorously.';
+    return ' Please answer at an intermediate level: clear and practical, with the key scriptures and reasons someone could actually use in conversation.';
+  }
+  // the scenario string actually sent for a lesson question, depth folded in
+  function apoloScenario(q) { return q + apoloDepthDirective(apoloDifficulty()); }
+  function updateApoloDifficultyUI() {
+    var d = apoloDifficulty();
+    document.querySelectorAll('#apolo-difficulty .apolo-diff-opt').forEach(function (b) {
+      b.classList.toggle('is-on', b.dataset.difficulty === d);
+    });
+  }
+
   // running totals over all chapters
   function apoloCounts() {
     var set = apoloDoneSet();
@@ -3122,6 +3197,7 @@
   function renderApologetics() {
     // keep the Apologist-mode difficulty label in step with the language
     if (typeof updateApologistLevelUI === 'function') updateApologistLevelUI();
+    updateApoloDifficultyUI();
     var road = document.getElementById('apologetics-road');
     if (!road || typeof APOLO_THEMES === 'undefined') return;
     updateApoloHero();
@@ -3231,17 +3307,18 @@
       if (level.open && !loaded) { loaded = true; loadApoloAnswer(body, id, q, level); }
     });
     // warm the answer on hover (network only — opening is what clears the lesson)
-    warmOnIntent(level, function () { requestCached('evangelism-prep', { scenario: q }); });
+    warmOnIntent(level, function () { requestCached('evangelism-prep', { scenario: apoloScenario(q) }); });
     return level;
   }
 
   function loadApoloAnswer(body, id, q, level) {
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('apologetics.preparing')));
-    requestCached('evangelism-prep', { scenario: q })
+    requestCached('evangelism-prep', { scenario: apoloScenario(q) })
       .then(function (data) {
         body.textContent = '';
         body.appendChild(txt('div', 'road-station-answer prose', cleanAIText(((data && data.prep) || '').trim())));
+        renderApoloFollowups(body, q, 0);
         // preparing the answer clears this lesson (once) and lights up the next
         if (apoloDoneSet()[id]) return;
         markApoloDone(id);
@@ -3257,6 +3334,62 @@
         recordActivity();
         checkBadges();
         renderProgressUI();
+      })
+      .catch(function (err) {
+        body.textContent = '';
+        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+      });
+  }
+
+  /* ---- follow-up questions ----
+     After an answer, offer AI-suggested next questions (from the apolo-followups
+     webhook). Tapping one opens its answer inline, which can itself branch into
+     more follow-ups — capped a couple of levels deep so it can't run away. */
+  var APOLO_FOLLOWUP_MAX_DEPTH = 2;
+
+  function renderApoloFollowups(container, q, depth) {
+    if (depth >= APOLO_FOLLOWUP_MAX_DEPTH) return;
+    var wrap = el('div', 'apolo-followups');
+    var label = txt('p', 'apolo-followups-label', t('apologetics.followupsLoading'));
+    wrap.appendChild(label);
+    container.appendChild(wrap);
+    requestCached('apolo-followups', { scenario: q, difficulty: apoloDifficulty() })
+      .then(function (data) {
+        var qs = (data && data.questions) || [];
+        if (!qs.length) { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); return; }
+        label.textContent = t('apologetics.followupsHeading');
+        var chips = el('div', 'apolo-followup-chips');
+        qs.forEach(function (fq) {
+          fq = cleanAIText(String(fq || '').trim());
+          if (!fq) return;
+          var chip = txt('button', 'apolo-followup', fq);
+          chip.type = 'button';
+          chip.addEventListener('click', function () {
+            if (chip.dataset.opened) return;
+            chip.dataset.opened = '1';
+            chip.classList.add('is-open');
+            openApoloFollowupAnswer(wrap, fq, depth);
+          });
+          chips.appendChild(chip);
+        });
+        wrap.appendChild(chips);
+      })
+      .catch(function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); });
+  }
+
+  // load and show the answer to a tapped follow-up, then its own follow-ups
+  function openApoloFollowupAnswer(wrap, fq, depth) {
+    var ans = el('div', 'apolo-followup-answer');
+    ans.appendChild(txt('p', 'apolo-followup-q', fq));
+    var body = el('div', 'apolo-followup-body');
+    body.appendChild(txt('p', 'verse-panel-note', t('apologetics.preparing')));
+    ans.appendChild(body);
+    wrap.appendChild(ans);
+    requestCached('evangelism-prep', { scenario: fq + apoloDepthDirective(apoloDifficulty()) })
+      .then(function (data) {
+        body.textContent = '';
+        body.appendChild(txt('div', 'road-station-answer prose', cleanAIText(((data && data.prep) || '').trim())));
+        renderApoloFollowups(body, fq, depth + 1);
       })
       .catch(function (err) {
         body.textContent = '';
@@ -3291,6 +3424,12 @@
     apoloStage = null;
     renderApologetics();
   });
+
+  // lesson difficulty toggle: sets the depth used for every prepared answer
+  document.querySelectorAll('#apolo-difficulty .apolo-diff-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () { setApoloDifficulty(btn.dataset.difficulty); });
+  });
+  updateApoloDifficultyUI();
 
   /* ============ Apologist Mode ============
      A live drill: the backend presents a real objection at the student's
@@ -3737,56 +3876,187 @@
     return false;
   }
 
-  /* 100 general badges, generated so the how-to text stays in step with the data:
-     one per Bible book (66) plus reading, streak, testament and plan milestones. */
+  // how many chapters of a given book have been read
+  function chaptersReadIn(p, name, total) {
+    var n = 0;
+    for (var c = 1; c <= total; c++) { if (p.chapters[name + '|' + c]) n++; }
+    return n;
+  }
+  // resolve a list of candidate book names to the ones that exist in the canon
+  function resolveBooks(names) {
+    var out = [];
+    names.forEach(function (nm) {
+      var f = findBook(nm);
+      if (f) out.push({ name: f.book.name, chapters: f.book.chapters });
+    });
+    return out;
+  }
+  // every chapter of every book in the group has been read
+  function groupComplete(p, books) {
+    for (var i = 0; i < books.length; i++) {
+      if (chaptersReadIn(p, books[i].name, books[i].chapters) < books[i].chapters) return false;
+    }
+    return true;
+  }
+
+  /* Over a thousand collectible badges, all generated so the how-to text stays
+     in step with the data and every badge is earned through something the app
+     already tracks: reading (per chapter, per book, per collection, and running
+     totals), streaks, reading plans, and the Road to Apologetics. */
   function buildGeneralBadges() {
     var list = [];
-    BIBLE_BOOKS.forEach(function (g) {
-      g.books.forEach(function (b) {
-        (function (book) {
-          list.push({
-            id: 'book:' + book.name, cat: 'Books', icon: '📗',
-            title: 'Finished ' + book.name,
-            desc: 'Read all ' + book.chapters + ' chapter' + (book.chapters > 1 ? 's' : '') + ' of ' + book.name,
-            test: function (p) {
-              for (var c = 1; c <= book.chapters; c++) { if (!p.chapters[book.name + '|' + c]) return false; }
-              return true;
-            }
-          });
-        })(b);
-      });
-    });
-    [1, 5, 10, 25, 50, 100, 150, 250, 400, 600, 900, 1189].forEach(function (n) {
+
+    // ---- reading totals (📖) ----
+    [1, 3, 5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 100, 125, 150, 175, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000, 1100, 1189].forEach(function (n) {
       list.push({
         id: 'chap:' + n, cat: 'Reading', icon: '📖',
-        title: n === 1 ? 'First chapter' : ('Read ' + n + ' chapters'),
+        title: n === 1 ? 'First chapter' : (n >= 1189 ? 'Every chapter read' : ('Read ' + n + ' chapters')),
         desc: 'Read a total of ' + n + ' chapter' + (n > 1 ? 's' : ''),
         test: (function (need) { return function (p) { return chapterCount(p) >= need; }; })(n)
       });
     });
-    [2, 3, 7, 14, 30, 50, 100, 200, 365].forEach(function (n) {
+
+    // ---- streaks (🔥) and days in the Word (📅) ----
+    [2, 3, 5, 7, 10, 14, 21, 30, 40, 50, 75, 100, 150, 200, 250, 300, 365, 500, 730, 1000].forEach(function (n) {
       list.push({
         id: 'streak:' + n, cat: 'Streaks', icon: '🔥',
         title: n + '-day streak', desc: 'Read on ' + n + ' days in a row',
         test: (function (need) { return function (p) { return p.longest >= need; }; })(n)
       });
     });
-    [10, 30, 100, 365].forEach(function (n) {
+    [5, 10, 20, 30, 50, 75, 100, 150, 200, 300, 365, 500, 730, 1000].forEach(function (n) {
       list.push({
         id: 'days:' + n, cat: 'Streaks', icon: '📅',
         title: n + ' days in the Word', desc: 'Read on ' + n + ' separate days',
         test: (function (need) { return function (p) { return p.daysActive >= need; }; })(n)
       });
     });
+
+    // ---- testament milestones (👑) ----
     list.push({ id: 'ot', cat: 'Milestones', icon: '📜', title: 'Old Testament complete', desc: 'Read every chapter of all 39 Old Testament books', test: function (p) { return testamentComplete(p, 0); } });
     list.push({ id: 'nt', cat: 'Milestones', icon: '✝', title: 'New Testament complete', desc: 'Read every chapter of all 27 New Testament books', test: function (p) { return testamentComplete(p, 1); } });
     list.push({ id: 'whole', cat: 'Milestones', icon: '👑', title: 'The whole Bible', desc: 'Read every chapter of all 66 books', test: function (p) { return testamentComplete(p, 0) && testamentComplete(p, 1); } });
-    list.push({ id: 'planday1', cat: 'Plans', icon: '🧭', title: 'On the path', desc: 'Mark your first reading-plan day complete', test: function () { return totalPlanDays() >= 1; } });
-    list.push({ id: 'planday7', cat: 'Plans', icon: '🗺️', title: 'One week in', desc: 'Complete 7 reading-plan days', test: function () { return totalPlanDays() >= 7; } });
-    list.push({ id: 'planday30', cat: 'Plans', icon: '⛰️', title: 'A month of days', desc: 'Complete 30 reading-plan days', test: function () { return totalPlanDays() >= 30; } });
-    list.push({ id: 'planday100', cat: 'Plans', icon: '🏔️', title: 'Centurion', desc: 'Complete 100 reading-plan days', test: function () { return totalPlanDays() >= 100; } });
+
+    // ---- reading plans (🏆) ----
+    [1, 3, 7, 14, 21, 30, 60, 90, 120, 180, 270, 365].forEach(function (n) {
+      list.push({
+        id: 'planday:' + n, cat: 'Plans', icon: n >= 365 ? '🏆' : (n >= 100 ? '🏔️' : (n >= 30 ? '⛰️' : (n >= 7 ? '🗺️' : '🧭'))),
+        title: n === 1 ? 'On the path' : ('Completed ' + n + ' plan days'),
+        desc: 'Complete ' + n + ' reading-plan day' + (n > 1 ? 's' : ''),
+        test: (function (need) { return function () { return totalPlanDays() >= need; }; })(n)
+      });
+    });
     list.push({ id: 'bookplan', cat: 'Plans', icon: '🎓', title: 'Book finisher', desc: 'Complete a One-Book-at-a-Time plan', test: function () { return anyBookPlanComplete(); } });
-    list.push({ id: 'yearplan', cat: 'Plans', icon: '🏆', title: 'The long road', desc: 'Complete the Bible-in-a-Year plan', test: function () { return planComplete('year', 365); } });
+    list.push({ id: 'yearplan', cat: 'Plans', icon: '📿', title: 'The long road', desc: 'Complete the Bible-in-a-Year plan', test: function () { return planComplete('year', 365); } });
+
+    // ---- canonical collections (📚): finish a whole section of Scripture ----
+    var COLLECTIONS = [
+      ['The Torah', ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy']],
+      ['The Historical Books', ['Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther']],
+      ['Wisdom & Poetry', ['Job', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon']],
+      ['The Major Prophets', ['Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel']],
+      ['The Minor Prophets', ['Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi']],
+      ['The Four Gospels', ['Matthew', 'Mark', 'Luke', 'John']],
+      ['The Pauline Epistles', ['Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon']],
+      ['The General Epistles', ['Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude']]
+    ];
+    COLLECTIONS.forEach(function (pair, i) {
+      var books = resolveBooks(pair[1]);
+      if (!books.length) return;
+      list.push({
+        id: 'coll:' + i, cat: 'Collections', icon: '📚',
+        title: pair[0] + ' complete',
+        desc: 'Read every chapter of ' + pair[0].replace(/^The /, ''),
+        test: (function (bks) { return function (p) { return groupComplete(p, bks); }; })(books)
+      });
+    });
+
+    // ---- landmark chapters (⭐): read a famous, pivotal chapter ----
+    var LANDMARKS = [
+      ['Genesis 1', 'Creation'], ['Genesis 3', 'The Fall'], ['Genesis 12', 'The call of Abraham'],
+      ['Exodus 3', 'The burning bush'], ['Exodus 14', 'The Red Sea'], ['Exodus 20', 'The Ten Commandments'],
+      ['Leviticus 16', 'The Day of Atonement'], ['Deuteronomy 6', 'The Shema'], ['Joshua 1', 'Be strong and courageous'],
+      ['Judges 7', 'Gideon’s three hundred'], ['Ruth 1', 'Where you go I will go'], ['1 Samuel 17', 'David and Goliath'],
+      ['2 Samuel 7', 'The covenant with David'], ['1 Kings 18', 'Elijah on Mount Carmel'], ['Job 38', 'God answers Job'],
+      ['Psalm 1', 'The two ways'], ['Psalm 22', 'The suffering psalm'], ['Psalm 23', 'The Lord is my shepherd'],
+      ['Psalm 51', 'Create in me a clean heart'], ['Psalm 91', 'The shelter of the Most High'], ['Psalm 119', 'The longest psalm'],
+      ['Psalm 139', 'Fearfully and wonderfully made'], ['Proverbs 3', 'Trust in the Lord'], ['Ecclesiastes 3', 'A time for everything'],
+      ['Isaiah 6', 'Here am I, send me'], ['Isaiah 9', 'A child is born'], ['Isaiah 40', 'Comfort my people'],
+      ['Isaiah 53', 'The suffering servant'], ['Jeremiah 29', 'Plans to prosper you'], ['Ezekiel 37', 'The valley of dry bones'],
+      ['Daniel 3', 'The fiery furnace'], ['Daniel 6', 'Daniel in the lions’ den'], ['Jonah 2', 'Jonah’s prayer'],
+      ['Micah 6', 'Act justly, love mercy'], ['Matthew 5', 'The Sermon on the Mount'], ['Matthew 6', 'The Lord’s Prayer'],
+      ['Matthew 28', 'The Great Commission'], ['Luke 2', 'The birth of Jesus'], ['Luke 15', 'The prodigal son'],
+      ['John 1', 'The Word made flesh'], ['John 3', 'For God so loved the world'], ['John 14', 'The way, the truth, the life'],
+      ['Acts 2', 'Pentecost'], ['Romans 8', 'No condemnation'], ['Romans 12', 'A living sacrifice'],
+      ['1 Corinthians 13', 'The love chapter'], ['1 Corinthians 15', 'The resurrection chapter'], ['Galatians 5', 'The fruit of the Spirit'],
+      ['Ephesians 6', 'The armor of God'], ['Philippians 4', 'Rejoice always'], ['Hebrews 11', 'The hall of faith'],
+      ['James 1', 'Consider it pure joy'], ['Revelation 21', 'A new heaven and earth'], ['Revelation 22', 'The river of life']
+    ];
+    LANDMARKS.forEach(function (pair, i) {
+      var loc = parseRef(pair[0]);
+      if (!loc) return;
+      list.push({
+        id: 'mark:' + i, cat: 'Landmark Chapters', icon: '⭐',
+        title: pair[1], desc: 'Read ' + loc.book + ' ' + loc.chapter + ' — ' + pair[1],
+        test: (function (b, c) { return function (p) { return !!p.chapters[b + '|' + c]; }; })(loc.book, loc.chapter)
+      });
+    });
+
+    // ---- Road to Apologetics: a badge for every lesson and every world ----
+    if (typeof APOLO_THEMES !== 'undefined') {
+      APOLO_THEMES.forEach(function (th, ti) {
+        th.questions.forEach(function (q, qi) {
+          list.push({
+            id: 'apolo:' + apoloId(ti, qi), cat: 'Apologetics: Lessons', icon: '🛡️',
+            title: 'Lesson: ' + q,
+            desc: 'Prepare an answer to “' + q + '” on the Road to Apologetics',
+            test: (function (aid) { return function () { return !!apoloDoneSet()[aid]; }; })(apoloId(ti, qi))
+          });
+        });
+      });
+      APOLO_THEMES.forEach(function (th, ti) {
+        list.push({
+          id: 'apoloworld:' + ti, cat: 'Apologetics: Worlds', icon: '🏰',
+          title: 'World ' + (ti + 1) + ': ' + th.theme,
+          desc: 'Clear every lesson in “' + th.theme + '”',
+          test: (function (idx) { return function () { return themeComplete(idx, apoloDoneSet()); }; })(ti)
+        });
+      });
+      // ranks earned as more lessons are cleared
+      [['Student', 1], ['Defender', 10], ['Apologist', 30], ['Ambassador', 75], ['Champion', 125], ['Contender for the Faith', 200]].forEach(function (pair, i) {
+        list.push({
+          id: 'apolorank:' + i, cat: 'Apologetics: Ranks', icon: '🎖️',
+          title: 'Rank: ' + pair[0], desc: 'Clear ' + pair[1] + ' apologetics lesson' + (pair[1] > 1 ? 's' : ''),
+          test: (function (need) { return function () { return apoloCounts().done >= need; }; })(pair[1])
+        });
+      });
+    }
+
+    // ---- one group per book: "Finished X" plus a badge for every chapter ----
+    BIBLE_BOOKS.forEach(function (g) {
+      g.books.forEach(function (b) {
+        (function (book) {
+          var cat = book.name;
+          list.push({
+            id: 'book:' + book.name, cat: cat, icon: '📗',
+            title: 'Finished ' + book.name,
+            desc: 'Read all ' + book.chapters + ' chapter' + (book.chapters > 1 ? 's' : '') + ' of ' + book.name,
+            test: function (p) { return chaptersReadIn(p, book.name, book.chapters) >= book.chapters; }
+          });
+          for (var c = 1; c <= book.chapters; c++) {
+            (function (ch) {
+              list.push({
+                id: 'ch:' + book.name + '|' + ch, cat: cat, icon: '📖',
+                title: book.name + ' ' + ch,
+                desc: 'Read ' + book.name + ' chapter ' + ch,
+                test: function (p) { return !!p.chapters[book.name + '|' + ch]; }
+              });
+            })(c);
+          }
+        })(b);
+      });
+    });
+
     return list;
   }
 
@@ -3798,11 +4068,15 @@
     GENERAL_BADGES.forEach(function (b) {
       if (!p.badges[b.id] && b.test(p)) { p.badges[b.id] = todayStr(); fresh.push(b); }
     });
-    if (fresh.length) {
-      saveProgress(p);
+    if (!fresh.length) return;
+    saveProgress(p);
+    // a few at once → one toast each; a whole batch → a single summary, no spam
+    if (fresh.length <= 4) {
       fresh.forEach(function (b) {
         notify('badge', t('notif.badge.title'), t('notif.badge.body', { name: b.title }));
       });
+    } else {
+      notify('badge', t('notif.badge.title'), t('notif.badgeBatch', { n: fresh.length }));
     }
   }
 
@@ -3916,15 +4190,21 @@
     var chapters = document.getElementById('dash-chapters');
     if (chapters) chapters.textContent = String(chapterCount(p));
 
-    var wrap = document.getElementById('badge-grid');
-    if (!wrap) return;
-    wrap.textContent = '';
-
     var earned = GENERAL_BADGES.filter(function (b) { return p.badges[b.id]; }).length;
     // the summary appears both as a home teaser and atop the Badges tab
     document.querySelectorAll('.js-badge-summary').forEach(function (summary) {
       summary.textContent = t('dash.badgesEarned', { done: earned, total: GENERAL_BADGES.length });
     });
+
+    // the full grid is over a thousand tiles — only build it when it's on screen
+    if (document.getElementById('view-badges').classList.contains('is-active')) renderBadgeGrid();
+  }
+
+  function renderBadgeGrid() {
+    var wrap = document.getElementById('badge-grid');
+    if (!wrap) return;
+    var p = loadProgress();
+    wrap.textContent = '';
 
     // group by category, keeping the order categories first appear
     var cats = [], byCat = {};
@@ -3933,6 +4213,7 @@
       byCat[b.cat].push(b);
     });
 
+    var frag = document.createDocumentFragment();
     cats.forEach(function (cat) {
       var items = byCat[cat];
       var ec = items.filter(function (b) { return p.badges[b.id]; }).length;
@@ -3948,8 +4229,9 @@
         grid.appendChild(tile);
       });
       group.appendChild(grid);
-      wrap.appendChild(group);
+      frag.appendChild(group);
     });
+    wrap.appendChild(frag);
   }
 
   // wire the bell + streak chips (there's one pair in the sidebar, one in the topbar)
@@ -4271,7 +4553,7 @@
       requestCached('verse-context', { book: loc.book, chapter: loc.chapter, verse: loc.verse, version: currentVersion() })
         .then(function (data) {
           list.textContent = '';
-          var node = buildCrossRefs((data && data.crossRefs) || []);
+          var node = buildCrossRefsWithText((data && data.crossRefs) || []);
           forEl.textContent = t('crossref.for', { ref: loc.book + ' ' + loc.chapter + ':' + loc.verse });
           if (node) { list.appendChild(node); result.hidden = false; setStatus(status, '', false); }
           else { result.hidden = true; setStatus(status, t('crossref.none'), false); }

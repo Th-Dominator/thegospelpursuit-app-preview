@@ -181,6 +181,7 @@ var TRANSLATIONS = {
     'crossref.for': 'Cross-references for {ref}',
     'crossref.none': 'No cross-references found for that reference.',
     'crossref.badRef': 'Enter a verse like “John 3:16” or “Isaiah 53:5”.',
+    'crossref.loadingVerse': 'Loading verse…',
 
     'timeline.eyebrow': 'bible timeline',
     'timeline.title': 'Timeline of the whole Bible',
@@ -474,6 +475,12 @@ var TRANSLATIONS = {
     'apologetics.startHere': 'Start here',
     'apologetics.prepare': 'Prepare the answer',
     'apologetics.preparing': 'Preparing…',
+    'apologetics.difficultyLabel': 'Answer depth',
+    'apologetics.diffBeginner': 'Beginner',
+    'apologetics.diffIntermediate': 'Intermediate',
+    'apologetics.diffAdvanced': 'Advanced',
+    'apologetics.followupsLoading': 'Finding follow-up questions…',
+    'apologetics.followupsHeading': 'Follow-up questions',
     'apologetics.markComplete': 'Mark this stage complete',
     'apologetics.stageDone': 'Completed',
     'apologetics.resetProgress': 'Reset my progress',
@@ -647,6 +654,7 @@ var TRANSLATIONS = {
     'notif.streak.body': 'You’ve read {n} days in a row. Keep the flame alive.',
     'notif.badge.title': 'Badge unlocked',
     'notif.badge.body': 'You earned “{name}”.',
+    'notif.badgeBatch': 'You earned {n} new badges!',
 
     /* ---- reminders (web push) ---- */
     'settings.remindersHeading': 'Reminders',
