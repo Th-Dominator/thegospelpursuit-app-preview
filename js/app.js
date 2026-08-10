@@ -5865,61 +5865,105 @@
      fulfillment in Jesus, grouped by the stage of his life where they came
      true. Every reference links into the reader. */
   var MESSIANIC_STAGES = [
-    { label: 'Ancestry & birth', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Adoration_of_the_sheperds_-_Matthias_Stomer.jpg/330px-Adoration_of_the_sheperds_-_Matthias_Stomer.jpg', items: [
-      { desc: 'The offspring of the woman who would crush the serpent', ot: 'Genesis 3:15', nt: 'Galatians 4:4' },
+    { label: 'Ancestry & lineage', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/King_David%2C_the_King_of_Israel.jpg/330px-King_David%2C_the_King_of_Israel.jpg', items: [
+      { desc: 'The offspring of the woman, who would crush the serpent', ot: 'Genesis 3:15', nt: 'Galatians 4:4' },
       { desc: 'A descendant of Abraham, blessing all nations', ot: 'Genesis 22:18', nt: 'Matthew 1:1' },
-      { desc: 'A descendant of Isaac', ot: 'Genesis 17:19', nt: 'Luke 3:34' },
+      { desc: 'A descendant of Isaac', ot: 'Genesis 21:12', nt: 'Luke 3:34' },
       { desc: 'A descendant of Jacob — a star out of Jacob', ot: 'Numbers 24:17', nt: 'Luke 3:34' },
       { desc: 'From the tribe of Judah', ot: 'Genesis 49:10', nt: 'Hebrews 7:14' },
-      { desc: 'Heir to the throne of David', ot: 'Isaiah 9:7', nt: 'Luke 1:32' },
-      { desc: 'Born in Bethlehem', ot: 'Micah 5:2', nt: 'Matthew 2:1' },
-      { desc: 'Born of a virgin — “Immanuel, God with us”', ot: 'Isaiah 7:14', nt: 'Matthew 1:23' },
-      { desc: 'Kings would bring him gifts and bow before him', ot: 'Psalms 72:10', nt: 'Matthew 2:11' },
-      { desc: 'Children killed in an attempt to destroy him', ot: 'Jeremiah 31:15', nt: 'Matthew 2:16' },
-      { desc: 'Called out of Egypt', ot: 'Hosea 11:1', nt: 'Matthew 2:15' },
-      { desc: 'A messenger sent ahead to prepare his way', ot: 'Malachi 3:1', nt: 'Matthew 3:1' }
+      { desc: 'From the family line of Jesse', ot: 'Isaiah 11:1', nt: 'Luke 3:32' },
+      { desc: 'Heir to the throne of David', ot: '2 Samuel 7:12', nt: 'Luke 1:32' },
+      { desc: 'The Son of David', ot: 'Jeremiah 23:5', nt: 'Romans 1:3' }
     ]},
-    { label: 'Life & ministry', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Bloch-SermonOnTheMount.jpg/330px-Bloch-SermonOnTheMount.jpg', items: [
-      { desc: 'A voice crying in the wilderness before him', ot: 'Isaiah 40:3', nt: 'Matthew 3:3' },
+    { label: 'Birth & childhood', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Adoration_of_the_sheperds_-_Matthias_Stomer.jpg/330px-Adoration_of_the_sheperds_-_Matthias_Stomer.jpg', items: [
+      { desc: 'Born of a virgin', ot: 'Isaiah 7:14', nt: 'Matthew 1:23' },
+      { desc: 'Born in Bethlehem', ot: 'Micah 5:2', nt: 'Matthew 2:1' },
+      { desc: 'Would come at the appointed time', ot: 'Daniel 9:25', nt: 'Galatians 4:4' },
+      { desc: 'Kings would bring him gifts and bow before him', ot: 'Psalms 72:10', nt: 'Matthew 2:11' },
+      { desc: 'The children of Bethlehem killed in an attempt to destroy him', ot: 'Jeremiah 31:15', nt: 'Matthew 2:16' },
+      { desc: 'Called out of Egypt', ot: 'Hosea 11:1', nt: 'Matthew 2:15' }
+    ]},
+    { label: 'His nature & mission', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/The_Baptism_of_Christ_%28Verrocchio_and_Leonardo%29.jpg/330px-The_Baptism_of_Christ_%28Verrocchio_and_Leonardo%29.jpg', items: [
+      { desc: '“Immanuel” — God with us', ot: 'Isaiah 7:14', nt: 'Matthew 1:23' },
+      { desc: 'Called Mighty God, Everlasting Father, Prince of Peace', ot: 'Isaiah 9:6', nt: 'John 1:1' },
+      { desc: 'Eternal — from ancient days', ot: 'Micah 5:2', nt: 'John 1:1' },
+      { desc: 'Declared the Son of God', ot: 'Psalms 2:7', nt: 'Matthew 3:17' },
+      { desc: 'David would call him “Lord”', ot: 'Psalms 110:1', nt: 'Matthew 22:44' },
+      { desc: 'Anointed by the Spirit of the Lord', ot: 'Isaiah 11:2', nt: 'Matthew 3:16' },
+      { desc: 'A messenger — an “Elijah” — sent before him', ot: 'Malachi 4:5', nt: 'Matthew 11:14' },
+      { desc: 'A voice crying in the wilderness to prepare his way', ot: 'Isaiah 40:3', nt: 'Matthew 3:3' },
       { desc: 'A prophet like Moses', ot: 'Deuteronomy 18:15', nt: 'Acts 3:22' },
+      { desc: 'A priest forever, in the order of Melchizedek', ot: 'Psalms 110:4', nt: 'Hebrews 5:6' },
+      { desc: 'The Branch — the righteous King', ot: 'Jeremiah 23:5', nt: 'Luke 1:32' },
+      { desc: 'God’s chosen servant', ot: 'Isaiah 42:1', nt: 'Matthew 12:18' },
+      { desc: 'A light for the Gentiles, salvation to the ends of the earth', ot: 'Isaiah 49:6', nt: 'Luke 2:32' }
+    ]},
+    { label: 'Ministry & teaching', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Bloch-SermonOnTheMount.jpg/330px-Bloch-SermonOnTheMount.jpg', items: [
       { desc: 'His ministry would begin in Galilee', ot: 'Isaiah 9:1', nt: 'Matthew 4:13' },
       { desc: 'The Spirit of the Lord upon him to preach good news', ot: 'Isaiah 61:1', nt: 'Luke 4:18' },
-      { desc: 'He would heal the blind, deaf, and lame', ot: 'Isaiah 35:5', nt: 'Matthew 11:5' },
+      { desc: 'He would heal the blind, deaf, lame, and mute', ot: 'Isaiah 35:5', nt: 'Matthew 11:5' },
+      { desc: 'He would carry our sicknesses', ot: 'Isaiah 53:4', nt: 'Matthew 8:17' },
+      { desc: 'A shepherd who gathers his flock', ot: 'Isaiah 40:11', nt: 'John 10:11' },
       { desc: 'He would teach in parables', ot: 'Psalms 78:2', nt: 'Matthew 13:35' },
       { desc: 'Consumed with zeal for God’s house', ot: 'Psalms 69:9', nt: 'John 2:17' },
-      { desc: 'A light for the Gentiles', ot: 'Isaiah 49:6', nt: 'Luke 2:32' },
-      { desc: 'Rejected by his own people', ot: 'Isaiah 53:3', nt: 'John 1:11' },
-      { desc: 'The stone the builders rejected', ot: 'Psalms 118:22', nt: 'Matthew 21:42' }
+      { desc: 'The Lord would come to his temple', ot: 'Malachi 3:1', nt: 'Mark 11:15' },
+      { desc: 'He would bring a new covenant', ot: 'Jeremiah 31:31', nt: 'Hebrews 8:6' }
     ]},
-    { label: 'Triumphal entry & betrayal', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Assisi-frescoes-entry-into-jerusalem-pietro_lorenzetti.jpg/330px-Assisi-frescoes-entry-into-jerusalem-pietro_lorenzetti.jpg', items: [
+    { label: 'Rejection & the coming King', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Assisi-frescoes-entry-into-jerusalem-pietro_lorenzetti.jpg/330px-Assisi-frescoes-entry-into-jerusalem-pietro_lorenzetti.jpg', items: [
+      { desc: 'Despised and rejected by his own people', ot: 'Isaiah 53:3', nt: 'John 1:11' },
+      { desc: 'The stone the builders rejected', ot: 'Psalms 118:22', nt: 'Matthew 21:42' },
+      { desc: 'A stone of stumbling for Israel', ot: 'Isaiah 8:14', nt: 'Romans 9:32' },
+      { desc: 'Hated without a cause', ot: 'Psalms 69:4', nt: 'John 15:25' },
+      { desc: 'His miracles met with unbelief', ot: 'Isaiah 53:1', nt: 'John 12:37' },
       { desc: 'Entering Jerusalem, humble, on a donkey', ot: 'Zechariah 9:9', nt: 'Matthew 21:5' },
-      { desc: 'Betrayed by a close friend', ot: 'Psalms 41:9', nt: 'John 13:18' },
+      { desc: 'Praised even by children', ot: 'Psalms 8:2', nt: 'Matthew 21:16' },
+      { desc: '“Blessed is he who comes in the name of the Lord”', ot: 'Psalms 118:26', nt: 'Matthew 21:9' }
+    ]},
+    { label: 'Betrayal & arrest', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Giotto_-_Scrovegni_-_-31-_-_Kiss_of_Judas.jpg/330px-Giotto_-_Scrovegni_-_-31-_-_Kiss_of_Judas.jpg', items: [
+      { desc: 'Betrayed by a close friend who shared his bread', ot: 'Psalms 41:9', nt: 'John 13:18' },
       { desc: 'Sold for thirty pieces of silver', ot: 'Zechariah 11:12', nt: 'Matthew 26:15' },
       { desc: 'The silver thrown down and used for a potter’s field', ot: 'Zechariah 11:13', nt: 'Matthew 27:7' },
-      { desc: 'His disciples would scatter', ot: 'Zechariah 13:7', nt: 'Matthew 26:31' },
+      { desc: 'His betrayer’s place would be taken by another', ot: 'Psalms 109:8', nt: 'Acts 1:20' },
+      { desc: 'The shepherd struck, and the disciples scattered', ot: 'Zechariah 13:7', nt: 'Matthew 26:31' }
+    ]},
+    { label: 'Trial & suffering', items: [
       { desc: 'Accused by false witnesses', ot: 'Psalms 35:11', nt: 'Matthew 26:60' },
       { desc: 'Silent before his accusers', ot: 'Isaiah 53:7', nt: 'Matthew 27:12' },
-      { desc: 'Struck and spat upon', ot: 'Isaiah 50:6', nt: 'Matthew 26:67' }
+      { desc: 'Struck on the cheek', ot: 'Micah 5:1', nt: 'Matthew 27:30' },
+      { desc: 'Beaten and spat upon; his beard torn out', ot: 'Isaiah 50:6', nt: 'Matthew 26:67' },
+      { desc: 'His appearance marred beyond that of any man', ot: 'Isaiah 52:14', nt: 'John 19:1' },
+      { desc: 'Wounded for our transgressions, bruised for our iniquities', ot: 'Isaiah 53:5', nt: '1 Peter 2:24' },
+      { desc: 'He would bear the sin of many and intercede for transgressors', ot: 'Isaiah 53:12', nt: 'Luke 23:34' }
     ]},
     { label: 'Crucifixion', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Cristo_crucificado.jpg/330px-Cristo_crucificado.jpg', items: [
-      { desc: 'Numbered with the transgressors', ot: 'Isaiah 53:12', nt: 'Mark 15:28' },
       { desc: 'His hands and feet pierced', ot: 'Psalms 22:16', nt: 'John 20:27' },
-      { desc: 'Mocked and insulted', ot: 'Psalms 22:7', nt: 'Matthew 27:39' },
+      { desc: 'Numbered with the transgressors', ot: 'Isaiah 53:12', nt: 'Mark 15:27' },
+      { desc: 'Mocked and insulted — “He trusts in God, let God rescue him”', ot: 'Psalms 22:7', nt: 'Matthew 27:39' },
       { desc: 'Given vinegar and gall to drink', ot: 'Psalms 69:21', nt: 'Matthew 27:34' },
       { desc: 'Soldiers cast lots for his clothing', ot: 'Psalms 22:18', nt: 'John 19:24' },
+      { desc: 'The cry: “My God, my God, why have you forsaken me?”', ot: 'Psalms 22:1', nt: 'Matthew 27:46' },
+      { desc: 'Forsaken and poured out unto death', ot: 'Psalms 22:14', nt: 'John 19:34' },
+      { desc: 'He would commit his spirit to God', ot: 'Psalms 31:5', nt: 'Luke 23:46' },
+      { desc: 'Darkness would fall over the land', ot: 'Amos 8:9', nt: 'Matthew 27:45' },
       { desc: 'Not one of his bones would be broken', ot: 'Psalms 34:20', nt: 'John 19:33' },
       { desc: 'His side pierced — “they will look on him whom they pierced”', ot: 'Zechariah 12:10', nt: 'John 19:34' },
-      { desc: 'He would pray for his persecutors', ot: 'Isaiah 53:12', nt: 'Luke 23:34' },
-      { desc: 'The cry: “My God, my God, why have you forsaken me?”', ot: 'Psalms 22:1', nt: 'Matthew 27:46' },
-      { desc: 'Wounded for our transgressions — bearing our sin', ot: 'Isaiah 53:5', nt: '1 Peter 2:24' },
-      { desc: 'Buried with the rich', ot: 'Isaiah 53:9', nt: 'Matthew 27:60' }
+      { desc: 'He would suffer outside the city gate', ot: 'Leviticus 16:27', nt: 'Hebrews 13:12' }
+    ]},
+    { label: 'His death & burial', items: [
+      { desc: 'The Messiah would be “cut off,” but not for himself', ot: 'Daniel 9:26', nt: 'Romans 5:6' },
+      { desc: 'A substitute pierced for our sins, bearing our punishment', ot: 'Isaiah 53:8', nt: '2 Corinthians 5:21' },
+      { desc: 'His soul made an offering for the sin of many', ot: 'Isaiah 53:10', nt: 'Hebrews 9:28' },
+      { desc: 'Assigned a grave with the wicked, yet buried with the rich', ot: 'Isaiah 53:9', nt: 'Matthew 27:60' },
+      { desc: 'His body would not see decay', ot: 'Psalms 16:10', nt: 'Acts 2:31' }
     ]},
     { label: 'Resurrection & exaltation', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Rafael_-_ressureicaocristo01.jpg/330px-Rafael_-_ressureicaocristo01.jpg', items: [
-      { desc: 'His body would not see decay — raised from the dead', ot: 'Psalms 16:10', nt: 'Acts 2:31' },
-      { desc: 'Ascended on high', ot: 'Psalms 68:18', nt: 'Ephesians 4:8' },
+      { desc: 'Raised to life — he would see the light of life and prolong his days', ot: 'Isaiah 53:11', nt: 'Luke 24:6' },
+      { desc: 'Not abandoned to the realm of the dead', ot: 'Psalms 16:10', nt: 'Acts 2:32' },
+      { desc: 'Ascended on high, leading captives', ot: 'Psalms 68:18', nt: 'Ephesians 4:8' },
       { desc: 'Seated at the right hand of God', ot: 'Psalms 110:1', nt: 'Hebrews 1:3' },
-      { desc: 'A priest forever, in the order of Melchizedek', ot: 'Psalms 110:4', nt: 'Hebrews 5:6' },
-      { desc: 'The chosen cornerstone', ot: 'Isaiah 28:16', nt: '1 Peter 2:6' },
+      { desc: 'The chosen cornerstone, rejected then exalted', ot: 'Isaiah 28:16', nt: '1 Peter 2:6' },
+      { desc: 'He would pour out his Spirit on all people', ot: 'Joel 2:28', nt: 'Acts 2:17' },
+      { desc: 'Every knee would bow before him', ot: 'Isaiah 45:23', nt: 'Philippians 2:10' },
       { desc: 'Given everlasting dominion over all peoples', ot: 'Daniel 7:14', nt: 'Revelation 1:7' }
     ]}
   ];
@@ -6038,7 +6082,8 @@
     var wrap = document.getElementById('messianic-list');
     if (!wrap) return;
     wrap.textContent = '';
-    // legend
+    // count + legend
+    wrap.appendChild(txt('p', 'mess-count', t('messianic.listCount', { n: messianicCount() })));
     var legend = el('div', 'mess-legend');
     legend.appendChild(txt('span', 'mess-legend-item mess-legend-ot', t('messianic.legendOt')));
     legend.appendChild(txt('span', 'mess-legend-item mess-legend-nt', t('messianic.legendNt')));

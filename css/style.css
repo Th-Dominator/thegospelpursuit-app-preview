@@ -4175,6 +4175,13 @@ body.xref-fs-open { overflow: hidden; }
 .mess-ref:disabled { cursor: default; opacity: .6; }
 .mess-ref-arrow { color: var(--ink-muted); font-size: 13px; }
 
+.mess-count {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--gold-dark);
+  margin: 0 0 10px;
+}
 .mess-legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 14px; }
 .mess-legend-item { font-size: 12px; color: var(--ink-soft); display: inline-flex; align-items: center; }
 .mess-legend-item::before {

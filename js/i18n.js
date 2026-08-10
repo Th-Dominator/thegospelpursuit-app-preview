@@ -700,6 +700,7 @@ var TRANSLATIONS = {
     'messianic.listLede': 'Each row pairs the Old Testament prophecy with its New Testament fulfillment. Tap either reference to open it in the reader.',
     'messianic.legendOt': 'Old Testament prophecy',
     'messianic.legendNt': 'New Testament fulfillment',
+    'messianic.listCount': '{n} prophecies, foretold and fulfilled',
     'badges.eyebrow': 'your walk',
     'badges.title': 'Badges',
     'badges.lede': 'Every badge you can earn — by reading, keeping a streak, finishing books, and working through plans. Locked badges show how to earn them.',
