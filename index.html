@@ -369,6 +369,7 @@
             <span class="bible-control-label" data-i18n="bible.version">Version</span>
             <select id="bible-version"></select>
           </label>
+          <button type="button" id="bible-save-notes" class="bible-save-notes" data-i18n="bible.notesSaved">Notes saved</button>
         </div>
 
         <!-- listen: reads the chapter aloud with the browser's speech voice -->
@@ -474,6 +475,7 @@
       <p class="view-lede" data-i18n="crossref.vizLede">There is no other book like it on earth. Every one of the 1,189 chapters runs along the bottom; each arc above joins two chapters that reference one another — <strong>341,272 cross-references</strong> in all. Hover or tap a chapter to light up its connections.</p>
 
       <div id="xref-viz" class="xref-viz">
+        <button type="button" id="xref-fullscreen" class="xref-fullscreen" data-i18n-aria="crossref.fullscreen" aria-label="Full screen" title="Full screen">⛶</button>
         <canvas id="xref-canvas" class="xref-canvas"></canvas>
         <div id="xref-hover" class="xref-hover" hidden></div>
         <p id="xref-loading" class="xref-loading" data-i18n="crossref.vizLoading">Drawing the connections…</p>
@@ -826,6 +828,11 @@
         <label class="settings-toggle">
           <input type="checkbox" id="setting-progress-bar">
           <span class="settings-toggle-text" data-i18n="settings.progressBarLabel">Show the reading progress bar</span>
+        </label>
+
+        <label class="settings-toggle">
+          <input type="checkbox" id="setting-notes-autosave">
+          <span class="settings-toggle-text" data-i18n="settings.notesAutosaveLabel">Autosave highlights &amp; notes as you write (off = save with the button in the reader)</span>
         </label>
       </section>
 

@@ -696,6 +696,83 @@ body {
   color: var(--ink-muted);
   margin: 0;
 }
+
+/* ---------- highlights, swatches & post-it notes ---------- */
+.verse-card.is-highlighted { border-radius: 10px; padding: 6px 10px; margin: 0 -10px; }
+.verse-card.hl-yellow { background: rgba(255, 214, 71, 0.22); }
+.verse-card.hl-green  { background: rgba(75, 201, 122, 0.20); }
+.verse-card.hl-blue   { background: rgba(84, 160, 255, 0.20); }
+.verse-card.hl-pink   { background: rgba(255, 122, 182, 0.20); }
+.verse-card.hl-orange { background: rgba(255, 149, 61, 0.22); }
+.verse-card.hl-purple { background: rgba(178, 122, 255, 0.22); }
+
+/* the solid swatch colours (also used by note colour dots + post-its) */
+.hl-yellow { background: #ffe066; }
+.hl-green  { background: #a8e6b0; }
+.hl-blue   { background: #a9d0ff; }
+.hl-pink   { background: #ffb3d1; }
+.hl-orange { background: #ffc38a; }
+.hl-purple { background: #d9b3ff; }
+
+.verse-panel-label { margin: 0 0 8px; font-size: 13px; color: var(--ink-muted); }
+.hl-swatches, .note-colors { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+.hl-swatch, .note-color {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--border); cursor: pointer; padding: 0;
+  transition: transform .08s, border-color .1s;
+}
+.hl-swatch:hover, .note-color:hover { transform: scale(1.14); }
+.hl-swatch.is-active, .note-color.is-active { border-color: var(--ink); transform: scale(1.14); }
+.note-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit; font-size: 15px; line-height: 1.6;
+  resize: vertical;
+}
+.note-textarea:focus { outline: none; border-color: var(--gold); }
+.note-actions { display: flex; gap: 8px; margin-top: 10px; }
+.verse-panel-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+}
+.verse-panel-btn:hover { border-color: var(--gold); background: var(--gold-tint); }
+.verse-panel-btn.is-danger:hover { border-color: #d9534f; color: #d9534f; background: transparent; }
+
+/* the sticky note shown on a verse */
+.verse-postit {
+  margin: 12px 0 2px;
+  padding: 12px 14px;
+  color: #20242e;
+  border-radius: 3px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+  transform: rotate(-0.6deg);
+  cursor: pointer;
+  max-width: 320px;
+}
+.verse-postit-text { margin: 0; font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
+
+/* the reader's manual Save-notes button (top right) */
+.bible-save-notes {
+  margin-left: auto;
+  align-self: center;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer;
+}
+.bible-save-notes.is-dirty { border-color: var(--gold); background: var(--gold-tint); color: var(--gold-dark); }
 .verse-panel-note.is-error { color: #A3352A; }
 .verse-prose {
   margin: 0;
@@ -1747,6 +1824,10 @@ button.verse-num:hover { text-decoration: underline; }
 .faq-a-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink-soft); }
 
 /* ---------- bible plans: catalog, categories, builder ---------- */
+/* the plans grid holds category headings + their own sub-grids, so it must be a
+   plain block container (not the 2-col card-grid) or the rows won't line up */
+#plans-grid { display: block; }
+.plan-build-card { width: 100%; margin-bottom: 6px; }
 .plan-cat-head {
   font-family: var(--font-display);
   font-weight: 600;
@@ -2430,12 +2511,16 @@ button.verse-num:hover { text-decoration: underline; }
 }
 .apologist-level { display: flex; align-items: center; gap: 8px; }
 .apologist-level-label { font-size: 13px; color: var(--ink-soft); }
-.apologist-dots { display: inline-flex; gap: 4px; }
+.apologist-dots { display: inline-flex; gap: 5px; align-items: center; }
 .apologist-dot {
-  width: 10px; height: 10px; border-radius: 50%;
+  width: 15px; height: 15px; border-radius: 50%;
+  padding: 0; border: 1px solid var(--border);
   background: var(--line, rgba(0, 0, 0, 0.18));
+  cursor: pointer;
+  transition: transform .08s, background .12s;
 }
-.apologist-dot.is-on { background: var(--gold-dark, #96660a); }
+.apologist-dot:hover { transform: scale(1.2); border-color: var(--gold-dark); }
+.apologist-dot.is-on { background: var(--gold-dark, #96660a); border-color: var(--gold-dark); }
 .apologist-level-text { font-size: 13px; font-weight: 600; color: var(--gold-dark, #96660a); }
 .apologist-btn {
   padding: 10px 18px;
@@ -3573,6 +3658,33 @@ button.verse-num:hover { text-decoration: underline; }
   overflow: hidden;
 }
 .xref-canvas { display: block; width: 100%; cursor: crosshair; touch-action: pan-y; }
+/* full-screen mode */
+.xref-fullscreen {
+  position: absolute;
+  top: 8px; right: 8px;
+  z-index: 3;
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(20,22,31,0.8);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.xref-fullscreen:hover { background: rgba(40,44,60,0.95); }
+.xref-viz.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  margin: 0;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.xref-viz.is-fullscreen .xref-canvas { width: 100%; height: auto; }
+body.xref-fs-open { overflow: hidden; }
 .xref-hover {
   position: absolute;
   top: 8px;
@@ -3694,6 +3806,73 @@ button.verse-num:hover { text-decoration: underline; }
   cursor: pointer;
 }
 .tl-row-ref:hover { border-color: var(--gold); background: var(--gold-tint); }
+
+/* ---- horizontal, scroll-through timeline with photos ---- */
+.tl-horizon {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 2px 18px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.tl-h-era {
+  flex: 0 0 auto;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+}
+.tl-h-era-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  padding: 10px 6px;
+  border-left: 3px solid var(--gold);
+  border-right: 3px solid var(--gold);
+  white-space: nowrap;
+}
+.tl-h-card {
+  flex: 0 0 200px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  scroll-snap-align: start;
+}
+.tl-h-img {
+  width: 100%;
+  height: 130px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-2, rgba(150,155,180,0.12));
+}
+.tl-h-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tl-h-date { font-size: 12px; font-weight: 700; color: var(--gold-dark); }
+.tl-h-title { font-size: 14px; line-height: 1.4; color: var(--ink); flex: 1; }
+.tl-h-ref {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold-dark);
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.tl-h-ref:hover { border-color: var(--gold); background: var(--gold-tint); }
 
 /* period bands + a continuous spine through the dots (BibleHub-style) */
 .tl-period { margin: 0; }

@@ -196,7 +196,8 @@
     'setting-verse-picker': { name: 'showVersePicker', fallback: true },
     'setting-progress-bar': { name: 'showProgressBar', fallback: true },
     'setting-bible-accuracy': { name: 'bibleAccuracy', fallback: true },
-    'setting-bible-sources': { name: 'bibleSources', fallback: false }
+    'setting-bible-sources': { name: 'bibleSources', fallback: false },
+    'setting-notes-autosave': { name: 'annotationsAutosave', fallback: true }
   };
 
   var settings = loadSettings();
@@ -484,6 +485,10 @@
     target.addEventListener('pointerenter', warm);
     target.addEventListener('focusin', warm);
     target.addEventListener('touchstart', warm, { passive: true });
+    // pointerdown fires a beat before click — so even a straight tap (no hover,
+    // as on touch) kicks off generation before the panel opens
+    target.addEventListener('pointerdown', warm);
+    target.addEventListener('mousedown', warm);
   }
 
   /* ---------- verse of the day ---------- */
@@ -1094,6 +1099,7 @@
     applyReadingPrefs();
     bibleAudio.reset();               // a fresh chapter starts fresh audio
     bibleAudio.show(verses.length > 0);
+    updateNotesSaveBtn();             // reflect any unsaved notes on the Save button
     // let the new cards lay out before the progress bar measures them
     if (window.requestAnimationFrame) window.requestAnimationFrame(updateReadingProgress);
   }
@@ -1230,6 +1236,43 @@
     });
   }
 
+  /* ---------- highlights & post-it notes (device-local) ----------
+     Per-verse colour highlights and sticky notes, keyed by book|chapter|verse.
+     Highlights save on click. Notes save immediately when autosave is on
+     (Settings), otherwise they wait in `pendingNotes` for the reader's Save
+     button. */
+  var ANNOT_KEY = 'tgp.annotations';
+  var HL_COLORS = ['yellow', 'green', 'blue', 'pink', 'orange', 'purple'];
+  var pendingNotes = {};   // key -> {text,color} not yet written to storage
+  function loadAnnots() { try { return JSON.parse(window.localStorage.getItem(ANNOT_KEY)) || {}; } catch (e) { return {}; } }
+  function saveAnnots(a) { try { window.localStorage.setItem(ANNOT_KEY, JSON.stringify(a)); } catch (e) { /* view-only */ } }
+  function annotKeyFor(n) { return bibleState.book.name + '|' + bibleState.chapter + '|' + n; }
+  function annotAutosave() { return settings.annotationsAutosave !== false; }  // default on
+  function hasPendingNotes() { for (var k in pendingNotes) { if (pendingNotes[k]) return true; } return false; }
+  function updateNotesSaveBtn() {
+    var btn = document.getElementById('bible-save-notes');
+    if (!btn) return;
+    var dirty = hasPendingNotes();
+    btn.classList.toggle('is-dirty', dirty);
+    btn.textContent = dirty ? t('bible.saveNotes') : t('bible.notesSaved');
+  }
+  function commitNote(key, cur) {
+    var a = loadAnnots(); a[key] = a[key] || {};
+    if (cur.text && cur.text.trim()) a[key].note = { text: cur.text.trim(), color: cur.color || 'yellow' };
+    else delete a[key].note;
+    saveAnnots(a); delete pendingNotes[key]; updateNotesSaveBtn();
+  }
+  function flushPendingNotes() {
+    var a = loadAnnots();
+    Object.keys(pendingNotes).forEach(function (k) {
+      var c = pendingNotes[k]; a[k] = a[k] || {};
+      if (c.text && c.text.trim()) a[k].note = { text: c.text.trim(), color: c.color || 'yellow' };
+      else delete a[k].note;
+    });
+    saveAnnots(a); pendingNotes = {}; updateNotesSaveBtn();
+    if (bibleState.chapterVerses) renderVerses(bibleState.chapterVerses);
+  }
+
   function buildVerseCard(verse) {
     var card = el('article', 'verse-card');
     card.setAttribute('data-verse', verse.number);
@@ -1296,8 +1339,96 @@
       actions.appendChild(btn);
     });
 
+    // ---- highlight + note tools (local, instant) ----
+    function applyHighlight(color) {
+      HL_COLORS.forEach(function (c) { card.classList.remove('hl-' + c); });
+      card.classList.toggle('is-highlighted', !!color);
+      if (color) card.classList.add('hl-' + color);
+    }
+    function renderPostit() {
+      var existing = card.querySelector('.verse-postit');
+      if (existing) existing.parentNode.removeChild(existing);
+      var a = loadAnnots()[annotKeyFor(verse.number)];
+      var note = a && a.note;
+      if (!note) return;
+      var pit = el('div', 'verse-postit hl-' + (note.color || 'yellow'));
+      pit.appendChild(txt('p', 'verse-postit-text', note.text));
+      pit.title = t('bible.note');
+      pit.addEventListener('click', function () { choose('note', fillNote); });
+      card.appendChild(pit);
+    }
+    function fillHighlight(p) {
+      var key = annotKeyFor(verse.number);
+      var cur = (loadAnnots()[key] || {}).hl || null;
+      p.appendChild(txt('p', 'verse-panel-label', t('bible.highlightPick')));
+      var row = el('div', 'hl-swatches');
+      HL_COLORS.forEach(function (c) {
+        var s = el('button', 'hl-swatch hl-' + c + (cur === c ? ' is-active' : ''));
+        s.type = 'button'; s.setAttribute('aria-label', c);
+        s.addEventListener('click', function () {
+          var a = loadAnnots(); a[key] = a[key] || {};
+          a[key].hl = (a[key].hl === c ? null : c);
+          saveAnnots(a);
+          applyHighlight(a[key].hl);
+          p.textContent = ''; fillHighlight(p);
+        });
+        row.appendChild(s);
+      });
+      p.appendChild(row);
+    }
+    function fillNote(p) {
+      var key = annotKeyFor(verse.number);
+      var saved = (loadAnnots()[key] || {}).note || null;
+      var cur = pendingNotes[key] || (saved ? { text: saved.text, color: saved.color } : { text: '', color: 'yellow' });
+      function markDirty() {
+        pendingNotes[key] = { text: cur.text, color: cur.color };
+        if (annotAutosave()) { commitNote(key, cur); renderPostit(); }
+        else updateNotesSaveBtn();
+      }
+      p.appendChild(txt('p', 'verse-panel-label', t('bible.notePick')));
+      var colors = el('div', 'note-colors');
+      HL_COLORS.forEach(function (c) {
+        var s = el('button', 'note-color hl-' + c + (cur.color === c ? ' is-active' : ''));
+        s.type = 'button'; s.setAttribute('aria-label', c);
+        s.addEventListener('click', function () { cur.color = c; markDirty(); p.textContent = ''; fillNote(p); });
+        colors.appendChild(s);
+      });
+      p.appendChild(colors);
+      var ta = el('textarea', 'note-textarea'); ta.rows = 4; ta.value = cur.text;
+      ta.placeholder = t('bible.notePlaceholder');
+      ta.addEventListener('input', function () { cur.text = ta.value; markDirty(); });
+      p.appendChild(ta);
+      var noteActions = el('div', 'note-actions');
+      var save = txt('button', 'verse-panel-btn', t('bible.noteSaveOne')); save.type = 'button';
+      save.addEventListener('click', function () { commitNote(key, cur); renderPostit(); });
+      noteActions.appendChild(save);
+      if (saved) {
+        var del = txt('button', 'verse-panel-btn is-danger', t('bible.noteDelete')); del.type = 'button';
+        del.addEventListener('click', function () {
+          var a = loadAnnots(); if (a[key]) delete a[key].note; saveAnnots(a);
+          delete pendingNotes[key]; renderPostit(); updateNotesSaveBtn(); p.textContent = ''; fillNote(p);
+        });
+        noteActions.appendChild(del);
+      }
+      p.appendChild(noteActions);
+    }
+
+    [
+      { name: 'highlight', key: 'bible.highlight', fill: fillHighlight },
+      { name: 'note', key: 'bible.note', fill: fillNote }
+    ].forEach(function (action) {
+      var btn = txt('button', 'verse-action verse-action-mark', t(action.key));
+      btn.type = 'button';
+      btn.addEventListener('click', function () { choose(action.name, action.fill); });
+      buttons[action.name] = btn;
+      actions.appendChild(btn);
+    });
+
     card.appendChild(actions);
     card.appendChild(panel);
+    // restore any saved highlight + note for this verse
+    applyHighlight((loadAnnots()[annotKeyFor(verse.number)] || {}).hl);
+    renderPostit();
     return card;
   }
 
@@ -3691,7 +3822,17 @@
     if (!dots || !text) return;
     var lvl = apologistLevel();
     dots.textContent = '';
-    for (var i = 1; i <= 5; i++) dots.appendChild(el('span', 'apologist-dot' + (i <= lvl ? ' is-on' : '')));
+    // each dot is a clickable toggle for that difficulty (1..5)
+    for (var i = 1; i <= 5; i++) {
+      (function (n) {
+        var dot = el('button', 'apologist-dot' + (n <= lvl ? ' is-on' : ''));
+        dot.type = 'button';
+        dot.title = t('apologist.setLevel', { n: n });
+        dot.setAttribute('aria-label', t('apologist.setLevel', { n: n }));
+        dot.addEventListener('click', function () { setApologistLevel(n); });
+        dots.appendChild(dot);
+      })(i);
+    }
     text.textContent = t('apologist.levelName' + lvl);
   }
 
@@ -5301,33 +5442,67 @@
     ]}
   ];
 
+  /* Public-domain images (Wikimedia) for key people and places, keyed by event
+     title. Rendered in the horizontal timeline; hidden gracefully if one fails
+     to load. */
+  var TIMELINE_IMAGES = {
+    'God creates the heavens and the earth': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg/330px-Michelangelo_-_Creation_of_Adam_%28cropped%29.jpg',
+    'The Great Flood and Noah’s ark': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Edward_Hicks%2C_American_-_Noah%27s_Ark_-_Google_Art_Project.jpg/330px-Edward_Hicks%2C_American_-_Noah%27s_Ark_-_Google_Art_Project.jpg',
+    'God calls Abram': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Guercino_Abramo_ripudia_Agar_%28cropped_2%29.jpg/330px-Guercino_Abramo_ripudia_Agar_%28cropped_2%29.jpg',
+    'Moses and the burning bush': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Rembrandt_Harmensz._van_Rijn_079.jpg/330px-Rembrandt_Harmensz._van_Rijn_079.jpg',
+    'Crossing the Red Sea': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/David_Roberts-IsraelitesLeavingEgypt_1828.jpg/330px-David_Roberts-IsraelitesLeavingEgypt_1828.jpg',
+    'The Ten Commandments at Sinai': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/0001_FL9694984.jpg/330px-0001_FL9694984.jpg',
+    'The fall of Jericho': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Tell_es-sultan.jpg/330px-Tell_es-sultan.jpg',
+    'Samuel anoints David': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/King_David%2C_the_King_of_Israel.jpg/330px-King_David%2C_the_King_of_Israel.jpg',
+    'Building of the temple begins': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Jerusalem_Modell_BW_2.JPG/330px-Jerusalem_Modell_BW_2.JPG',
+    'Elijah on Mount Carmel': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Giovanni_Girolamo_Savoldo%2C_Elijah_Fed_by_the_Raven%2C_c._1510%2C_NGA_46134.jpg/330px-Giovanni_Girolamo_Savoldo%2C_Elijah_Fed_by_the_Raven%2C_c._1510%2C_NGA_46134.jpg',
+    'Jerusalem falls; the temple destroyed': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Tissot_The_Flight_of_the_Prisoners.jpg/330px-Tissot_The_Flight_of_the_Prisoners.jpg',
+    'Daniel in the lions’ den; Babylon falls': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Sir_Peter_Paul_Rubens_-_Daniel_in_the_Lions%27_Den_-_Google_Art_Project.jpg/330px-Sir_Peter_Paul_Rubens_-_Daniel_in_the_Lions%27_Den_-_Google_Art_Project.jpg',
+    'The exiles return under Cyrus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Cyrus_II_%28The_Great%29_%28cropped%29.jpg/330px-Cyrus_II_%28The_Great%29_%28cropped%29.jpg',
+    'The birth of Jesus': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Adoration_of_the_sheperds_-_Matthias_Stomer.jpg/330px-Adoration_of_the_sheperds_-_Matthias_Stomer.jpg',
+    'The Sermon on the Mount': 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Bloch-SermonOnTheMount.jpg/330px-Bloch-SermonOnTheMount.jpg',
+    'The crucifixion': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Cristo_crucificado.jpg/330px-Cristo_crucificado.jpg',
+    'The resurrection': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Rafael_-_ressureicaocristo01.jpg/330px-Rafael_-_ressureicaocristo01.jpg',
+    'The Holy Spirit comes at Pentecost': 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Vienna_Karlskirche_frescos4b.jpg',
+    'The conversion of Saul (Paul)': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/La_conversion_de_Saint_Paul_Giordano_Nancy_3018.jpg/330px-La_conversion_de_Saint_Paul_Giordano_Nancy_3018.jpg',
+    'John’s Revelation on Patmos': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Chora-of-Patmos.JPG/330px-Chora-of-Patmos.JPG'
+  };
+
+  // A horizontal, scroll-through timeline: era markers and event cards (many
+  // with a public-domain image of the person or place) laid left to right.
   function renderDetailedTimeline() {
     var wrap = document.getElementById('timeline-detailed');
     if (!wrap || wrap.dataset.built) return;
     wrap.dataset.built = '1';
+    var track = el('div', 'tl-horizon');
     DETAILED_TIMELINE.forEach(function (period) {
-      var band = el('div', 'tl-period');
-      band.appendChild(txt('h3', 'tl-period-name', period.era));
-      var rows = el('div', 'tl-period-rows');
+      var era = el('div', 'tl-h-era');
+      era.appendChild(txt('span', 'tl-h-era-text', period.era));
+      track.appendChild(era);
       period.events.forEach(function (ev) {
-        var row = el('div', 'tl-row');
-        row.appendChild(txt('span', 'tl-row-date', ev.date));
-        row.appendChild(txt('span', 'tl-row-dot', ''));
-        var main = el('div', 'tl-row-main');
-        main.appendChild(txt('span', 'tl-row-title', ev.title));
+        var card = el('article', 'tl-h-card');
+        var src = TIMELINE_IMAGES[ev.title];
+        if (src) {
+          var fig = el('div', 'tl-h-img');
+          var im = document.createElement('img');
+          im.src = src; im.alt = ev.title; im.loading = 'lazy';
+          im.onerror = function () { if (fig.parentNode) fig.parentNode.removeChild(fig); };
+          fig.appendChild(im);
+          card.appendChild(fig);
+        }
+        card.appendChild(txt('span', 'tl-h-date', ev.date));
+        card.appendChild(txt('span', 'tl-h-title', ev.title));
         var loc = ev.ref ? parseRef(ev.ref) : null;
         if (loc) {
-          var b = txt('button', 'tl-row-ref', ev.ref);
+          var b = txt('button', 'tl-h-ref', ev.ref);
           b.type = 'button';
           b.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
-          main.appendChild(b);
+          card.appendChild(b);
         }
-        row.appendChild(main);
-        rows.appendChild(row);
+        track.appendChild(card);
       });
-      band.appendChild(rows);
-      wrap.appendChild(band);
     });
+    wrap.appendChild(track);
   }
 
   /* ---------- investigate Christianity (in the Road) ----------
@@ -5394,6 +5569,7 @@
     var xs = null, arcs = null, degree = null;
     var hovered = -1, selected = -1, rafPending = false;
 
+    var fsBtn = null;
     function grab() {
       viz = document.getElementById('xref-viz');
       canvas = document.getElementById('xref-canvas');
@@ -5401,6 +5577,7 @@
       captionEl = document.getElementById('xref-caption');
       selectedEl = document.getElementById('xref-selected');
       loadingEl = document.getElementById('xref-loading');
+      fsBtn = document.getElementById('xref-fullscreen');
     }
 
     function buildChapterIndex() {
@@ -5429,7 +5606,11 @@
     function layout() {
       var rect = viz.getBoundingClientRect();
       W = Math.max(320, Math.floor(rect.width));
-      H = Math.round(Math.min(440, Math.max(260, W * 0.46)));
+      if (viz.classList.contains('is-fullscreen')) {
+        H = Math.max(320, Math.floor(rect.height) - 70);   // leave room for the caption/close
+      } else {
+        H = Math.round(Math.min(440, Math.max(260, W * 0.46)));
+      }
       dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
@@ -5521,10 +5702,37 @@
 
     function label(i) { return chapters[i].book + ' ' + chapters[i].chapter; }
 
-    function showHover(i, clientX) {
+    // the y of the arc between chapters a and z at a given canvas x (the control
+    // point sits at the midpoint, so x is linear in the bezier parameter t)
+    function arcYAt(a, z, x) {
+      var x1 = xs[a], x2 = xs[z];
+      if (x1 === x2) return null;
+      var lo = Math.min(x1, x2), hi = Math.max(x1, x2);
+      if (x < lo || x > hi) return null;
+      var t = (x - x1) / (x2 - x1);
+      if (t < 0 || t > 1) return null;
+      var cy = baseY - Math.abs(x2 - x1);
+      return (1 - t) * (1 - t) * baseY + 2 * (1 - t) * t * cy + t * t * baseY;
+    }
+    // the chapter whose arc (from `hi`) passes closest under the cursor, or -1
+    function nearestArc(hi, x, y) {
+      var conns = connections(hi), best = -1, bestD = 7;
+      for (var k = 0; k < conns.length; k++) {
+        var yy = arcYAt(hi, conns[k], x);
+        if (yy == null) continue;
+        var d = Math.abs(yy - y);
+        if (d < bestD) { bestD = d; best = conns[k]; }
+      }
+      return best;
+    }
+
+    function showHover(i, clientX, partner) {
       if (!hoverEl) return;
       hoverEl.hidden = false;
-      hoverEl.textContent = label(i) + ' · ' + t('crossref.refCount', { n: degree[i] });
+      // over an arc line → name both chapters it joins; otherwise the chapter + count
+      hoverEl.textContent = (partner >= 0)
+        ? label(i) + ' ↔ ' + label(partner)
+        : label(i) + ' · ' + t('crossref.refCount', { n: degree[i] });
       var rect = viz.getBoundingClientRect();
       var x = clientX - rect.left;
       hoverEl.style.left = Math.max(8, Math.min(rect.width - 8, x)) + 'px';
@@ -5555,10 +5763,13 @@
 
     function wire() {
       canvas.addEventListener('pointermove', function (e) {
+        var rect = canvas.getBoundingClientRect();
+        var cy = e.clientY - rect.top;
         var i = chapterAt(e.clientX);
-        if (i === hovered) { showHover(i, e.clientX); return; }
+        var partner = nearestArc(i, e.clientX - rect.left, cy);
+        showHover(i, e.clientX, partner);
+        if (i === hovered) return;
         hovered = i;
-        showHover(i, e.clientX);
         if (!rafPending) {
           rafPending = true;
           window.requestAnimationFrame(function () { rafPending = false; paint(hovered >= 0 ? hovered : selected); });
@@ -5574,12 +5785,24 @@
         paint(selected);
         renderSelected(selected);
       });
+      if (fsBtn) fsBtn.addEventListener('click', toggleFullscreen);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && viz.classList.contains('is-fullscreen')) toggleFullscreen();
+      });
       var t0 = null;
       window.addEventListener('resize', function () {
         if (!built || document.getElementById('view-crossref').classList.contains('is-active') === false) return;
         clearTimeout(t0);
         t0 = setTimeout(function () { layout(); renderBase(); paint(selected); }, 200);
       });
+    }
+
+    function toggleFullscreen() {
+      var on = viz.classList.toggle('is-fullscreen');
+      document.body.classList.toggle('xref-fs-open', on);
+      if (fsBtn) fsBtn.textContent = on ? '✕' : '⛶';
+      // let the layout settle to its new size before re-measuring
+      window.requestAnimationFrame(function () { layout(); renderBase(); paint(selected); });
     }
 
     function build() {
@@ -5620,6 +5843,11 @@
   renderVersionOptions();
   wireSettings();
   bibleAudio.wire();
+  (function wireNotesSave() {
+    var btn = document.getElementById('bible-save-notes');
+    if (btn) btn.addEventListener('click', flushPendingNotes);
+    updateNotesSaveBtn();
+  })();
   initPush();
   applyReadingPrefs();
 
