@@ -321,6 +321,7 @@
     appShell.hidden = false;
     renderTodayHeader();
     decorateExploreCards();
+    updateBetaBadge();
     loadDailyVerse();
     checkBadges();        // register any badges already earned before this update
     renderProgressUI();
@@ -377,6 +378,7 @@
     if (name === 'devotional') renderMyDevotionals();
     if (name === 'progress') renderReadingProgress();
     if (name === 'messianic') renderMessianic();
+    if (name === 'beta') renderBeta();
     // the cross-reference arc diagram loads its data on first view
     if (name === 'crossref') xrefViz.open();
     // the badge collection is huge — build it only when its tab is opened
@@ -4770,6 +4772,161 @@
       frag.appendChild(group);
     });
     wrap.appendChild(frag);
+  }
+
+  /* ---------- beta readiness (temporary launch tracker) ----------
+     A plain count of tasks shipped vs. tasks recommended before beta. Lives in
+     its own tab above Settings; delete this block, its view, its nav link, and
+     the showView/openApp calls once it reaches 100%. */
+  var BETA_TASKS = [
+    { cat: 'Reading & study', items: [
+      { t: 'Bible reader — browse and read by chapter', done: true },
+      { t: 'Verse of the day', done: true },
+      { t: 'Search scripture', done: true },
+      { t: 'Highlights & side notes', done: true },
+      { t: 'Cross-references — arc map, lookup & dropdown builder', done: true },
+      { t: 'Illustrated Bible timeline', done: true },
+      { t: 'Definitions — A–Z with admin entries', done: true },
+      { t: 'Reading-progress dial', done: true },
+      { t: 'Messianic prophecy — fulfilments, timeline & odds', done: true }
+    ]},
+    { cat: 'Growth & discipleship', items: [
+      { t: 'Devotional generator & write-your-own', done: true },
+      { t: 'Bible plans — 121 plans + plan builder', done: true },
+      { t: 'The Road to Apologetics — stations, Apologist Mode, objections', done: true },
+      { t: 'Tips for new believers', done: true },
+      { t: 'Badges & celebrations', done: true }
+    ]},
+    { cat: 'Platform & experience', items: [
+      { t: 'Dark / light theming', done: true },
+      { t: '40-language interface', done: true },
+      { t: 'Settings — one group per feature', done: true },
+      { t: 'Daily reading reminders (web push)', done: true },
+      { t: 'Responsive & accessibility QA pass', done: false, note: 'Sweep every view on phone sizes; keyboard & screen-reader check.' }
+    ]},
+    { cat: 'Backend (n8n)', items: [
+      { t: 'Core Claude workflows & credential', done: true },
+      { t: 'Devotional length & apologetics tone wired to prompts', done: true },
+      { t: 'Multilingual scripture via Claude', done: true },
+      { t: 'Reader endpoints — chapter, context, insights, quiz', done: true },
+      { t: 'Definitions, follow-ups & reminders workflows', done: true },
+      { t: 'Wire search-context & translation into scripture', done: false, note: 'Settings exist in the UI but the scripture node ignores them.' },
+      { t: 'Save / read verses keyed by language', done: false, note: 'Today one verse is stored in one language only.' },
+      { t: 'Rewrite the apologetics system prompt', done: false, note: 'evangelism-prep path stays; the prompt needs the apologetics rework.' }
+    ]},
+    { cat: 'Accounts & sync', items: [
+      { t: 'Sign-in / accounts', done: false, note: 'No user identity is sent to the backend yet.' },
+      { t: 'Cloud-saved plans, progress & notes', done: false, note: 'Everything is on-device; needs a store + the user id in each call.' }
+    ]},
+    { cat: 'Release readiness', items: [
+      { t: 'Content QA across all 40 languages', done: false, note: 'Spot-check scripture and generated text per language.' },
+      { t: 'Install as an app (PWA) — offline & icon', done: false },
+      { t: 'Usage analytics & error monitoring', done: false },
+      { t: 'Privacy policy & about page', done: false },
+      { t: 'Image credits & licenses', done: false, note: 'Attribute the Wikimedia artwork used across the app.' }
+    ]}
+  ];
+  function betaTally() {
+    var done = 0, total = 0;
+    BETA_TASKS.forEach(function (c) { c.items.forEach(function (i) { total++; if (i.done) done++; }); });
+    return { done: done, total: total, pct: total ? Math.round((done / total) * 100) : 0 };
+  }
+  // keep the little percentage badge on the nav link current
+  function updateBetaBadge() {
+    var badge = document.getElementById('nav-beta-pct');
+    if (badge) badge.textContent = betaTally().pct + '%';
+  }
+  function renderBeta() {
+    var panel = document.getElementById('beta-panel');
+    if (!panel) return;
+    panel.textContent = '';
+    var overall = betaTally();
+    var remaining = overall.total - overall.done;
+
+    // hero: big percentage + overall bar
+    var hero = el('div', 'beta-hero');
+    var top = el('div', 'beta-hero-top');
+    var fig = el('div', 'beta-hero-figure');
+    var pct = el('span', 'beta-hero-pct'); pct.textContent = overall.pct; pct.appendChild(txt('span', 'beta-hero-unit', '%'));
+    fig.appendChild(pct);
+    var lab = el('div', 'beta-hero-label');
+    lab.appendChild(txt('span', 'beta-hero-strong', overall.done + ' of ' + overall.total + ' tasks complete'));
+    lab.appendChild(txt('span', 'beta-hero-sub', remaining + ' recommended before beta'));
+    fig.appendChild(lab);
+    top.appendChild(fig);
+    var stage = overall.pct >= 100 ? t('beta.stageReady') : overall.pct >= 90 ? t('beta.stageRC') : overall.pct >= 66 ? t('beta.stageFeature') : overall.pct >= 40 ? t('beta.stageCore') : t('beta.stageEarly');
+    top.appendChild(txt('span', 'beta-stage-chip', stage));
+    hero.appendChild(top);
+    var track = el('div', 'beta-track');
+    var fill = el('div', 'beta-track-fill');
+    hero.appendChild(track); track.appendChild(fill);
+    panel.appendChild(hero);
+
+    // by area
+    panel.appendChild(txt('h2', 'prog-subhead', t('beta.byArea')));
+    var mini = [];
+    BETA_TASKS.forEach(function (c) {
+      var d = c.items.filter(function (i) { return i.done; }).length;
+      var row = progressBar(c.cat, d, c.items.length);
+      panel.appendChild(row);
+      mini.push(row.querySelector('.prog-bar-fill'));
+    });
+
+    // every task, by area
+    panel.appendChild(txt('h2', 'prog-subhead', t('beta.everyTask')));
+    var cards = el('div', 'beta-cards');
+    BETA_TASKS.forEach(function (c) {
+      var d = c.items.filter(function (i) { return i.done; }).length;
+      var p = c.items.length ? Math.round((d / c.items.length) * 100) : 0;
+      var card = el('div', 'beta-card');
+      var head = el('div', 'beta-card-head');
+      head.appendChild(txt('h3', 'beta-card-title', c.cat));
+      head.appendChild(txt('span', 'beta-card-pct', p + '%'));
+      card.appendChild(head);
+      var list = el('ul', 'beta-items');
+      c.items.forEach(function (i) {
+        var li = el('li', 'beta-item ' + (i.done ? 'is-done' : 'is-todo'));
+        li.appendChild(txt('span', 'beta-mark ' + (i.done ? 'done' : 'todo'), i.done ? '✓' : ''));
+        var body = el('span', 'beta-item-text');
+        body.appendChild(document.createTextNode(i.t));
+        if (i.note) body.appendChild(txt('span', 'beta-item-note', i.note));
+        li.appendChild(body);
+        list.appendChild(li);
+      });
+      card.appendChild(list);
+      cards.appendChild(card);
+    });
+    panel.appendChild(cards);
+
+    // the road to beta — remaining tasks in a sensible order
+    var order = ['Accounts & sync', 'Backend (n8n)', 'Release readiness', 'Platform & experience'];
+    var todo = [];
+    order.forEach(function (name) {
+      var c = BETA_TASKS.filter(function (x) { return x.cat === name; })[0];
+      if (c) c.items.forEach(function (i) { if (!i.done) todo.push(i.t); });
+    });
+    if (todo.length) {
+      var callout = el('div', 'beta-callout');
+      callout.appendChild(txt('h2', 'beta-callout-title', t('beta.roadHeading')));
+      callout.appendChild(txt('p', 'beta-callout-lede', t('beta.roadLede')));
+      var road = el('div', 'beta-road');
+      todo.forEach(function (tk, i) {
+        var r = el('div', 'beta-road-item');
+        r.appendChild(txt('span', 'beta-road-n', String(i + 1)));
+        r.appendChild(txt('span', 'beta-road-t', tk));
+        road.appendChild(r);
+      });
+      callout.appendChild(road);
+      panel.appendChild(callout);
+    } else {
+      panel.appendChild(txt('p', 'prog-note', t('beta.doneNote')));
+    }
+
+    // animate the bars in (setTimeout: reliable even when not compositing)
+    window.setTimeout(function () {
+      fill.style.width = overall.pct + '%';
+      mini.forEach(function (f) { /* progressBar already set width inline */ });
+    }, 60);
   }
 
   /* ---------- reading progress (a Credit-Karma-style dial) ----------

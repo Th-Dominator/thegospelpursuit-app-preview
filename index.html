@@ -154,6 +154,11 @@
           <span class="notif-count js-notif-count" hidden>0</span>
         </button>
       </div>
+      <button class="nav-link" data-view="beta">
+        <span class="nav-icon" aria-hidden="true">🚀</span>
+        <span class="nav-text" data-i18n="nav.beta">Beta readiness</span>
+        <span id="nav-beta-pct" class="nav-badge"></span>
+      </button>
       <button class="nav-link" data-view="settings">
         <span class="nav-icon" aria-hidden="true">⚙</span>
         <span class="nav-text" data-i18n="nav.settings">Settings</span>
@@ -819,6 +824,14 @@
       <h2 class="tips-subhead" data-i18n="tips.studyHeading">How to study the Bible</h2>
       <p class="view-lede" data-i18n="tips.studyLede">Reading is where it starts; studying is how it sinks in. Here’s a simple method anyone can use.</p>
       <div id="study-list" class="tips-list"></div>
+    </section>
+
+    <!-- BETA READINESS (temporary — remove once at 100%) -->
+    <section id="view-beta" class="view">
+      <p class="eyebrow" data-i18n="beta.eyebrow">before launch</p>
+      <h1 class="view-title" data-i18n="beta.title">Beta readiness</h1>
+      <p class="view-lede" data-i18n="beta.lede">Progress toward the beta release — everything shipped, and everything still recommended before launch.</p>
+      <div id="beta-panel" class="beta-panel"></div>
     </section>
 
     <!-- SETTINGS -->

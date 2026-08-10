@@ -638,6 +638,22 @@ var TRANSLATIONS = {
     'nav.badges': 'Badges',
     'nav.progress': 'Reading progress',
     'nav.messianic': 'Messianic prophecy',
+    'nav.beta': 'Beta readiness',
+
+    /* ---- beta readiness tracker (temporary) ---- */
+    'beta.eyebrow': 'before launch',
+    'beta.title': 'Beta readiness',
+    'beta.lede': 'Progress toward the beta release — everything shipped, and everything still recommended before launch. This tab is a temporary tracker; remove it once it reaches 100%.',
+    'beta.byArea': 'Progress by area',
+    'beta.everyTask': 'Every task, area by area',
+    'beta.roadHeading': 'The road to beta',
+    'beta.roadLede': 'The recommended tasks that stand between here and a beta anyone can sign up for.',
+    'beta.doneNote': 'Everything on the list is done — you’re ready for beta. You can delete this tab now.',
+    'beta.stageEarly': 'Early build',
+    'beta.stageCore': 'Core in place',
+    'beta.stageFeature': 'Feature-complete build',
+    'beta.stageRC': 'Release candidate',
+    'beta.stageReady': 'Ready for beta',
 
     /* ---- reading progress tab ---- */
     'progress.eyebrow': 'your walk',

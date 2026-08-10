@@ -4011,6 +4011,91 @@ body.xref-fs-open { overflow: hidden; }
 }
 
 /* ============================================================
+   Beta readiness tab (temporary launch tracker)
+   ============================================================ */
+.beta-hero {
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.beta-hero-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.beta-hero-figure { display: flex; align-items: baseline; gap: 14px; }
+.beta-hero-pct {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(48px, 11vw, 80px);
+  line-height: .9;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.beta-hero-unit { font-size: .42em; color: var(--ink-muted); margin-left: 2px; }
+.beta-hero-label { display: flex; flex-direction: column; }
+.beta-hero-strong { font-size: 15px; font-weight: 600; color: var(--ink); }
+.beta-hero-sub { font-size: 13px; color: var(--ink-soft); }
+.beta-stage-chip {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 600;
+  color: var(--gold-dark);
+  background: var(--gold-tint);
+  border: 1px solid var(--border);
+  padding: 6px 13px; border-radius: 999px;
+}
+.beta-stage-chip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+.beta-track {
+  height: 15px; margin-top: 20px;
+  background: var(--border); border-radius: 999px; overflow: hidden;
+}
+.beta-track-fill {
+  height: 100%; width: 0; border-radius: 999px;
+  background: linear-gradient(90deg, #f6c453, #6fcf97, #56ccf2);
+  transition: width 1.1s cubic-bezier(.22,.61,.36,1);
+}
+@media (prefers-reduced-motion: reduce) { .beta-track-fill { transition: none; } }
+
+.beta-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.beta-card {
+  padding: 18px 18px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.beta-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.beta-card-title { font-family: var(--font-display); font-weight: 600; font-size: 16px; margin: 0; }
+.beta-card-pct { font-size: 13px; font-weight: 600; color: var(--gold-dark); font-variant-numeric: tabular-nums; }
+.beta-items { list-style: none; margin: 0; padding: 0; }
+.beta-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 0; border-top: 1px solid var(--divider);
+  font-size: 14px;
+}
+.beta-item:first-child { border-top: 0; }
+.beta-mark {
+  flex: 0 0 auto; width: 19px; height: 19px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 11px; font-weight: 700; margin-top: 1px;
+}
+.beta-mark.done { background: color-mix(in srgb, #2f8f5b 18%, transparent); color: #2f8f5b; }
+.beta-mark.todo { background: color-mix(in srgb, var(--gold) 16%, transparent); color: var(--gold-dark); border: 1px dashed var(--gold); }
+:root[data-theme="dark"] .beta-mark.done { color: #7fd6a4; background: rgba(127,214,164,.16); }
+.beta-item-text { color: var(--ink); }
+.beta-item.is-todo .beta-item-text { color: var(--ink-soft); }
+.beta-item-note { display: block; font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+
+.beta-callout {
+  margin-top: 8px; padding: 20px 22px;
+  border: 1px solid var(--border); border-left: 4px solid var(--gold);
+  border-radius: var(--radius); background: var(--gold-tint);
+}
+.beta-callout-title { font-family: var(--font-display); font-weight: 600; font-size: 18px; margin: 0 0 4px; }
+.beta-callout-lede { margin: 0 0 14px; font-size: 14px; color: var(--ink-soft); }
+.beta-road { display: grid; gap: 9px; }
+.beta-road-item { display: flex; gap: 12px; align-items: baseline; font-size: 14px; }
+.beta-road-n { font-family: var(--font-display); font-weight: 600; color: var(--gold-dark); font-variant-numeric: tabular-nums; min-width: 20px; }
+.beta-road-t { color: var(--ink); }
+
+/* ============================================================
    Today tab: photos on the explore cards
    ============================================================ */
 .explore-card.has-photo { padding: 0; overflow: hidden; }
