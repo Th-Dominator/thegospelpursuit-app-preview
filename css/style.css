@@ -3920,3 +3920,293 @@ body.xref-fs-open { overflow: hidden; }
 }
 .plan-note[hidden] { display: none; }
 
+/* ============================================================
+   Reading-progress tab: a Credit-Karma-style dial + breakdowns
+   ============================================================ */
+.progress-panel { margin-top: 8px; }
+.prog-dial {
+  position: relative;
+  max-width: 420px;
+  margin: 8px auto 4px;
+}
+.prog-dial-svg { display: block; width: 100%; height: auto; }
+.prog-dial-track { stroke: var(--border); }
+.prog-dial-value { transition: stroke-dashoffset 1.1s cubic-bezier(.22,.61,.36,1); }
+.prog-dial-center {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 6%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.prog-dial-pct {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 46px;
+  line-height: 1;
+  color: var(--ink);
+}
+.prog-dial-caption { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+.prog-counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 6px 0 8px;
+}
+.prog-count {
+  text-align: center;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.prog-count-num {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--gold-dark);
+}
+.prog-count-label { display: block; font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+.prog-subhead {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 22px 0 12px;
+  color: var(--ink);
+}
+.prog-bar-row { margin: 0 0 12px; }
+.prog-bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+.prog-bar-label { font-size: 14px; color: var(--ink); }
+.prog-bar-count { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.prog-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.prog-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f6c453, #6fcf97, #56ccf2);
+  transition: width .8s cubic-bezier(.22,.61,.36,1);
+}
+.prog-note {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--gold);
+  border-radius: var(--radius);
+  background: var(--gold-tint);
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   Today tab: photos on the explore cards
+   ============================================================ */
+.explore-card.has-photo { padding: 0; overflow: hidden; }
+.explore-photo {
+  display: block;
+  width: 100%;
+  height: 128px;
+  background: var(--surface-2, rgba(150,155,180,0.12));
+  overflow: hidden;
+}
+.explore-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.explore-card.has-photo .explore-icon { display: none; }
+.explore-card.has-photo .explore-text { padding: 0 16px 16px; }
+.explore-card.has-photo .today-tag { top: 10px; right: 10px; }
+
+/* ============================================================
+   Cross-reference: reference builder (testament › book › chapter › verse)
+   ============================================================ */
+.xref-builder {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 0 0 14px;
+}
+.xref-builder .bible-control { margin: 0; }
+.xref-builder select:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 560px) {
+  .xref-builder { grid-template-columns: 1fr 1fr; }
+}
+
+/* ============================================================
+   Definitions: A-Z groups + admin panel
+   ============================================================ */
+.definitions-groups { margin-top: 4px; }
+.definitions-letter-group { margin: 0 0 16px; }
+.definitions-letter-group[hidden] { display: none; }
+.definitions-letter-head {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--gold-dark);
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--divider);
+}
+.definitions-chip.is-custom { border-color: var(--gold); }
+.definitions-chip.is-custom::after { content: ' ★'; color: var(--gold-dark); font-size: 11px; }
+
+.def-admin {
+  margin-top: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+.def-admin-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.def-admin-summary::-webkit-details-marker { display: none; }
+.def-admin-title { font-family: var(--font-display); font-weight: 600; font-size: 15px; color: var(--ink); }
+.def-admin-title::before { content: '⚙ '; color: var(--gold-dark); }
+.def-admin-hint { font-size: 12px; color: var(--ink-soft); }
+.def-admin-body { padding: 0 16px 16px; }
+.def-admin-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.def-admin-empty { font-size: 13px; color: var(--ink-muted); margin: 0; }
+.def-admin-item {
+  position: relative;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.def-admin-term-name { display: block; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.def-admin-def-text { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft); white-space: pre-wrap; }
+.def-admin-del {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--error);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.def-admin-del:hover { border-color: var(--error); }
+
+/* ============================================================
+   Messianic prophecy tab
+   ============================================================ */
+.messianic-odds {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 22px 20px;
+  margin: 4px 0 8px;
+}
+.mo-figure { text-align: center; margin-bottom: 16px; }
+.mo-count { font-size: 14px; color: var(--ink-soft); }
+.mo-odds {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(34px, 8vw, 56px);
+  line-height: 1.05;
+  color: var(--gold-dark);
+  margin-top: 4px;
+}
+.mo-words { font-size: 14px; color: var(--ink-muted); margin-top: 2px; }
+.mo-slider { width: 100%; margin: 6px 0 10px; accent-color: var(--gold); cursor: pointer; }
+.mo-ticks { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.mo-tick {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.mo-tick.is-active { border-color: var(--gold); background: var(--gold-tint); color: var(--gold-dark); }
+.mo-illus { font-size: 15px; line-height: 1.6; color: var(--ink); margin: 0 0 8px; }
+.mo-punch {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+.mo-caveat { font-size: 12px; line-height: 1.55; color: var(--ink-muted); margin: 0; }
+
+.messianic-timeline { margin: 4px 0 8px; }
+.mess-h-era .tl-h-era-text { border-color: var(--gold-dark); }
+.mess-card { flex: 0 0 220px; width: 220px; }
+.mess-card-desc { font-size: 14px; line-height: 1.4; color: var(--ink); flex: 1; }
+.mess-card-refs, .mess-row-refs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.mess-ref {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.mess-ref-ot { color: var(--gold-dark); }
+.mess-ref-nt { color: #2f7d55; }
+:root[data-theme="dark"] .mess-ref-nt { color: #7fd6a4; }
+.mess-ref:hover { border-color: var(--gold); background: var(--gold-tint); }
+.mess-ref:disabled { cursor: default; opacity: .6; }
+.mess-ref-arrow { color: var(--ink-muted); font-size: 13px; }
+
+.mess-legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 0 0 14px; }
+.mess-legend-item { font-size: 12px; color: var(--ink-soft); display: inline-flex; align-items: center; }
+.mess-legend-item::before {
+  content: '';
+  width: 12px; height: 12px;
+  border-radius: 3px;
+  margin-right: 6px;
+}
+.mess-legend-ot::before { background: var(--gold); }
+.mess-legend-nt::before { background: #2f7d55; }
+:root[data-theme="dark"] .mess-legend-nt::before { background: #7fd6a4; }
+.mess-list-stage {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--gold-dark);
+  margin: 20px 0 10px;
+}
+.mess-table { display: flex; flex-direction: column; gap: 8px; }
+.mess-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 16px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.mess-row-desc { font-size: 14px; line-height: 1.45; color: var(--ink); }
+@media (max-width: 560px) {
+  .mess-row { grid-template-columns: 1fr; }
+  .mess-row-refs { justify-content: flex-start; }
+}
+

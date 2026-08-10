@@ -103,6 +103,10 @@
         <span class="nav-icon" aria-hidden="true">⇄</span>
         <span class="nav-text" data-i18n="nav.crossref">Cross-references</span>
       </button>
+      <button class="nav-link" data-view="messianic">
+        <span class="nav-icon" aria-hidden="true">✡</span>
+        <span class="nav-text" data-i18n="nav.messianic">Messianic prophecy</span>
+      </button>
       <button class="nav-link" data-view="timeline">
         <span class="nav-icon" aria-hidden="true">⌛</span>
         <span class="nav-text" data-i18n="nav.timeline">Bible timeline</span>
@@ -130,6 +134,10 @@
       <button class="nav-link" data-view="badges">
         <span class="nav-icon" aria-hidden="true">🏅</span>
         <span class="nav-text" data-i18n="nav.badges">Badges</span>
+      </button>
+      <button class="nav-link" data-view="progress">
+        <span class="nav-icon" aria-hidden="true">📊</span>
+        <span class="nav-text" data-i18n="nav.progress">Reading progress</span>
       </button>
     </nav>
 
@@ -318,6 +326,14 @@
       <div id="badge-grid" class="badge-groups"></div>
     </section>
 
+    <!-- READING PROGRESS -->
+    <section id="view-progress" class="view">
+      <p class="eyebrow" data-i18n="progress.eyebrow">your walk</p>
+      <h1 class="view-title" data-i18n="progress.title">Reading progress</h1>
+      <p class="view-lede" data-i18n="progress.lede">How far you’ve read through the whole Bible — chapter by chapter. Your progress is kept on this device and grows every time you read.</p>
+      <div id="progress-panel" class="progress-panel"></div>
+    </section>
+
     <!-- THE BIBLE -->
     <section id="view-bible" class="view">
       <p class="eyebrow" data-i18n="bible.eyebrow">the bible</p>
@@ -489,6 +505,27 @@
 
       <h2 class="timeline-subhead" data-i18n="crossref.lookupHeading">Look up a verse’s cross-references</h2>
       <p class="view-lede" data-i18n="crossref.lede">Enter any verse and see the passages that speak to it — prophecies, echoes, quotations, and parallels across the whole Bible. Tap one to open it in the reader.</p>
+
+      <!-- build a reference by picking testament › book › chapter › verse -->
+      <div id="crossref-builder" class="xref-builder">
+        <label class="bible-control">
+          <span class="bible-control-label" data-i18n="crossref.pickTestament">Testament</span>
+          <select id="xref-testament"></select>
+        </label>
+        <label class="bible-control">
+          <span class="bible-control-label" data-i18n="crossref.pickBook">Book</span>
+          <select id="xref-book"></select>
+        </label>
+        <label class="bible-control">
+          <span class="bible-control-label" data-i18n="crossref.pickChapter">Chapter</span>
+          <select id="xref-chapter"></select>
+        </label>
+        <label class="bible-control">
+          <span class="bible-control-label" data-i18n="crossref.pickVerse">Verse</span>
+          <select id="xref-verse"></select>
+        </label>
+      </div>
+
       <form id="crossref-form" class="tool-form">
         <input id="crossref-query" type="text" autocomplete="off" data-i18n-placeholder="crossref.placeholder" placeholder="John 3:16, Isaiah 53:5, Romans 8:28" required>
         <button type="submit" data-i18n="crossref.submit">Find</button>
@@ -498,6 +535,28 @@
         <div id="crossref-list" class="crossref-list"></div>
       </div>
       <p id="crossref-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- MESSIANIC PROPHECY -->
+    <section id="view-messianic" class="view">
+      <p class="eyebrow" data-i18n="messianic.eyebrow">messianic prophecy</p>
+      <h1 class="view-title" data-i18n="messianic.title">Messianic prophecy</h1>
+      <p class="view-lede" data-i18n="messianic.lede">Centuries before his birth, the Hebrew Scriptures foretold the Messiah in striking detail — where he would be born, how he would live, die, and rise. Jesus of Nazareth fulfilled them all. Here they are, side by side: the promise and its fulfillment.</p>
+
+      <!-- the odds -->
+      <h2 class="timeline-subhead" data-i18n="messianic.oddsHeading">What are the odds?</h2>
+      <p class="view-lede" data-i18n="messianic.oddsLede">One man fulfilling even a handful of these prophecies by chance stretches probability past breaking. Drag to see how the odds collapse as the prophecies stack up.</p>
+      <div id="messianic-odds" class="messianic-odds"></div>
+
+      <!-- horizontal timeline of fulfillment -->
+      <h2 class="timeline-subhead" data-i18n="messianic.timelineHeading">Fulfilled in the life of Christ</h2>
+      <p class="view-lede" data-i18n="messianic.timelineLede">Prophecies spoken across a thousand years, all converging on a single life — laid out in the order they came true.</p>
+      <div id="messianic-timeline" class="messianic-timeline"></div>
+
+      <!-- full list -->
+      <h2 class="timeline-subhead" data-i18n="messianic.listHeading">Every prophecy, promise and fulfillment</h2>
+      <p class="view-lede" data-i18n="messianic.listLede">Each row pairs the Old Testament prophecy with its New Testament fulfillment. Tap either reference to open it in the reader.</p>
+      <div id="messianic-list" class="messianic-list"></div>
     </section>
 
     <!-- BIBLE TIMELINE -->
@@ -525,6 +584,23 @@
       <div id="definitions-common" class="definitions-common"></div>
       <div id="definitions-result" class="result-card prose" hidden></div>
       <p id="definitions-status" class="status" role="status" aria-live="polite"></p>
+
+      <!-- admin: add your own definitions (saved on this device) -->
+      <details id="definitions-admin" class="def-admin">
+        <summary class="def-admin-summary">
+          <span class="def-admin-title" data-i18n="definitions.adminHeading">Admin — add a definition</span>
+          <span class="def-admin-hint" data-i18n="definitions.adminHint">Write your own entries; they appear in the list above and open instantly.</span>
+        </summary>
+        <div class="def-admin-body">
+          <form id="def-admin-form" class="devo-own-form">
+            <input id="def-admin-term" type="text" autocomplete="off" data-i18n-placeholder="definitions.adminTermPh" placeholder="Term (e.g. Shalom)" required>
+            <textarea id="def-admin-def" rows="5" data-i18n-placeholder="definitions.adminDefPh" placeholder="Its meaning, roots, and a key verse…" required></textarea>
+            <button type="submit" data-i18n="definitions.adminSave">Save definition</button>
+          </form>
+          <p id="def-admin-status" class="status" role="status" aria-live="polite"></p>
+          <div id="def-admin-list" class="def-admin-list"></div>
+        </div>
+      </details>
     </section>
 
     <!-- DEVOTIONAL -->

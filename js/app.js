@@ -320,10 +320,38 @@
     rays.hidden = true;
     appShell.hidden = false;
     renderTodayHeader();
+    decorateExploreCards();
     loadDailyVerse();
     checkBadges();        // register any badges already earned before this update
     renderProgressUI();
     renderNotifUI();
+  }
+
+  /* Public-domain artwork (Wikimedia) for the Today tab's Explore cards, keyed
+     by the view each card opens. Added as a hero image atop the card; if one
+     fails to load, the card falls back to its plain icon layout. */
+  var EXPLORE_PHOTOS = {
+    bible: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Gutenberg_Bible%2C_Lenox_Copy%2C_New_York_Public_Library%2C_2009._Pic_01.jpg/330px-Gutenberg_Bible%2C_Lenox_Copy%2C_New_York_Public_Library%2C_2009._Pic_01.jpg',
+    devotional: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/JEAN-FRAN%C3%87OIS_MILLET_-_El_%C3%81ngelus_%28Museo_de_Orsay%2C_1857-1859._%C3%93leo_sobre_lienzo%2C_55.5_x_66_cm%29.jpg/330px-JEAN-FRAN%C3%87OIS_MILLET_-_El_%C3%81ngelus_%28Museo_de_Orsay%2C_1857-1859._%C3%93leo_sobre_lienzo%2C_55.5_x_66_cm%29.jpg',
+    apologetics: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/V%26A_-_Raphael%2C_St_Paul_Preaching_in_Athens_%281515%29.jpg/330px-V%26A_-_Raphael%2C_St_Paul_Preaching_in_Athens_%281515%29.jpg',
+    search: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Aleppo_Codex_Joshua_1_1.jpg/330px-Aleppo_Codex_Joshua_1_1.jpg',
+    plans: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Meester_van_Catharina_van_Kleef_-_Getijdenboek_van_de_Meester_van_Catharina_van_Kleef4.jpg/330px-Meester_van_Catharina_van_Kleef_-_Getijdenboek_van_de_Meester_van_Catharina_van_Kleef4.jpg',
+    tips: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/The_Baptism_of_Christ_%28Verrocchio_and_Leonardo%29.jpg/330px-The_Baptism_of_Christ_%28Verrocchio_and_Leonardo%29.jpg'
+  };
+  function decorateExploreCards() {
+    document.querySelectorAll('.explore-card').forEach(function (card) {
+      if (card.dataset.photoDone) return;
+      var src = EXPLORE_PHOTOS[card.dataset.view];
+      if (!src) return;
+      card.dataset.photoDone = '1';
+      var fig = el('span', 'explore-photo');
+      var im = document.createElement('img');
+      im.src = src; im.alt = ''; im.loading = 'lazy'; im.setAttribute('aria-hidden', 'true');
+      im.onerror = function () { card.classList.remove('has-photo'); if (fig.parentNode) fig.parentNode.removeChild(fig); };
+      fig.appendChild(im);
+      card.insertBefore(fig, card.firstChild);
+      card.classList.add('has-photo');
+    });
   }
 
   /* ---------- view routing ---------- */
@@ -345,8 +373,10 @@
     if (name === 'apologetics') { apoloStage = null; renderApologetics(); }
     // the timeline and definitions build their static content on first view
     if (name === 'timeline') { renderDetailedTimeline(); renderBibleTimeline(); }
-    if (name === 'definitions') renderCommonTerms();
+    if (name === 'definitions') { renderCommonTerms(); renderDefAdmin(); }
     if (name === 'devotional') renderMyDevotionals();
+    if (name === 'progress') renderReadingProgress();
+    if (name === 'messianic') renderMessianic();
     // the cross-reference arc diagram loads its data on first view
     if (name === 'crossref') xrefViz.open();
     // the badge collection is huge — build it only when its tab is opened
@@ -4742,6 +4772,128 @@
     wrap.appendChild(frag);
   }
 
+  /* ---------- reading progress (a Credit-Karma-style dial) ----------
+     A big semicircular gauge for the share of the whole Bible read, then a
+     testament split and a section-by-section breakdown. All from the same
+     per-chapter reading data the badges use. */
+  var PROGRESS_SECTIONS = [
+    { key: 'progress.secTorah', names: ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'] },
+    { key: 'progress.secHistory', names: ['Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther'] },
+    { key: 'progress.secWisdom', names: ['Job', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon'] },
+    { key: 'progress.secMajor', names: ['Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel'] },
+    { key: 'progress.secMinor', names: ['Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'] },
+    { key: 'progress.secGospels', names: ['Matthew', 'Mark', 'Luke', 'John', 'Acts'] },
+    { key: 'progress.secPaul', names: ['Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon'] },
+    { key: 'progress.secGeneral', names: ['Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude', 'Revelation'] }
+  ];
+
+  // read / total chapters across a list of books
+  function sectionTally(p, names) {
+    var read = 0, total = 0;
+    resolveBooks(names).forEach(function (b) {
+      total += b.chapters;
+      read += chaptersReadIn(p, b.name, b.chapters);
+    });
+    return { read: read, total: total };
+  }
+  // read / total chapters for a whole testament (0 = OT, 1 = NT)
+  function testamentTally(p, idx) {
+    var read = 0, total = 0;
+    BIBLE_BOOKS[idx].books.forEach(function (b) {
+      total += b.chapters;
+      read += chaptersReadIn(p, b.name, b.chapters);
+    });
+    return { read: read, total: total };
+  }
+  function booksFinished(p) {
+    var n = 0;
+    BIBLE_BOOKS.forEach(function (g) {
+      g.books.forEach(function (b) { if (chaptersReadIn(p, b.name, b.chapters) >= b.chapters) n++; });
+    });
+    return n;
+  }
+
+  // one labelled progress bar (label · read/total · percent)
+  function progressBar(label, read, total) {
+    var pct = total ? Math.round((read / total) * 100) : 0;
+    var row = el('div', 'prog-bar-row');
+    var head = el('div', 'prog-bar-head');
+    head.appendChild(txt('span', 'prog-bar-label', label));
+    head.appendChild(txt('span', 'prog-bar-count', read + '/' + total + ' · ' + pct + '%'));
+    row.appendChild(head);
+    var track = el('div', 'prog-bar-track');
+    var fill = el('div', 'prog-bar-fill');
+    fill.style.width = pct + '%';
+    track.appendChild(fill);
+    row.appendChild(track);
+    return row;
+  }
+
+  function renderReadingProgress() {
+    var panel = document.getElementById('progress-panel');
+    if (!panel) return;
+    var p = loadProgress();
+    var read = chapterCount(p), total = 1189;
+    var pct = total ? (read / total) * 100 : 0;
+    var pctR = Math.round(pct);
+    panel.textContent = '';
+
+    // --- the dial: a semicircular gauge, filled to the percentage read ---
+    var ARC = 282.743; // path length of the semicircle below (π · r, r = 90)
+    var off = ARC * (1 - pct / 100);
+    var dial = el('div', 'prog-dial');
+    dial.innerHTML =
+      '<svg class="prog-dial-svg" viewBox="0 0 200 128" role="img" aria-label="' + pctR + '%">' +
+        '<defs><linearGradient id="progGrad" x1="0" y1="0" x2="1" y2="0">' +
+          '<stop offset="0" stop-color="#f6c453"/><stop offset="0.5" stop-color="#6fcf97"/><stop offset="1" stop-color="#56ccf2"/>' +
+        '</linearGradient></defs>' +
+        '<path class="prog-dial-track" d="M 10 118 A 90 90 0 0 1 190 118" fill="none" stroke-width="16" stroke-linecap="round"/>' +
+        '<path class="prog-dial-value" d="M 10 118 A 90 90 0 0 1 190 118" fill="none" stroke-width="16" stroke-linecap="round" stroke="url(#progGrad)" ' +
+          'stroke-dasharray="' + ARC + '" stroke-dashoffset="' + ARC + '"/>' +
+      '</svg>';
+    var center = el('div', 'prog-dial-center');
+    center.appendChild(txt('span', 'prog-dial-pct', pctR + '%'));
+    center.appendChild(txt('span', 'prog-dial-caption', t('progress.ofBible')));
+    dial.appendChild(center);
+    panel.appendChild(dial);
+
+    // headline counts under the dial
+    var counts = el('div', 'prog-counts');
+    function stat(num, label) {
+      var s = el('div', 'prog-count');
+      s.appendChild(txt('span', 'prog-count-num', String(num)));
+      s.appendChild(txt('span', 'prog-count-label', label));
+      return s;
+    }
+    counts.appendChild(stat(read, t('progress.chaptersRead')));
+    counts.appendChild(stat(total - read, t('progress.chaptersLeft')));
+    counts.appendChild(stat(booksFinished(p) + '/66', t('progress.booksFinished')));
+    panel.appendChild(counts);
+
+    // testament split
+    var tHead = txt('h2', 'prog-subhead', t('progress.byTestament'));
+    panel.appendChild(tHead);
+    var ot = testamentTally(p, 0), nt = testamentTally(p, 1);
+    panel.appendChild(progressBar(t('bible.oldTestament'), ot.read, ot.total));
+    panel.appendChild(progressBar(t('bible.newTestament'), nt.read, nt.total));
+
+    // section-by-section
+    panel.appendChild(txt('h2', 'prog-subhead', t('progress.bySection')));
+    PROGRESS_SECTIONS.forEach(function (sec) {
+      var tally = sectionTally(p, sec.names);
+      panel.appendChild(progressBar(t(sec.key), tally.read, tally.total));
+    });
+
+    // encouragement
+    var note = txt('p', 'prog-note', pctR >= 100 ? t('progress.doneNote') : (read === 0 ? t('progress.startNote') : t('progress.keepNote', { left: total - read })));
+    panel.appendChild(note);
+
+    // set the fill to the true value (a short timeout lets the CSS transition
+    // animate it in when the page is on screen; the value is correct either way)
+    var valPath = dial.querySelector('.prog-dial-value');
+    if (valPath) window.setTimeout(function () { valPath.style.strokeDashoffset = off; }, 60);
+  }
+
   // wire the bell + streak chips (there's one pair in the sidebar, one in the topbar)
   document.querySelectorAll('.js-notif-open').forEach(function (btn) {
     btn.addEventListener('click', openNotif);
@@ -5148,6 +5300,97 @@
     });
   })();
 
+  /* Build a reference from dropdowns: testament › book › chapter › verse.
+     Each choice fills the one below it; the final verse choice writes the
+     reference into the lookup box (and, when a verse is picked, runs it).
+     Verse numbers are exact when the chapter loads; otherwise a safe range. */
+  (function wireCrossrefBuilder() {
+    var tSel = document.getElementById('xref-testament');
+    if (!tSel) return;
+    var bSel = document.getElementById('xref-book');
+    var cSel = document.getElementById('xref-chapter');
+    var vSel = document.getElementById('xref-verse');
+    var input = document.getElementById('crossref-query');
+    var form = document.getElementById('crossref-form');
+
+    function opt(sel, value, label, disabled) {
+      var o = document.createElement('option');
+      o.value = value; o.textContent = label;
+      if (disabled) { o.disabled = true; o.selected = true; }
+      sel.appendChild(o);
+    }
+    function reset(sel, placeholderKey) {
+      sel.textContent = '';
+      opt(sel, '', t(placeholderKey), true);
+      sel.disabled = true;
+    }
+    function fillTestaments() {
+      tSel.textContent = '';
+      opt(tSel, '', t('crossref.pickTestamentPh'), true);
+      BIBLE_BOOKS.forEach(function (g, i) { opt(tSel, String(i), t(g.testamentKey)); });
+    }
+    function fillBooks(ti) {
+      bSel.textContent = '';
+      opt(bSel, '', t('crossref.pickBookPh'), true);
+      BIBLE_BOOKS[ti].books.forEach(function (b) { opt(bSel, b.name, b.name); });
+      bSel.disabled = false;
+    }
+    function fillChapters(book) {
+      cSel.textContent = '';
+      opt(cSel, '', t('crossref.pickChapterPh'), true);
+      for (var c = 1; c <= book.chapters; c++) opt(cSel, String(c), String(c));
+      cSel.disabled = false;
+    }
+    function fillVerses(count) {
+      vSel.textContent = '';
+      opt(vSel, '', t('crossref.pickVersePh'), true);
+      for (var v = 1; v <= count; v++) opt(vSel, String(v), String(v));
+      vSel.disabled = false;
+    }
+    function updateInput() {
+      if (!bSel.value || !cSel.value) return;
+      var ref = bSel.value + ' ' + cSel.value + (vSel.value ? ':' + vSel.value : '');
+      input.value = ref;
+    }
+
+    reset(bSel, 'crossref.pickBookPh');
+    reset(cSel, 'crossref.pickChapterPh');
+    reset(vSel, 'crossref.pickVersePh');
+    fillTestaments();
+
+    tSel.addEventListener('change', function () {
+      if (tSel.value === '') return;
+      fillBooks(parseInt(tSel.value, 10));
+      reset(cSel, 'crossref.pickChapterPh');
+      reset(vSel, 'crossref.pickVersePh');
+    });
+    bSel.addEventListener('change', function () {
+      var found = findBook(bSel.value);
+      if (!found) return;
+      fillChapters(found.book);
+      reset(vSel, 'crossref.pickVersePh');
+      updateInput();
+    });
+    cSel.addEventListener('change', function () {
+      if (!cSel.value) return;
+      updateInput();
+      fillVerses(80); // a safe range until the exact count loads
+      // refine to the chapter's real verse count when it's available
+      requestCached('bible-chapter', { book: bSel.value, chapter: parseInt(cSel.value, 10), version: currentVersion() })
+        .then(function (data) {
+          var verses = extractVerses(data);
+          if (verses.length) fillVerses(verses[verses.length - 1].number || verses.length);
+        })
+        .catch(function () { /* keep the safe range */ });
+    });
+    vSel.addEventListener('change', function () {
+      if (!vSel.value) return;
+      updateInput();
+      // a full reference is ready — run the lookup
+      if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    });
+  })();
+
   /* ---------- definitions ---------- */
   wireForm({
     formId: 'definitions-form',
@@ -5179,44 +5422,156 @@
     'Testament', 'Tithe', 'Transgression', 'Trinity', 'Truth', 'Wisdom', 'Worship', 'Wrath'
   ].sort(function (a, b) { return a.localeCompare(b); });
 
+  /* Custom definitions the owner adds (admin panel). Stored on the device and
+     merged into the A-Z list; a term with a stored definition opens instantly
+     without calling the backend. */
+  var CUSTOM_DEFS_KEY = 'tgp.customDefinitions';
+  function loadCustomDefs() {
+    try { var a = JSON.parse(window.localStorage.getItem(CUSTOM_DEFS_KEY)); return Array.isArray(a) ? a : []; }
+    catch (e) { return []; }
+  }
+  function saveCustomDefs(a) {
+    try { window.localStorage.setItem(CUSTOM_DEFS_KEY, JSON.stringify(a)); } catch (e) { /* view-only */ }
+  }
+  function customDefFor(term) {
+    var key = String(term).toLowerCase();
+    var found = loadCustomDefs().filter(function (d) { return d.term.toLowerCase() === key; });
+    return found.length ? found[found.length - 1].def : null;
+  }
+  // the full A-Z term list: built-in common terms plus any custom ones
+  function allDefinitionTerms() {
+    var seen = {}, out = [];
+    COMMON_TERMS.forEach(function (t0) { var k = t0.toLowerCase(); if (!seen[k]) { seen[k] = 1; out.push(t0); } });
+    loadCustomDefs().forEach(function (d) { var k = d.term.toLowerCase(); if (!seen[k]) { seen[k] = 1; out.push(d.term); } });
+    return out.sort(function (a, b) { return a.localeCompare(b); });
+  }
+
   function submitDefinition(term) {
     var input = document.getElementById('definitions-term');
     input.value = term;
+    // a custom (owner-written) definition is shown straight away, no backend call
+    var custom = customDefFor(term);
+    if (custom) {
+      var result = document.getElementById('definitions-result');
+      var status = document.getElementById('definitions-status');
+      result.textContent = cleanAIText(custom.trim());
+      result.hidden = false;
+      if (status) setStatus(status, '', false);
+      result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
     document.getElementById('definitions-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   }
 
+  // A-Z browser: a letter dropdown that filters, plus terms grouped by letter.
   function renderCommonTerms() {
     var wrap = document.getElementById('definitions-common');
-    if (!wrap || wrap.dataset.built) return;
-    wrap.dataset.built = '1';
+    if (!wrap) return;
+    wrap.textContent = '';
     wrap.appendChild(txt('p', 'definitions-common-label', t('definitions.commonHeading')));
 
-    // a dropdown of every term, in alphabetical order
+    var terms = allDefinitionTerms();
+    // group terms by first letter (non-letters collected under '#')
+    var groups = {}, letters = [];
+    terms.forEach(function (term) {
+      var c = term.charAt(0).toUpperCase();
+      if (!/[A-Z]/.test(c)) c = '#';
+      if (!groups[c]) { groups[c] = []; letters.push(c); }
+      groups[c].push(term);
+    });
+    letters.sort();
+
+    // the letter dropdown (A-Z) — filters which group is shown
     var picker = el('div', 'definitions-picker');
     var sel = el('select', 'definitions-select');
-    sel.setAttribute('aria-label', t('definitions.commonHeading'));
-    var ph = el('option');
-    ph.value = ''; ph.textContent = t('definitions.pickTerm'); ph.disabled = true; ph.selected = true;
-    sel.appendChild(ph);
-    COMMON_TERMS.forEach(function (term) {
-      var o = el('option');
-      o.value = term; o.textContent = term;
-      sel.appendChild(o);
+    sel.setAttribute('aria-label', t('definitions.pickLetter'));
+    var all = el('option'); all.value = ''; all.textContent = t('definitions.allLetters'); sel.appendChild(all);
+    letters.forEach(function (L) {
+      var o = el('option'); o.value = L; o.textContent = L; sel.appendChild(o);
     });
-    sel.addEventListener('change', function () { if (sel.value) submitDefinition(sel.value); });
     picker.appendChild(sel);
     wrap.appendChild(picker);
 
-    // alphabetical quick-pick chips as well
-    var row = el('div', 'definitions-chips');
-    COMMON_TERMS.forEach(function (term) {
-      var b = txt('button', 'definitions-chip', term);
-      b.type = 'button';
-      b.addEventListener('click', function () { submitDefinition(term); });
-      row.appendChild(b);
+    // grouped A-Z chip sections
+    var groupsWrap = el('div', 'definitions-groups');
+    letters.forEach(function (L) {
+      var sec = el('div', 'definitions-letter-group');
+      sec.dataset.letter = L;
+      sec.appendChild(txt('h3', 'definitions-letter-head', L));
+      var row = el('div', 'definitions-chips');
+      groups[L].forEach(function (term) {
+        var b = txt('button', 'definitions-chip', term);
+        b.type = 'button';
+        if (customDefFor(term)) b.classList.add('is-custom');
+        b.addEventListener('click', function () { submitDefinition(term); });
+        row.appendChild(b);
+      });
+      sec.appendChild(row);
+      groupsWrap.appendChild(sec);
     });
-    wrap.appendChild(row);
+    wrap.appendChild(groupsWrap);
+
+    sel.addEventListener('change', function () {
+      var pick = sel.value;
+      groupsWrap.querySelectorAll('.definitions-letter-group').forEach(function (g) {
+        g.hidden = pick && g.dataset.letter !== pick;
+      });
+    });
   }
+
+  /* admin panel: add / remove your own definitions */
+  function renderDefAdmin() {
+    var list = document.getElementById('def-admin-list');
+    if (!list) return;
+    var defs = loadCustomDefs();
+    list.textContent = '';
+    if (!defs.length) {
+      list.appendChild(txt('p', 'def-admin-empty', t('definitions.adminEmpty')));
+      return;
+    }
+    defs.slice().reverse().forEach(function (d, ri) {
+      var idx = defs.length - 1 - ri; // real index in the stored array
+      var card = el('div', 'def-admin-item');
+      card.appendChild(txt('span', 'def-admin-term-name', d.term));
+      card.appendChild(txt('p', 'def-admin-def-text', d.def));
+      var del = txt('button', 'def-admin-del', t('definitions.adminDelete'));
+      del.type = 'button';
+      del.addEventListener('click', function () {
+        var cur = loadCustomDefs();
+        cur.splice(idx, 1);
+        saveCustomDefs(cur);
+        renderDefAdmin();
+        renderCommonTerms(); // refresh the A-Z list
+      });
+      card.appendChild(del);
+      list.appendChild(card);
+    });
+  }
+
+  (function wireDefAdmin() {
+    var form = document.getElementById('def-admin-form');
+    if (!form) return;
+    var term = document.getElementById('def-admin-term');
+    var def = document.getElementById('def-admin-def');
+    var status = document.getElementById('def-admin-status');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var tVal = term.value.trim(), dVal = def.value.trim();
+      if (!tVal || !dVal) return;
+      var defs = loadCustomDefs();
+      // replace an existing entry with the same term, else add
+      var lower = tVal.toLowerCase();
+      var existing = -1;
+      defs.forEach(function (d, i) { if (d.term.toLowerCase() === lower) existing = i; });
+      if (existing >= 0) defs[existing] = { term: tVal, def: dVal };
+      else defs.push({ term: tVal, def: dVal });
+      saveCustomDefs(defs);
+      term.value = ''; def.value = '';
+      setStatus(status, t('definitions.adminSaved', { term: tVal }), false);
+      renderDefAdmin();
+      renderCommonTerms();
+    });
+  })();
 
   /* ---------- whole-Bible timeline (curated) ----------
      A fixed, reliable overview from creation to the new creation. Dates are
@@ -5503,6 +5858,216 @@
       });
     });
     wrap.appendChild(track);
+  }
+
+  /* ---------- messianic prophecy ----------
+     A curated set of Old Testament prophecies and their New Testament
+     fulfillment in Jesus, grouped by the stage of his life where they came
+     true. Every reference links into the reader. */
+  var MESSIANIC_STAGES = [
+    { label: 'Ancestry & birth', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Adoration_of_the_sheperds_-_Matthias_Stomer.jpg/330px-Adoration_of_the_sheperds_-_Matthias_Stomer.jpg', items: [
+      { desc: 'The offspring of the woman who would crush the serpent', ot: 'Genesis 3:15', nt: 'Galatians 4:4' },
+      { desc: 'A descendant of Abraham, blessing all nations', ot: 'Genesis 22:18', nt: 'Matthew 1:1' },
+      { desc: 'A descendant of Isaac', ot: 'Genesis 17:19', nt: 'Luke 3:34' },
+      { desc: 'A descendant of Jacob — a star out of Jacob', ot: 'Numbers 24:17', nt: 'Luke 3:34' },
+      { desc: 'From the tribe of Judah', ot: 'Genesis 49:10', nt: 'Hebrews 7:14' },
+      { desc: 'Heir to the throne of David', ot: 'Isaiah 9:7', nt: 'Luke 1:32' },
+      { desc: 'Born in Bethlehem', ot: 'Micah 5:2', nt: 'Matthew 2:1' },
+      { desc: 'Born of a virgin — “Immanuel, God with us”', ot: 'Isaiah 7:14', nt: 'Matthew 1:23' },
+      { desc: 'Kings would bring him gifts and bow before him', ot: 'Psalms 72:10', nt: 'Matthew 2:11' },
+      { desc: 'Children killed in an attempt to destroy him', ot: 'Jeremiah 31:15', nt: 'Matthew 2:16' },
+      { desc: 'Called out of Egypt', ot: 'Hosea 11:1', nt: 'Matthew 2:15' },
+      { desc: 'A messenger sent ahead to prepare his way', ot: 'Malachi 3:1', nt: 'Matthew 3:1' }
+    ]},
+    { label: 'Life & ministry', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Bloch-SermonOnTheMount.jpg/330px-Bloch-SermonOnTheMount.jpg', items: [
+      { desc: 'A voice crying in the wilderness before him', ot: 'Isaiah 40:3', nt: 'Matthew 3:3' },
+      { desc: 'A prophet like Moses', ot: 'Deuteronomy 18:15', nt: 'Acts 3:22' },
+      { desc: 'His ministry would begin in Galilee', ot: 'Isaiah 9:1', nt: 'Matthew 4:13' },
+      { desc: 'The Spirit of the Lord upon him to preach good news', ot: 'Isaiah 61:1', nt: 'Luke 4:18' },
+      { desc: 'He would heal the blind, deaf, and lame', ot: 'Isaiah 35:5', nt: 'Matthew 11:5' },
+      { desc: 'He would teach in parables', ot: 'Psalms 78:2', nt: 'Matthew 13:35' },
+      { desc: 'Consumed with zeal for God’s house', ot: 'Psalms 69:9', nt: 'John 2:17' },
+      { desc: 'A light for the Gentiles', ot: 'Isaiah 49:6', nt: 'Luke 2:32' },
+      { desc: 'Rejected by his own people', ot: 'Isaiah 53:3', nt: 'John 1:11' },
+      { desc: 'The stone the builders rejected', ot: 'Psalms 118:22', nt: 'Matthew 21:42' }
+    ]},
+    { label: 'Triumphal entry & betrayal', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Assisi-frescoes-entry-into-jerusalem-pietro_lorenzetti.jpg/330px-Assisi-frescoes-entry-into-jerusalem-pietro_lorenzetti.jpg', items: [
+      { desc: 'Entering Jerusalem, humble, on a donkey', ot: 'Zechariah 9:9', nt: 'Matthew 21:5' },
+      { desc: 'Betrayed by a close friend', ot: 'Psalms 41:9', nt: 'John 13:18' },
+      { desc: 'Sold for thirty pieces of silver', ot: 'Zechariah 11:12', nt: 'Matthew 26:15' },
+      { desc: 'The silver thrown down and used for a potter’s field', ot: 'Zechariah 11:13', nt: 'Matthew 27:7' },
+      { desc: 'His disciples would scatter', ot: 'Zechariah 13:7', nt: 'Matthew 26:31' },
+      { desc: 'Accused by false witnesses', ot: 'Psalms 35:11', nt: 'Matthew 26:60' },
+      { desc: 'Silent before his accusers', ot: 'Isaiah 53:7', nt: 'Matthew 27:12' },
+      { desc: 'Struck and spat upon', ot: 'Isaiah 50:6', nt: 'Matthew 26:67' }
+    ]},
+    { label: 'Crucifixion', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Cristo_crucificado.jpg/330px-Cristo_crucificado.jpg', items: [
+      { desc: 'Numbered with the transgressors', ot: 'Isaiah 53:12', nt: 'Mark 15:28' },
+      { desc: 'His hands and feet pierced', ot: 'Psalms 22:16', nt: 'John 20:27' },
+      { desc: 'Mocked and insulted', ot: 'Psalms 22:7', nt: 'Matthew 27:39' },
+      { desc: 'Given vinegar and gall to drink', ot: 'Psalms 69:21', nt: 'Matthew 27:34' },
+      { desc: 'Soldiers cast lots for his clothing', ot: 'Psalms 22:18', nt: 'John 19:24' },
+      { desc: 'Not one of his bones would be broken', ot: 'Psalms 34:20', nt: 'John 19:33' },
+      { desc: 'His side pierced — “they will look on him whom they pierced”', ot: 'Zechariah 12:10', nt: 'John 19:34' },
+      { desc: 'He would pray for his persecutors', ot: 'Isaiah 53:12', nt: 'Luke 23:34' },
+      { desc: 'The cry: “My God, my God, why have you forsaken me?”', ot: 'Psalms 22:1', nt: 'Matthew 27:46' },
+      { desc: 'Wounded for our transgressions — bearing our sin', ot: 'Isaiah 53:5', nt: '1 Peter 2:24' },
+      { desc: 'Buried with the rich', ot: 'Isaiah 53:9', nt: 'Matthew 27:60' }
+    ]},
+    { label: 'Resurrection & exaltation', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Rafael_-_ressureicaocristo01.jpg/330px-Rafael_-_ressureicaocristo01.jpg', items: [
+      { desc: 'His body would not see decay — raised from the dead', ot: 'Psalms 16:10', nt: 'Acts 2:31' },
+      { desc: 'Ascended on high', ot: 'Psalms 68:18', nt: 'Ephesians 4:8' },
+      { desc: 'Seated at the right hand of God', ot: 'Psalms 110:1', nt: 'Hebrews 1:3' },
+      { desc: 'A priest forever, in the order of Melchizedek', ot: 'Psalms 110:4', nt: 'Hebrews 5:6' },
+      { desc: 'The chosen cornerstone', ot: 'Isaiah 28:16', nt: '1 Peter 2:6' },
+      { desc: 'Given everlasting dominion over all peoples', ot: 'Daniel 7:14', nt: 'Revelation 1:7' }
+    ]}
+  ];
+  function messianicCount() {
+    var n = 0;
+    MESSIANIC_STAGES.forEach(function (s) { n += s.items.length; });
+    return n;
+  }
+
+  /* The classic illustrative probabilities (popularised by Peter Stoner in
+     "Science Speaks") for one person fulfilling N prophecies by chance. These
+     convey scale, not a rigorous calculation. */
+  var MESSIANIC_ODDS = [
+    { n: 8, power: '10¹⁷', words: '1 in 100 quadrillion',
+      illus: 'the odds of covering all of Texas two feet deep in silver dollars, marking a single coin, and a blindfolded person finding it on the first try.',
+      punch: 'And that’s just eight of them.' },
+    { n: 16, power: '10⁴⁵', words: '1 in a hundred quattuordecillion',
+      illus: 'far more than the grains of sand on every beach on earth — like blindly pulling one specific atom out of a mountain.',
+      punch: 'You’d sooner win the lottery every week for a decade.' },
+    { n: 48, power: '10¹⁵⁷', words: '1 in 10 followed by 157 zeros',
+      illus: 'a number with more zeros than there are atoms in the entire observable universe (about 10⁸⁰).',
+      punch: 'You’d have better odds of splitting an atom with your bare hands. For one man to fulfill them by chance is, for all practical purposes, impossible.' }
+  ];
+
+  function messianicRefButton(ref, cls) {
+    var loc = parseRef(ref);
+    var b = txt('button', cls, ref);
+    b.type = 'button';
+    if (loc) b.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
+    else b.disabled = true;
+    return b;
+  }
+
+  function renderMessianicOdds() {
+    var wrap = document.getElementById('messianic-odds');
+    if (!wrap) return;
+    wrap.textContent = '';
+    var stops = MESSIANIC_ODDS;
+
+    var big = el('div', 'mo-figure');
+    var count = txt('div', 'mo-count', '');
+    var odds = txt('div', 'mo-odds', '');
+    var words = txt('div', 'mo-words', '');
+    big.appendChild(count); big.appendChild(odds); big.appendChild(words);
+
+    var illus = txt('p', 'mo-illus', '');
+    var punch = txt('p', 'mo-punch', '');
+
+    var slider = document.createElement('input');
+    slider.type = 'range'; slider.min = '0'; slider.max = String(stops.length - 1);
+    slider.step = '1'; slider.value = '0'; slider.className = 'mo-slider';
+    slider.setAttribute('aria-label', t('messianic.oddsHeading'));
+
+    var ticks = el('div', 'mo-ticks');
+    stops.forEach(function (s, i) {
+      var tk = txt('button', 'mo-tick', s.n + ' ' + t('messianic.prophecies'));
+      tk.type = 'button';
+      tk.addEventListener('click', function () { slider.value = String(i); update(); });
+      ticks.appendChild(tk);
+    });
+
+    function update() {
+      var s = stops[parseInt(slider.value, 10)];
+      count.textContent = t('messianic.oddsCount', { n: s.n });
+      odds.textContent = t('messianic.oddsOne') + ' ' + s.power;
+      words.textContent = s.words;
+      illus.textContent = t('messianic.oddsThatsLike') + ' ' + s.illus;
+      punch.textContent = s.punch;
+      ticks.querySelectorAll('.mo-tick').forEach(function (tk, i) {
+        tk.classList.toggle('is-active', i === parseInt(slider.value, 10));
+      });
+    }
+    slider.addEventListener('input', update);
+
+    wrap.appendChild(big);
+    wrap.appendChild(slider);
+    wrap.appendChild(ticks);
+    wrap.appendChild(illus);
+    wrap.appendChild(punch);
+    wrap.appendChild(txt('p', 'mo-caveat', t('messianic.oddsCaveat')));
+    update();
+  }
+
+  function renderMessianicTimeline() {
+    var wrap = document.getElementById('messianic-timeline');
+    if (!wrap) return;
+    wrap.textContent = '';
+    var track = el('div', 'tl-horizon');
+    MESSIANIC_STAGES.forEach(function (stage) {
+      var era = el('div', 'tl-h-era mess-h-era');
+      era.appendChild(txt('span', 'tl-h-era-text', stage.label));
+      track.appendChild(era);
+      stage.items.forEach(function (it, i) {
+        var card = el('article', 'tl-h-card mess-card');
+        if (i === 0 && stage.img) {
+          var fig = el('div', 'tl-h-img');
+          var im = document.createElement('img');
+          im.src = stage.img; im.alt = stage.label; im.loading = 'lazy';
+          im.onerror = function () { if (fig.parentNode) fig.parentNode.removeChild(fig); };
+          fig.appendChild(im);
+          card.appendChild(fig);
+        }
+        card.appendChild(txt('span', 'mess-card-desc', it.desc));
+        var refs = el('div', 'mess-card-refs');
+        refs.appendChild(messianicRefButton(it.ot, 'mess-ref mess-ref-ot'));
+        refs.appendChild(txt('span', 'mess-ref-arrow', '→'));
+        refs.appendChild(messianicRefButton(it.nt, 'mess-ref mess-ref-nt'));
+        card.appendChild(refs);
+        track.appendChild(card);
+      });
+    });
+    wrap.appendChild(track);
+  }
+
+  function renderMessianicList() {
+    var wrap = document.getElementById('messianic-list');
+    if (!wrap) return;
+    wrap.textContent = '';
+    // legend
+    var legend = el('div', 'mess-legend');
+    legend.appendChild(txt('span', 'mess-legend-item mess-legend-ot', t('messianic.legendOt')));
+    legend.appendChild(txt('span', 'mess-legend-item mess-legend-nt', t('messianic.legendNt')));
+    wrap.appendChild(legend);
+
+    MESSIANIC_STAGES.forEach(function (stage) {
+      wrap.appendChild(txt('h3', 'mess-list-stage', stage.label));
+      var table = el('div', 'mess-table');
+      stage.items.forEach(function (it) {
+        var row = el('div', 'mess-row');
+        row.appendChild(txt('span', 'mess-row-desc', it.desc));
+        var pair = el('span', 'mess-row-refs');
+        pair.appendChild(messianicRefButton(it.ot, 'mess-ref mess-ref-ot'));
+        pair.appendChild(txt('span', 'mess-ref-arrow', '→'));
+        pair.appendChild(messianicRefButton(it.nt, 'mess-ref mess-ref-nt'));
+        row.appendChild(pair);
+        table.appendChild(row);
+      });
+      wrap.appendChild(table);
+    });
+  }
+
+  var messianicBuilt = false;
+  function renderMessianic() {
+    if (messianicBuilt) return;
+    messianicBuilt = true;
+    renderMessianicOdds();
+    renderMessianicTimeline();
+    renderMessianicList();
   }
 
   /* ---------- investigate Christianity (in the Road) ----------
