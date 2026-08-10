@@ -127,6 +127,7 @@ var TRANSLATIONS = {
     'bible.resume': 'Resume',
     'bible.stop': 'Stop',
     'bible.speed': 'Speed',
+    'bible.voiceStyle': 'Narration',
     'bible.audioUnsupported': 'Audio isn’t available in this browser.',
     'bible.back': 'Back',
     'bible.prevChapter': 'Previous',

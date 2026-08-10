@@ -1140,11 +1140,47 @@
      Reads each verse in turn using the browser's own voices — no network, no
      backend. Highlights the verse being spoken, follows the language setting,
      and degrades to a quiet note where speech synthesis isn't available. */
+  /* The chapter narrator. Built on the browser's speech engine, but tuned to
+     sound like a reader rather than a robot: it picks the most natural voice
+     the device offers, reads one sentence at a time (so intonation lands and
+     phrases breathe), pauses between sentences and verses, and nudges pitch and
+     pace slightly from line to line to break the flat, uncanny monotone. The
+     listener chooses from 15 narration styles — each a blend of voice, pitch,
+     tempo, expressiveness, and pause length. */
   var bibleAudio = (function () {
     var synth = window.speechSynthesis;
     var supported = !!synth && typeof window.SpeechSynthesisUtterance === 'function';
-    var bar, playBtn, playIcon, playLabel, stopBtn, rateSel, note;
+    var bar, playBtn, playIcon, playLabel, stopBtn, rateSel, styleSel, note;
     var order = [], idx = 0, playing = false, paused = false;
+    var gapTimer = null, pausedInGap = false, lastCard = -1;
+
+    /* 15 narration styles. rate/pitch are the base voice tuning, gender biases
+       voice selection, gap is the pause (ms) at a verse end (mid-verse pauses
+       are shorter), vary adds gentle line-to-line movement so it isn't flat. */
+    var NARRATION_STYLES = [
+      { id: 'storyteller',   label: 'Warm storyteller',        rate: 0.92, pitch: 1.03, gender: 'f',  gap: 360, vary: true },
+      { id: 'narrator',      label: 'Classic narrator',        rate: 0.96, pitch: 0.96, gender: 'm',  gap: 320, vary: true },
+      { id: 'reverent',      label: 'Reverent & worshipful',   rate: 0.83, pitch: 0.93, gender: 'm',  gap: 560, vary: false },
+      { id: 'gentle',        label: 'Gentle & soothing',       rate: 0.82, pitch: 1.07, gender: 'f',  gap: 480, vary: false },
+      { id: 'dramatic',      label: 'Dramatic reading',        rate: 0.95, pitch: 0.92, gender: 'm',  gap: 440, vary: true },
+      { id: 'grandfather',   label: 'Grandfather by the fire', rate: 0.80, pitch: 0.86, gender: 'm',  gap: 540, vary: true },
+      { id: 'proclaimer',    label: 'Bold proclaimer',         rate: 1.00, pitch: 0.98, gender: 'm',  gap: 300, vary: true },
+      { id: 'poetic',        label: 'Poetic & lyrical',        rate: 0.87, pitch: 1.01, gender: 'f',  gap: 500, vary: true },
+      { id: 'storytime',     label: 'Story time (for kids)',   rate: 0.92, pitch: 1.16, gender: 'f',  gap: 400, vary: true },
+      { id: 'contemplative', label: 'Contemplative',           rate: 0.78, pitch: 0.98, gender: null, gap: 640, vary: false },
+      { id: 'anchor',        label: 'News anchor',             rate: 1.06, pitch: 1.00, gender: null, gap: 240, vary: false },
+      { id: 'intimate',      label: 'Intimate & close',        rate: 0.85, pitch: 0.99, gender: 'f',  gap: 440, vary: false },
+      { id: 'epic',          label: 'Epic & cinematic',        rate: 0.88, pitch: 0.85, gender: 'm',  gap: 560, vary: true },
+      { id: 'bright',        label: 'Bright & uplifting',      rate: 1.00, pitch: 1.11, gender: 'f',  gap: 300, vary: true },
+      { id: 'brisk',         label: 'Brisk & efficient',       rate: 1.15, pitch: 1.00, gender: null, gap: 150, vary: false }
+    ];
+    var STYLE_KEY = 'tgp.narrationStyle';
+    function currentStyle() {
+      var id = null;
+      try { id = window.localStorage.getItem(STYLE_KEY); } catch (e) { /* ignore */ }
+      return NARRATION_STYLES.filter(function (s) { return s.id === id; })[0] || NARRATION_STYLES[0];
+    }
+    function saveStyle(id) { try { window.localStorage.setItem(STYLE_KEY, id); } catch (e) { /* ignore */ } }
 
     function els() {
       if (bar) return;
@@ -1154,6 +1190,7 @@
       playLabel = document.getElementById('bible-listen-label');
       stopBtn = document.getElementById('bible-listen-stop');
       rateSel = document.getElementById('bible-audio-rate');
+      styleSel = document.getElementById('bible-audio-style');
       note = document.getElementById('bible-audio-note');
     }
 
@@ -1161,11 +1198,37 @@
       var c = currentLang;
       return c === 'en' ? 'en-US' : (c === 'zh' ? 'zh-CN' : (c === 'zh-TW' ? 'zh-TW' : c));
     }
-    function pickVoice(tag) {
+
+    /* Rank the device's voices so the most natural one wins: neural/natural
+       engines first, then cloud voices, then known good named voices; the buzzy
+       compact/eSpeak voices are pushed to the bottom. Gender biases per style. */
+    var GOOD = /samantha|alex|daniel|karen|moira|tessa|serena|allison|ava|tom|fiona|kate|oliver|stephanie|aria|jenny|guy|sonia|ryan|michelle|nova|amelie|anna|paulina|jorge|diego|victoria|catherine/;
+    var FEM = /female|samantha|karen|moira|tessa|serena|allison|ava|fiona|kate|stephanie|aria|jenny|sonia|michelle|zira|susan|linda|amelie|anna|paulina|nova|victoria|catherine|hazel|clara/;
+    var MAL = /alex|daniel|thomas|tom|oliver|guy|ryan|david|mark|george|james|fred|jorge|diego|male/;
+    function scoreVoice(v, st) {
+      var n = (v.name || '').toLowerCase(), s = 0;
+      if (/natural|neural/.test(n)) s += 120;
+      else if (/premium|enhanced/.test(n)) s += 80;
+      else if (/google/.test(n)) s += 60;
+      else if (/siri/.test(n)) s += 55;
+      if (/espeak|compact|pico|robo/.test(n)) s -= 140;
+      if (GOOD.test(n)) s += 40;
+      if (!v.localService) s += 12; // cloud voices are usually the natural ones
+      if (st && st.gender) {
+        var fem = FEM.test(n), mal = !fem && MAL.test(n);
+        if (st.gender === 'f') s += fem ? 35 : (mal ? -18 : 0);
+        if (st.gender === 'm') s += mal ? 35 : (fem ? -18 : 0);
+      }
+      return s;
+    }
+    function pickVoice(tag, st) {
       var voices = synth.getVoices() || [];
-      var base = tag.split('-')[0];
-      var exact = voices.filter(function (v) { return v.lang && v.lang.toLowerCase() === tag.toLowerCase(); })[0];
-      return exact || voices.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf(base) === 0; })[0] || null;
+      if (!voices.length) return null;
+      var base = tag.split('-')[0].toLowerCase();
+      var pool = voices.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf(base) === 0; });
+      if (!pool.length) pool = voices.slice();
+      pool.sort(function (a, b) { return scoreVoice(b, st) - scoreVoice(a, st); });
+      return pool[0] || null;
     }
 
     function markVerse(on, n) {
@@ -1173,8 +1236,9 @@
       for (var i = 0; i < cards.length; i++) cards[i].classList.remove('is-speaking');
       if (on && typeof n === 'number' && cards[n]) {
         cards[n].classList.add('is-speaking');
-        cards[n].scrollIntoView({ block: 'center', behavior: 'smooth' });
+        if (n !== lastCard) { cards[n].scrollIntoView({ block: 'center', behavior: 'smooth' }); lastCard = n; }
       }
+      if (!on) lastCard = -1;
     }
 
     function setPlayingUI(state) {
@@ -1184,25 +1248,44 @@
       if (stopBtn) stopBtn.hidden = !(state || paused);
     }
 
+    function clearGap() { if (gapTimer) { clearTimeout(gapTimer); gapTimer = null; } }
+
+    // break a verse into sentence-sized phrases so intonation and breath land
+    function splitSentences(text) {
+      var m = text.match(/[^.!?…;]+[.!?…;]*/g);
+      if (!m) return [text];
+      var out = [];
+      m.forEach(function (s) { s = s.trim(); if (s) out.push(s); });
+      return out.length ? out : [text];
+    }
+
     function speakFrom(i) {
       if (i >= order.length) { finish(); return; }
       idx = i;
-      var u = new window.SpeechSynthesisUtterance(order[i].text);
-      var tag = langTag();
-      u.lang = tag;
-      var v = pickVoice(tag);
+      var item = order[i];
+      var st = currentStyle();
+      var u = new window.SpeechSynthesisUtterance(item.text);
+      u.lang = langTag();
+      var v = pickVoice(u.lang, st);
       if (v) u.voice = v;
-      u.rate = parseFloat(rateSel && rateSel.value) || 1;
-      u.onstart = function () { markVerse(true, order[i].cardIndex); };
+      var mult = parseFloat(rateSel && rateSel.value) || 1;
+      var rate = st.rate * mult, pitch = st.pitch;
+      if (st.vary) { rate += (i % 2 ? 0.03 : -0.02); pitch += (((i % 3) - 1) * 0.045); }
+      u.rate = Math.max(0.5, Math.min(2, rate));
+      u.pitch = Math.max(0.4, Math.min(1.7, pitch));
+      u.onstart = function () { markVerse(true, item.cardIndex); };
       u.onend = function () {
-        if (!playing) return;         // cancelled
-        speakFrom(i + 1);
+        if (!playing) return; // cancelled or paused
+        var gap = item.verseEnd ? st.gap : Math.round(st.gap * 0.4);
+        clearGap();
+        gapTimer = setTimeout(function () { gapTimer = null; if (playing) speakFrom(i + 1); }, gap);
       };
       synth.speak(u);
     }
 
     function finish() {
       playing = false; paused = false;
+      clearGap();
       markVerse(false);
       setPlayingUI(false);
       if (playLabel) playLabel.textContent = t('bible.listen');
@@ -1215,7 +1298,11 @@
       for (var i = 0; i < cards.length; i++) {
         var body = cards[i].querySelector('.verse-body');
         var text = body ? body.textContent.trim() : '';
-        if (text) order.push({ text: text, cardIndex: i });
+        if (!text) continue;
+        var sents = splitSentences(text);
+        for (var j = 0; j < sents.length; j++) {
+          order.push({ text: sents[j], cardIndex: i, verseEnd: j === sents.length - 1 });
+        }
       }
     }
 
@@ -1223,7 +1310,8 @@
       build();
       if (!order.length) return;
       synth.cancel();
-      playing = true; paused = false;
+      clearGap();
+      playing = true; paused = false; pausedInGap = false;
       setPlayingUI(true);
       speakFrom(0);
     }
@@ -1235,24 +1323,51 @@
         if (!supported) {
           if (playBtn) playBtn.hidden = true;
           if (rateSel) rateSel.parentNode.hidden = true;
+          if (styleSel) styleSel.parentNode.hidden = true;
           if (note) note.hidden = false;
           return;
         }
+        // fill the narration-style picker
+        if (styleSel && !styleSel.dataset.built) {
+          styleSel.dataset.built = '1';
+          NARRATION_STYLES.forEach(function (s) {
+            var o = document.createElement('option');
+            o.value = s.id; o.textContent = s.label;
+            styleSel.appendChild(o);
+          });
+          styleSel.value = currentStyle().id;
+          styleSel.addEventListener('change', function () {
+            saveStyle(styleSel.value);
+            // apply the new voice immediately by restarting the current verse
+            if (playing || paused) { synth.cancel(); clearGap(); playing = true; paused = false; pausedInGap = false; setPlayingUI(true); speakFrom(idx); }
+          });
+        }
         playBtn.addEventListener('click', function () {
           if (!playing && !paused) { start(); return; }
-          if (playing && !paused) { synth.pause(); paused = true; playing = false; setPlayingUI(false); return; }
-          if (paused) { synth.resume(); paused = false; playing = true; setPlayingUI(true); }
+          if (playing && !paused) {
+            paused = true; playing = false;
+            pausedInGap = !!gapTimer; clearGap();
+            if (synth.speaking) synth.pause();
+            setPlayingUI(false);
+            return;
+          }
+          if (paused) {
+            paused = false; playing = true; setPlayingUI(true);
+            if (pausedInGap) { pausedInGap = false; speakFrom(idx + 1); }
+            else if (synth.paused) synth.resume();
+            else speakFrom(idx);
+          }
         });
         stopBtn.addEventListener('click', function () { synth.cancel(); finish(); });
         rateSel.addEventListener('change', function () {
-          // apply the new speed by restarting from the current verse
-          if (playing || paused) { synth.cancel(); playing = true; paused = false; setPlayingUI(true); speakFrom(idx); }
+          // apply the new speed by restarting from the current sentence
+          if (playing || paused) { synth.cancel(); clearGap(); playing = true; paused = false; pausedInGap = false; setPlayingUI(true); speakFrom(idx); }
         });
-        // some browsers load voices asynchronously
+        // some browsers load voices asynchronously; nothing to do but re-rank next call
         if (typeof synth.onvoiceschanged !== 'undefined') synth.onvoiceschanged = function () {};
       },
       show: function (on) { els(); if (bar) bar.hidden = !on; },
-      reset: function () { if (supported) window.speechSynthesis.cancel(); playing = false; paused = false; idx = 0; setPlayingUI(false); markVerse(false); }
+      reset: function () { if (supported) window.speechSynthesis.cancel(); clearGap(); playing = false; paused = false; pausedInGap = false; idx = 0; setPlayingUI(false); markVerse(false); }
     };
   })();
 

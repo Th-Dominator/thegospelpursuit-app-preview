@@ -3509,14 +3509,16 @@ button.verse-num:hover { text-decoration: underline; }
   border-color: var(--border);
 }
 .bible-audio-icon { font-size: 12px; }
+.bible-audio-style,
 .bible-audio-rate {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
   font-size: 13px;
   color: var(--ink-soft);
 }
+.bible-audio-style { margin-left: auto; }
+.bible-audio-style select,
 .bible-audio-rate select {
   font: inherit;
   padding: 4px 6px;
@@ -3524,6 +3526,10 @@ button.verse-num:hover { text-decoration: underline; }
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
+}
+.bible-audio-style select { max-width: 168px; }
+@media (max-width: 560px) {
+  .bible-audio-style { margin-left: 0; }
 }
 .bible-audio-note { font-size: 13px; color: var(--ink-muted); }
 .verse-card.is-speaking {
