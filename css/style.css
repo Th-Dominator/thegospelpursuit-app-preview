@@ -159,6 +159,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* take the space between the brand and the pinned foot, and scroll when the
+     list is taller than the screen — so Sign in / Settings stay reachable */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .nav-link {
   display: flex;
