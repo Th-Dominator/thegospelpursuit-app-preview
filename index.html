@@ -1054,7 +1054,7 @@
           window.Clerk.mountUserButton(slot, { afterSignOutUrl: window.location.href });
           if (!syncStarted && window.TGPSync) {
             syncStarted = true;
-            window.TGPSync.init({ getToken: function () { return window.Clerk.session.getToken(); }, apiBase: '' });
+            window.TGPSync.init({ getToken: function () { return window.Clerk.session.getToken(); }, apiBase: 'https://thegospelpursuit-app-preview.vercel.app' });
           }
         } else {
           var b = document.createElement('button');

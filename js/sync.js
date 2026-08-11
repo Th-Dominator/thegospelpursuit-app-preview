@@ -16,7 +16,10 @@
 (function () {
   'use strict';
 
-  var API_BASE = '';   // '' = same origin (recommended). Else e.g. 'https://gp-api.vercel.app'
+  // The API (Vercel) is a different origin from the app on GitHub Pages, so
+  // point at it absolutely. CORS is handled by the function. ('' would mean
+  // same-origin, which is right only if the app is also served from Vercel.)
+  var API_BASE = 'https://thegospelpursuit-app-preview.vercel.app';
   var PUSH_EVERY_MS = 8000;
 
   // the localStorage keys worth syncing (device-only caches are excluded)
