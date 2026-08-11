@@ -4101,6 +4101,48 @@ body.xref-fs-open { overflow: hidden; }
 .beta-road-n { font-family: var(--font-display); font-weight: 600; color: var(--gold-dark); font-variant-numeric: tabular-nums; min-width: 20px; }
 .beta-road-t { color: var(--ink); }
 
+/* ---- readiness audit (letter-graded) ---- */
+.audit-block {
+  margin: 14px 0 6px; padding: 20px 22px;
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.audit-head { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
+.audit-grade {
+  flex: none; width: 92px; min-height: 92px; border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; padding: 8px 6px;
+}
+.audit-grade-letter { font-family: var(--font-display); font-weight: 600; font-size: 40px; line-height: 1; }
+.audit-grade-score { font-size: 11px; margin-top: 4px; opacity: .9; font-variant-numeric: tabular-nums; }
+.audit-title { font-family: var(--font-display); font-weight: 600; font-size: 20px; margin: 0 0 4px; }
+.audit-sub { margin: 0; font-size: 14px; color: var(--ink-soft); }
+.audit-grid { display: grid; gap: 14px; }
+@media (min-width: 620px) { .audit-grid { grid-template-columns: 1fr 1fr; } }
+.audit-dim {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); padding: 14px 16px;
+}
+.audit-dim-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.audit-dim-name { font-weight: 600; font-size: 14px; color: var(--ink); }
+.audit-dim-grade {
+  flex: none; font-family: var(--font-display); font-weight: 600; font-size: 13px;
+  color: #fff; border-radius: 999px; padding: 2px 10px;
+}
+.audit-dim-track { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; margin-bottom: 8px; }
+.audit-dim-fill { height: 100%; border-radius: 999px; background: var(--gold); transition: width .6s ease; }
+.audit-dim-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+/* grade colours: A green, B gold, C amber, D/F red */
+.grade-a { background: #3f8f5b; }
+.grade-b { background: var(--gold); }
+.grade-c { background: #c08a2e; }
+.grade-d, .grade-f { background: var(--error); }
+.audit-dim-grade.grade-b { color: #fff; }
+/* focus-now list: bolded title + description under each number */
+.focus-block .beta-road-item { align-items: flex-start; }
+.focus-t { display: block; color: var(--ink); font-size: 15px; margin-bottom: 2px; }
+.focus-d { display: block; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
+
 /* ============================================================
    Today tab: photos on the explore cards
    ============================================================ */

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="The Gospel Pursuit">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2747"/>
+      <stop offset="1" stop-color="#14161f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="38%" r="60%">
+      <stop offset="0" stop-color="#c6bcff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#c6bcff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+  <!-- rays -->
+  <g stroke="#a99cf2" stroke-opacity="0.5" stroke-width="6" stroke-linecap="round">
+    <line x1="256" y1="150" x2="256" y2="196"/>
+    <line x1="176" y1="176" x2="204" y2="212"/>
+    <line x1="336" y1="176" x2="308" y2="212"/>
+  </g>
+  <!-- serif cross -->
+  <g fill="#c6bcff">
+    <rect x="238" y="196" width="36" height="164" rx="8"/>
+    <rect x="196" y="242" width="120" height="34" rx="8"/>
+  </g>
+</svg>

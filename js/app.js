@@ -494,10 +494,56 @@
   function genKey(path, body) {
     return path + '|' + currentLang + '|' + JSON.stringify(settings) + '|' + JSON.stringify(body || {});
   }
+
+  /* Persist resolved answers so a panel you've opened before reappears instantly
+     — even after a reload or with no connection. Only deterministic reference
+     content flows through requestCached (chapter guides, verse context, book &
+     chapter insights, quizzes, apologetics prep), so it's safe to store. The
+     store is capped and keyed by language + settings + request, so changing any
+     of those regenerates and stale content never leaks across them. */
+  var GEN_STORE_KEY = 'tgp.genCache.v1';
+  var GEN_STORE_MAX = 240;          // most-recent N answers kept (localStorage is ~5MB)
+  var genStore = null;              // lazy-loaded { key: { v: data, t: savedAt } }
+  function genStoreLoad() {
+    if (genStore) return genStore;
+    try { genStore = JSON.parse(window.localStorage.getItem(GEN_STORE_KEY)) || {}; }
+    catch (e) { genStore = {}; }
+    if (!genStore || typeof genStore !== 'object') genStore = {};
+    return genStore;
+  }
+  function genStoreSave() {
+    var s = genStoreLoad(), keys = Object.keys(s);
+    if (keys.length > GEN_STORE_MAX) {
+      keys.sort(function (a, b) { return (s[a].t || 0) - (s[b].t || 0); });  // oldest first
+      keys.slice(0, keys.length - GEN_STORE_MAX).forEach(function (k) { delete s[k]; });
+    }
+    try { window.localStorage.setItem(GEN_STORE_KEY, JSON.stringify(s)); } catch (e) { /* quota — skip */ }
+  }
+  function genStoreGet(key) { var e = genStoreLoad()[key]; return e ? e.v : undefined; }
+  function genStorePut(key, value) { genStoreLoad()[key] = { v: value, t: Date.now() }; genStoreSave(); }
+  // don't cache an empty 200 (means "endpoint not wired yet") — it would stick
+  function isStorable(data) {
+    if (data == null) return false;
+    if (typeof data === 'string') return data.trim() !== '';
+    if (Array.isArray(data)) return data.length > 0;
+    if (typeof data === 'object') return Object.keys(data).length > 0;
+    return true;
+  }
+
   function requestCached(path, body) {
     var key = genKey(path, body);
     if (genCache[key]) return genCache[key];
-    var p = request(path, body).catch(function (err) {
+    // a persisted answer resolves instantly and needs no network
+    var stored = genStoreGet(key);
+    if (stored !== undefined) {
+      var hit = Promise.resolve(stored);
+      genCache[key] = hit;
+      return hit;
+    }
+    var p = request(path, body).then(function (data) {
+      if (isStorable(data)) genStorePut(key, data);   // remember for next time
+      return data;
+    }, function (err) {
       delete genCache[key];   // let the next open try again
       throw err;
     });
@@ -4941,6 +4987,109 @@
       { t: 'Image credits & licenses', done: false, note: 'Attribute the Wikimedia artwork used across the app.' }
     ]}
   ];
+
+  /* ---------- readiness audit (letter-graded) ----------
+     A qualitative grade per dimension, to sit above the plain task tally. The
+     app is strong on features and content; the points it's missing are release-
+     hardening — offline, accounts, launch checks. Scores are 0-100; the letter
+     is derived. Edit the scores/notes freely as things land. */
+  var AUDIT_DIMENSIONS = [
+    { name: 'Content & study features', score: 95,
+      note: 'Reader, search, cross-references, timeline, messianic prophecy, devotionals, plans, apologetics and definitions — an unusually complete study Bible for teaching evangelism and apologetics.' },
+    { name: 'Offline & speed', score: 65,
+      note: 'Drop-downs warm on hover and de-dupe in memory, but nothing survives a reload and the app can’t open with no connection. A caching service worker plus a stored answer cache would make repeat answers instant and work offline.' },
+    { name: 'Backend robustness', score: 72,
+      note: 'The n8n + Claude endpoints all respond, but the search-context and translation settings are ignored by the scripture node, verses save in one language only, and the apologetics prompt still needs its rework.' },
+    { name: 'Accounts & sync', score: 40,
+      note: 'Everything lives in this browser’s storage. No identity and no cloud backup — reinstall or switch phones and progress is gone. This is exactly what a serverless Postgres (Neon) plus a Vercel API is for.' },
+    { name: 'Release readiness', score: 45,
+      note: 'No installable PWA/manifest, analytics, error monitoring, privacy policy, or image credits yet — each of these is expected before a public beta.' }
+  ];
+  var AUDIT_WEIGHTS = {
+    'Content & study features': 3,
+    'Offline & speed': 2,
+    'Backend robustness': 2,
+    'Accounts & sync': 1,
+    'Release readiness': 1
+  };
+  function gradeLetter(score) {
+    if (score >= 93) return 'A';  if (score >= 90) return 'A-';
+    if (score >= 87) return 'B+'; if (score >= 83) return 'B'; if (score >= 80) return 'B-';
+    if (score >= 77) return 'C+'; if (score >= 73) return 'C'; if (score >= 70) return 'C-';
+    if (score >= 67) return 'D+'; if (score >= 63) return 'D'; if (score >= 60) return 'D-';
+    return 'F';
+  }
+  function auditOverall() {
+    var wsum = 0, ssum = 0;
+    AUDIT_DIMENSIONS.forEach(function (d) {
+      var w = AUDIT_WEIGHTS[d.name] || 1; wsum += w; ssum += w * d.score;
+    });
+    var score = wsum ? Math.round(ssum / wsum) : 0;
+    return { score: score, letter: gradeLetter(score) };
+  }
+
+  /* The four things you named, in the order that unblocks a public beta. */
+  var FOCUS_NOW = [
+    { t: 'Finish the Definitions tab',
+      d: 'Pre-bundle the ~100 common terms so they open instantly with no backend call and work offline. The A–Z browser and admin entries are already in place.' },
+    { t: 'Verify verse context',
+      d: 'Spot-check the verse-context endpoint across books so the “context” drop-downs are trustworthy before you teach from them.' },
+    { t: 'Make the interactive drop-downs faster',
+      d: 'Persist the warm cache to storage so any chapter guide, context or quiz you’ve opened before reappears instantly — even after a reload or with no connection.' },
+    { t: 'Optimise offline capability',
+      d: 'Add a caching service worker and a PWA manifest so the whole app opens with no connection and installs to the home screen like a native iOS app.' }
+  ];
+
+  function renderAudit(panel) {
+    var overall = auditOverall();
+    var wrap = el('div', 'audit-block');
+    var head = el('div', 'audit-head');
+    var badge = el('div', 'audit-grade grade-' + overall.letter.charAt(0).toLowerCase());
+    badge.appendChild(txt('span', 'audit-grade-letter', overall.letter));
+    badge.appendChild(txt('span', 'audit-grade-score', overall.score + ' / 100'));
+    head.appendChild(badge);
+    var htext = el('div', 'audit-head-text');
+    htext.appendChild(txt('h2', 'audit-title', 'Readiness grade'));
+    htext.appendChild(txt('p', 'audit-sub', 'Feature-complete and content-rich; the remaining points are release-hardening — offline, accounts, and launch checks.'));
+    head.appendChild(htext);
+    wrap.appendChild(head);
+
+    var grid = el('div', 'audit-grid');
+    AUDIT_DIMENSIONS.forEach(function (d) {
+      var letter = gradeLetter(d.score);
+      var card = el('div', 'audit-dim');
+      var top = el('div', 'audit-dim-top');
+      top.appendChild(txt('span', 'audit-dim-name', d.name));
+      top.appendChild(txt('span', 'audit-dim-grade grade-' + letter.charAt(0).toLowerCase(), letter));
+      card.appendChild(top);
+      var track = el('div', 'audit-dim-track');
+      var fill = el('div', 'audit-dim-fill'); fill.style.width = d.score + '%';
+      track.appendChild(fill); card.appendChild(track);
+      card.appendChild(txt('p', 'audit-dim-note', d.note));
+      grid.appendChild(card);
+    });
+    wrap.appendChild(grid);
+    panel.appendChild(wrap);
+  }
+
+  function renderFocus(panel) {
+    var wrap = el('div', 'beta-callout focus-block');
+    wrap.appendChild(txt('h2', 'beta-callout-title', 'Focus now — the path to beta'));
+    wrap.appendChild(txt('p', 'beta-callout-lede', 'The four things you named, in the order that unblocks a public beta.'));
+    var road = el('div', 'beta-road');
+    FOCUS_NOW.forEach(function (f, i) {
+      var r = el('div', 'beta-road-item');
+      r.appendChild(txt('span', 'beta-road-n', String(i + 1)));
+      var body = el('span', 'beta-road-t');
+      body.appendChild(txt('strong', 'focus-t', f.t));
+      body.appendChild(txt('span', 'focus-d', f.d));
+      r.appendChild(body);
+      road.appendChild(r);
+    });
+    wrap.appendChild(road);
+    panel.appendChild(wrap);
+  }
+
   function betaTally() {
     var done = 0, total = 0;
     BETA_TASKS.forEach(function (c) { c.items.forEach(function (i) { total++; if (i.done) done++; }); });
@@ -4977,6 +5126,9 @@
     hero.appendChild(track); track.appendChild(fill);
     panel.appendChild(hero);
 
+    // letter-graded readiness audit
+    renderAudit(panel);
+
     // by area
     panel.appendChild(txt('h2', 'prog-subhead', t('beta.byArea')));
     var mini = [];
@@ -4986,6 +5138,9 @@
       panel.appendChild(row);
       mini.push(row.querySelector('.prog-bar-fill'));
     });
+
+    // your four named priorities, front and centre
+    renderFocus(panel);
 
     // every task, by area
     panel.appendChild(txt('h2', 'prog-subhead', t('beta.everyTask')));
@@ -6731,6 +6886,9 @@
     updateNotesSaveBtn();
   })();
   initPush();
+  // register the service worker for offline caching, independent of push
+  // support (iOS Safari withholds push until the app is installed)
+  if ('serviceWorker' in navigator) registerSW();
   applyReadingPrefs();
 
   /* A saved non-English choice needs its table fetched before the first paint,
