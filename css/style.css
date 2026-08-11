@@ -1352,6 +1352,41 @@ html[lang="my"] .dropcap,
 
 .btn-enter:disabled { opacity: 0.6; }
 
+/* sign-in / create-account on the title page, under Get Started */
+.title-auth {
+  position: relative;
+  z-index: 1;
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  animation: fadeUp 0.7s ease-out 3s both;
+}
+.title-auth[hidden] { display: none; }
+.title-auth .title-auth-link {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-dark);
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.title-auth .title-auth-link:hover { color: var(--ink); }
+.title-auth .title-auth-sep { color: var(--ink-muted); }
+.title-auth .title-auth-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* app shell reveal */
 .app-shell {
   position: relative;

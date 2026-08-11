@@ -65,6 +65,8 @@
     <button id="enter-app" class="btn-enter" data-i18n="loading.cta" disabled>Get Started</button>
   </div>
 
+  <div id="title-auth" class="title-auth" hidden></div>
+
   <p class="verse verse-gr karaoke" lang="grc">&#7961;&gamma;&#8060; &epsilon;&#7984;&mu;&iota; &#7969; &#8001;&delta;&#8056;&sigmaf; &kappa;&alpha;&#8054; &#7969; &#7936;&lambda;&#8053;&theta;&epsilon;&iota;&alpha; &kappa;&alpha;&#8054; &#7969; &zeta;&omega;&#8053;&#183; &omicron;&#8016;&delta;&epsilon;&#8054;&sigmaf; &#7956;&rho;&chi;&epsilon;&tau;&alpha;&iota; &pi;&rho;&#8056;&sigmaf; &tau;&#8056;&nu; &pi;&alpha;&tau;&#8051;&rho;&alpha; &epsilon;&#7984; &mu;&#8052; &delta;&iota;&#8125; &#7952;&mu;&omicron;&#8166;.</p>
   <p class="verse-cite verse-cite-gr" lang="grc">&#7992;&omega;&#940;&nu;&nu;&eta;&sigmaf; 14:6-7</p>
 </div>
@@ -1045,7 +1047,52 @@
   whenClerk(function () {
     window.Clerk.load().then(function () {
       var box = document.getElementById('clerk-auth');
+      var titleBox = document.getElementById('title-auth');
+
+      // The title-page (loading screen) sign-in / create-account row.
+      function renderTitle() {
+        if (!titleBox) return;
+        titleBox.textContent = '';
+        titleBox.hidden = false;
+        if (window.Clerk.user) {
+          var u = window.Clerk.user;
+          var name = u.firstName || (u.primaryEmailAddress && u.primaryEmailAddress.emailAddress) || 'friend';
+          var wrap = document.createElement('span');
+          wrap.className = 'title-auth-user';
+          var hi = document.createElement('span');
+          hi.textContent = 'Signed in as ' + name;
+          var sep = document.createElement('span');
+          sep.className = 'title-auth-sep';
+          sep.textContent = '·';
+          var out = document.createElement('button');
+          out.type = 'button';
+          out.className = 'title-auth-link';
+          out.textContent = 'Sign out';
+          out.addEventListener('click', function () { window.Clerk.signOut(); });
+          wrap.appendChild(hi); wrap.appendChild(sep); wrap.appendChild(out);
+          titleBox.appendChild(wrap);
+        } else {
+          var signIn = document.createElement('button');
+          signIn.type = 'button';
+          signIn.className = 'title-auth-link';
+          signIn.textContent = 'Sign in';
+          signIn.addEventListener('click', function () { window.Clerk.openSignIn(); });
+          var mid = document.createElement('span');
+          mid.className = 'title-auth-sep';
+          mid.textContent = '·';
+          var signUp = document.createElement('button');
+          signUp.type = 'button';
+          signUp.className = 'title-auth-link';
+          signUp.textContent = 'Create account';
+          signUp.addEventListener('click', function () { window.Clerk.openSignUp(); });
+          titleBox.appendChild(signIn);
+          titleBox.appendChild(mid);
+          titleBox.appendChild(signUp);
+        }
+      }
+
       function render() {
+        renderTitle();
         if (!box) return;
         box.textContent = '';
         if (window.Clerk.user) {
