@@ -4138,6 +4138,10 @@ body.xref-fs-open { overflow: hidden; }
 .grade-c { background: #c08a2e; }
 .grade-d, .grade-f { background: var(--error); }
 .audit-dim-grade.grade-b { color: #fff; }
+/* sign-in slot in the sidebar foot */
+.sidebar-auth { display: flex; align-items: center; padding: 2px 8px 4px; min-height: 34px; }
+.sidebar-auth .sidebar-signin { width: 100%; }
+
 /* focus-now list: bolded title + description under each number */
 .focus-block .beta-road-item { align-items: flex-start; }
 .focus-t { display: block; color: var(--ink); font-size: 15px; margin-bottom: 2px; }

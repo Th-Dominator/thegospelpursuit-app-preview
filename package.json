@@ -1,0 +1,10 @@
+{
+  "name": "gospel-pursuit-api",
+  "private": true,
+  "type": "module",
+  "description": "Serverless API (Vercel) for The Gospel Pursuit — accounts & sync backed by Neon.",
+  "dependencies": {
+    "@clerk/backend": "^1.15.0",
+    "@neondatabase/serverless": "^0.10.1"
+  }
+}
