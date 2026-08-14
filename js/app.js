@@ -4976,8 +4976,8 @@
       { t: 'Rewrite the apologetics system prompt', done: false, note: 'evangelism-prep path stays; the prompt needs the apologetics rework.' }
     ]},
     { cat: 'Accounts & sync', items: [
-      { t: 'Sign-in / accounts', done: false, note: 'No user identity is sent to the backend yet.' },
-      { t: 'Cloud-saved plans, progress & notes', done: false, note: 'Everything is on-device; needs a store + the user id in each call.' }
+      { t: 'Sign-in / accounts', done: true, note: 'Clerk sign-in / create-account is wired into the app; signing in identifies the user and starts cloud sync.' },
+      { t: 'Cloud-saved plans, progress & notes', done: false, note: 'The sync client mirrors on-device state to the backend on sign-in; still needs an end-to-end check that it persists and merges across devices.' }
     ]},
     { cat: 'Release readiness', items: [
       { t: 'Content QA across all 40 languages', done: false, note: 'Spot-check scripture and generated text per language.' },
@@ -5000,8 +5000,8 @@
       note: 'Drop-downs warm on hover and de-dupe in memory, but nothing survives a reload and the app can’t open with no connection. A caching service worker plus a stored answer cache would make repeat answers instant and work offline.' },
     { name: 'Backend robustness', score: 72,
       note: 'The n8n + Claude endpoints all respond, but the search-context and translation settings are ignored by the scripture node, verses save in one language only, and the apologetics prompt still needs its rework.' },
-    { name: 'Accounts & sync', score: 40,
-      note: 'Everything lives in this browser’s storage. No identity and no cloud backup — reinstall or switch phones and progress is gone. This is exactly what a serverless Postgres (Neon) plus a Vercel API is for.' },
+    { name: 'Accounts & sync', score: 72,
+      note: 'Sign-in is in place: Clerk gives each user an identity, and signing in starts the sync client that mirrors on-device state to the Vercel/Neon backend. What remains is confirming cloud-saved plans, progress and notes actually persist and merge across devices.' },
     { name: 'Release readiness', score: 45,
       note: 'No installable PWA/manifest, analytics, error monitoring, privacy policy, or image credits yet — each of these is expected before a public beta.' }
   ];
