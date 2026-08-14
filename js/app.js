@@ -1984,6 +1984,60 @@
     { key: 'sources', label: 'book.sources', type: 'list' }
   ];
 
+  /* ---------- curated book overviews (verified) ----------
+     Authoritative, editor-verified overview text for specific books, keyed by
+     book name and using the same section keys as BOOK_SECTIONS. When present
+     (and the interface is in English), these fields are merged *over* the
+     backend-generated study so the trusted wording always wins; the backend
+     still supplies the sections the curated entry doesn't cover. English-only,
+     so translated interfaces keep the backend's localized text. */
+  var CURATED_BOOK_INSIGHTS = {
+    'Genesis': {
+      name: 'Genesis is the first book of the Bible and the first of the five books of the Law (the Torah). Its English title comes from the Greek Old Testament — the Septuagint — which named the book Genesis.',
+      nameMeaning: '“Beginning.” Genesis concerns the divine origin of all things, whether matter or energy, living or inanimate. It implies that, apart from God, everything can be traced back to a beginning point when God’s purposes and works came into being.',
+      author: 'Moses.',
+      genre: 'Genesis presents history in the form of narrative, drawing on a range of literary types to communicate its theological message clearly and effectively. Its three major sections each have a characteristic form: the primeval events (Genesis 1–11) take a narrative form suited to oral transmission; the accounts of the first three patriarchs (Genesis 12–36; 38) trace ancestry; and the Joseph narrative (Genesis 37; 39–50) is built on tension and resolution. Other literary types run through the book as well — genealogies (5:3–32; 11:10–32), appearances of God (17–18; 32:22–30), direct words from God (25:23), blessings (1:28; 9:1; 27:27–29), and tribal sayings (49:3–27).',
+      outline: [
+        'Primeval history: creation, the fall, the flood, and the nations (Genesis 1–11)',
+        'The patriarchs: Abraham, Isaac, and Jacob (Genesis 12–36; 38)',
+        'The Joseph narrative (Genesis 37; 39–50)'
+      ],
+      summary: 'Genesis recounts the beginning of the heavens and the earth and of all created things within them, of God’s covenant relationship with humankind, of sin, of redemption, of the nations, and of God’s chosen people, Israel. In Genesis 1:26–28 God makes clear that He created man and woman to bless them and so that they could exercise dominion on His behalf over all creation. Humanity’s disobedience threatened God’s purpose for humanity in creation, and God responded by calling Abraham (previously known as Abram).',
+      themes: [
+        'The beginning of the heavens and the earth',
+        'God’s covenant relationship with humankind',
+        'Sin and its consequences',
+        'Redemption and God’s plan to restore',
+        'The origin of the nations',
+        'God’s chosen people, Israel',
+        'Blessing and human dominion under God’s reign'
+      ],
+      purpose: 'Genesis was written to give the nation of Israel an explanation of its existence as it stood on the threshold of the conquest of Canaan. Moses’ task, as an inspired prophetic author, was to make clear to his people how and why God had brought them into being — to know what their mission was and how their present situation fulfilled ancient promises. God had revealed to Abraham that he would be granted the land of Canaan (Genesis 12:1,5,7; 13:15), that his descendants would leave that land for a time (15:13), and that they would be delivered from the land of their oppression to return to the land of promise (15:16). This land would be theirs forever (17:8), and through them all the nations of the earth would be blessed (12:2–3; 27:29). Joseph understood this and saw in his own sojourn in Egypt the divine preservation of his people (45:7–8): God had sent him there to save them from physical and spiritual extinction (50:20), and He would remember His promise to Abraham, Isaac, and Jacob and return them to Canaan (50:24). The link with Exodus is clear in the call of Moses to lead his people from Egypt to the land of promise.',
+      storyline: 'The theological message of Genesis reaches beyond the concerns of Israel alone. The book provides Israel’s reason for being and explains the human condition that called forth a covenant people. God’s original and eternal purposes are set out in Genesis 1:26–28: He created men and women in His image to bless them and so that they could exercise dominion over all creation on His behalf — the key themes of biblical theology, God’s blessing and human dominion under God’s reign. The fall of humankind into sin subverted God’s goal, and a process of redemption and of recovery of the original covenant had to be effected. So God chose Abraham, through whose offspring the divine purposes in creation might come to pass; that man and that nation were charged with serving God as the model of a people under His dominion and the vehicle through which a saving relationship could be established between Him and the alienated world of the nations.',
+      christ: 'Israel failed to be the servant people. Yet from the nation rose a remnant — Jesus the Christ — who accomplished in His life and death the redemptive and reigning purposes of God. The church now exists as His body, to serve as Israel was chosen and redeemed to serve. The theology of Genesis is therefore wrapped up in the kingdom purposes of God, who, despite human failure, cannot be hindered in His ultimate objective of displaying His glory through His creation and His dominion.'
+    }
+  };
+
+  /* Merge a curated entry over the backend study (curated keys win). English
+     interface only, so localized backends keep their translated wording. */
+  function withCuratedBook(data) {
+    var name = bibleState.book && bibleState.book.name;
+    var curated = (currentLang === DEFAULT_LANG && name) ? CURATED_BOOK_INSIGHTS[name] : null;
+    if (!curated) return data;
+    var out = {};
+    if (data && typeof data === 'object') {
+      Object.keys(data).forEach(function (k) { out[k] = data[k]; });
+    }
+    Object.keys(curated).forEach(function (k) { out[k] = curated[k]; });
+    return out;
+  }
+
+  // the curated entry alone (used as an offline / backend-down fallback)
+  function curatedBookOnly() {
+    var name = bibleState.book && bibleState.book.name;
+    return (currentLang === DEFAULT_LANG && name) ? CURATED_BOOK_INSIGHTS[name] : null;
+  }
+
   function renderChapterOverview(data) {
     return renderSectionedStudy(data, CHAPTER_SECTIONS,
       { book: bibleState.book.name, chapter: bibleState.chapter });
@@ -2759,7 +2813,7 @@
       .then(function (data) {
         if (bookGuideKey !== key) return;
         body.textContent = '';
-        var rich = renderBookOverview(data);
+        var rich = renderBookOverview(withCuratedBook(data));
         if (rich) { body.appendChild(rich); return; }
         renderInsight(body, [
           { key: 'bible.bookAbout', text: data && data.overview },
@@ -2768,8 +2822,13 @@
         ], 'bible.bookUnavailable');
       })
       .catch(function (err) {
-        bookGuideKey = null;
+        if (bookGuideKey !== key) return;
+        // backend down / offline: still show the verified curated overview if we have one
+        var curated = curatedBookOnly();
+        var rich = curated && renderBookOverview(curated);
         body.textContent = '';
+        if (rich) { body.appendChild(rich); return; }
+        bookGuideKey = null;
         body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
       });
   }
@@ -3020,7 +3079,7 @@
     requestCached('book-insight', { book: bibleState.book.name })
       .then(function (data) {
         if (focusKeys.book !== key) return;
-        var rich = renderBookOverview(data);
+        var rich = renderBookOverview(withCuratedBook(data));
         if (rich) { body.textContent = ''; body.appendChild(rich); return; }
         renderInsight(body, [
           { key: 'bible.bookAbout', text: data && data.overview },
@@ -3030,6 +3089,9 @@
       })
       .catch(function (err) {
         if (focusKeys.book !== key) return;
+        var curated = curatedBookOnly();
+        var rich = curated && renderBookOverview(curated);
+        if (rich) { body.textContent = ''; body.appendChild(rich); return; }
         focusKeys.book = null;
         body.textContent = '';
         body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
