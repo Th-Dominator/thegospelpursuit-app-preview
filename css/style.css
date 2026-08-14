@@ -3601,7 +3601,29 @@ button.verse-num:hover { text-decoration: underline; }
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
-.definitions-picker { margin: 0 0 14px; }
+.definitions-picker {
+  margin: 0 0 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.definitions-picker .definitions-select { flex: 1 1 200px; max-width: 260px; }
+.definitions-category { margin: 0 0 24px; }
+.definitions-category[hidden] { display: none; }
+.definitions-cat-head {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--gold);
+}
+.definitions-cat-empty {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--ink-muted);
+  font-style: italic;
+}
 .definitions-select {
   width: 100%;
   max-width: 360px;
@@ -3919,6 +3941,16 @@ body.xref-fs-open { overflow: hidden; }
   cursor: pointer;
 }
 .tl-h-ref:hover { border-color: var(--gold); background: var(--gold-tint); }
+.tl-h-world {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+  font-style: italic;
+  padding-top: 6px;
+  border-top: 1px dotted var(--divider);
+}
+.tl-h-world::before { content: 'Meanwhile: '; font-style: normal; font-weight: 600; color: var(--gold-dark); }
 
 /* period bands + a continuous spine through the dots (BibleHub-style) */
 .tl-period { margin: 0; }
@@ -4265,7 +4297,17 @@ body.xref-fs-open { overflow: hidden; }
   border-radius: var(--radius);
   background: var(--surface-2);
 }
-.def-admin-term-name { display: block; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.def-admin-item-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.def-admin-term-name { font-weight: 600; color: var(--ink); }
+.def-admin-term-cat {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--gold-dark);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
 .def-admin-def-text { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft); white-space: pre-wrap; }
 .def-admin-del {
   margin-top: 8px;

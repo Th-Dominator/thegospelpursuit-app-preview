@@ -688,7 +688,15 @@ var TRANSLATIONS = {
     'crossref.pickChapterPh': 'Chapter…',
     'crossref.pickVersePh': 'Verse…',
 
-    /* ---- definitions: letters + admin ---- */
+    /* ---- definitions: groups, letters + admin ---- */
+    'definitions.pickCategory': 'Choose a group',
+    'definitions.allCategories': 'All groups',
+    'definitions.catPeople': 'People',
+    'definitions.catPlaces': 'Places & Maps',
+    'definitions.catItems': 'Historical Items',
+    'definitions.catVocab': 'Vocabulary',
+    'definitions.catEmpty': 'Nothing in this group yet.',
+    'definitions.adminCat': 'Group',
     'definitions.pickLetter': 'Jump to a letter',
     'definitions.allLetters': 'All letters (A–Z)',
     'definitions.adminHeading': 'Admin — add a definition',

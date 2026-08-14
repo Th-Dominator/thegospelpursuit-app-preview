@@ -5831,23 +5831,59 @@
     render: function (data, result) { result.textContent = cleanAIText((data.definition || '').trim()); }
   });
 
-  var COMMON_TERMS = [
-    'Adoption', 'Advocate', 'Angel', 'Anoint', 'Apostle', 'Ascension', 'Atonement',
-    'Baptism', 'Blasphemy', 'Blessing', 'Born again', 'Canon', 'Christ', 'Church',
-    'Circumcision', 'Communion', 'Confession', 'Conscience', 'Conversion', 'Covenant',
-    'Creation', 'Cross', 'Crucifixion', 'Curse', 'Deacon', 'Disciple', 'Doctrine',
-    'Election', 'Eternal life', 'Evangelism', 'Exodus', 'Faith', 'Fasting', 'Fear of the Lord',
-    'Fellowship', 'Forgiveness', 'Fruit of the Spirit', 'Gentile', 'Glory', 'Gospel',
-    'Grace', 'Heaven', 'Hell', 'Holiness', 'Holy Spirit', 'Hope', 'Idolatry', 'Incarnation',
-    'Intercession', 'Israel', 'Jesus', 'Judgment', 'Justification', 'Kingdom of God', 'Lamb of God',
-    'Law', 'Lord', 'Love', 'Mercy', 'Messiah', 'Miracle', 'New birth', 'Obedience',
-    'Offering', 'Parable', 'Passover', 'Peace', 'Pentecost', 'Prayer', 'Predestination',
-    'Priest', 'Prophecy', 'Prophet', 'Propitiation', 'Providence', 'Reconciliation',
-    'Redemption', 'Regeneration', 'Repentance', 'Resurrection', 'Revelation', 'Righteousness',
-    'Sabbath', 'Sacrament', 'Sacrifice', 'Saint', 'Salvation', 'Sanctification', 'Savior',
-    'Scripture', 'Second coming', 'Sin', 'Soul', 'Sovereignty', 'Temple', 'Temptation',
-    'Testament', 'Tithe', 'Transgression', 'Trinity', 'Truth', 'Wisdom', 'Worship', 'Wrath'
-  ].sort(function (a, b) { return a.localeCompare(b); });
+  /* The A–Z browser is split into four groups the reader can pick between:
+     People, Places & Maps, Historical Items, and Vocabulary. Each term still
+     opens the same "define-term" lookup. Custom (admin) entries are merged into
+     their chosen group. */
+  var TERM_CATEGORIES = [
+    { key: 'people', labelKey: 'definitions.catPeople', terms: [
+      'Aaron', 'Abraham', 'Adam', 'Andrew', 'Barnabas', 'Bathsheba', 'Boaz', 'Caiaphas',
+      'Cain', 'Cyrus', 'Daniel', 'David', 'Deborah', 'Delilah', 'Elijah', 'Elisha',
+      'Esau', 'Esther', 'Eve', 'Ezekiel', 'Ezra', 'Gideon', 'Goliath', 'Hannah',
+      'Herod the Great', 'Isaac', 'Isaiah', 'Ishmael', 'Jacob', 'James', 'Jeremiah',
+      'Jesus', 'Jezebel', 'Job', 'John the Apostle', 'John the Baptist', 'Jonah',
+      'Jonathan', 'Joseph', 'Joshua', 'Josiah', 'Judas Iscariot', 'Lazarus', 'Luke',
+      'Mark', 'Mary Magdalene', 'Mary, mother of Jesus', 'Matthew', 'Melchizedek',
+      'Moses', 'Naomi', 'Nebuchadnezzar', 'Nehemiah', 'Nicodemus', 'Noah', 'Paul',
+      'Peter', 'Pontius Pilate', 'Rachel', 'Rahab', 'Rebekah', 'Ruth', 'Samson',
+      'Samuel', 'Sarah', 'Saul (king)', 'Solomon', 'Stephen', 'Thomas', 'Timothy',
+      'Zechariah'
+    ]},
+    { key: 'places', labelKey: 'definitions.catPlaces', terms: [
+      'Antioch', 'Assyria', 'Babylon', 'Bethel', 'Bethlehem', 'Caesarea', 'Canaan',
+      'Capernaum', 'Corinth', 'Damascus', 'Dead Sea', 'Eden', 'Egypt', 'Ephesus',
+      'Galilee', 'Gethsemane', 'Golgotha (Calvary)', 'Haran', 'Hebron', 'Jericho',
+      'Jerusalem', 'Jordan River', 'Judea', 'Mount Carmel', 'Mount of Olives',
+      'Mount Sinai', 'Nazareth', 'Nineveh', 'Patmos', 'Persia', 'Philippi', 'Red Sea',
+      'Rome', 'Samaria', 'Shiloh', 'Sodom and Gomorrah', 'Tarsus', 'Ur', 'Zion'
+    ]},
+    { key: 'items', labelKey: 'definitions.catItems', terms: [
+      'Altar', 'Ark of the Covenant', 'Bronze serpent', 'Burning bush', 'Ephod',
+      'Golden calf', 'Incense', 'Manna', 'Menorah', 'Mercy seat', 'Noah’s ark',
+      'Passover lamb', 'Phylacteries', 'Scroll', 'Septuagint', 'Showbread', 'Shofar',
+      'Tabernacle', 'Temple', 'Ten Commandments', 'Tent of meeting', 'Unleavened bread',
+      'Urim and Thummim', 'Veil of the temple'
+    ]},
+    { key: 'vocab', labelKey: 'definitions.catVocab', terms: [
+      'Adoption', 'Advocate', 'Angel', 'Anoint', 'Apostle', 'Ascension', 'Atonement',
+      'Baptism', 'Blasphemy', 'Blessing', 'Born again', 'Canon', 'Christ', 'Church',
+      'Circumcision', 'Communion', 'Confession', 'Conscience', 'Conversion', 'Covenant',
+      'Creation', 'Cross', 'Crucifixion', 'Curse', 'Deacon', 'Disciple', 'Doctrine',
+      'Election', 'Eternal life', 'Evangelism', 'Exodus', 'Faith', 'Fasting', 'Fear of the Lord',
+      'Fellowship', 'Forgiveness', 'Fruit of the Spirit', 'Gentile', 'Glory', 'Gospel',
+      'Grace', 'Heaven', 'Hell', 'Holiness', 'Holy Spirit', 'Hope', 'Idolatry', 'Incarnation',
+      'Intercession', 'Israel', 'Judgment', 'Justification', 'Kingdom of God', 'Lamb of God',
+      'Law', 'Lord', 'Love', 'Mercy', 'Messiah', 'Miracle', 'New birth', 'Obedience',
+      'Offering', 'Parable', 'Passover', 'Peace', 'Pentecost', 'Prayer', 'Predestination',
+      'Priest', 'Prophecy', 'Prophet', 'Propitiation', 'Providence', 'Reconciliation',
+      'Redemption', 'Regeneration', 'Repentance', 'Resurrection', 'Revelation', 'Righteousness',
+      'Sabbath', 'Sacrament', 'Sacrifice', 'Saint', 'Salvation', 'Sanctification', 'Savior',
+      'Scripture', 'Second coming', 'Sin', 'Soul', 'Sovereignty', 'Temptation',
+      'Testament', 'Tithe', 'Transgression', 'Trinity', 'Truth', 'Wisdom', 'Worship', 'Wrath'
+    ]}
+  ];
+  var CATEGORY_KEYS = TERM_CATEGORIES.map(function (c) { return c.key; });
+  function byName(a, b) { return a.localeCompare(b); }
 
   /* Custom definitions the owner adds (admin panel). Stored on the device and
      merged into the A-Z list; a term with a stored definition opens instantly
@@ -5865,12 +5901,19 @@
     var found = loadCustomDefs().filter(function (d) { return d.term.toLowerCase() === key; });
     return found.length ? found[found.length - 1].def : null;
   }
-  // the full A-Z term list: built-in common terms plus any custom ones
-  function allDefinitionTerms() {
-    var seen = {}, out = [];
-    COMMON_TERMS.forEach(function (t0) { var k = t0.toLowerCase(); if (!seen[k]) { seen[k] = 1; out.push(t0); } });
-    loadCustomDefs().forEach(function (d) { var k = d.term.toLowerCase(); if (!seen[k]) { seen[k] = 1; out.push(d.term); } });
-    return out.sort(function (a, b) { return a.localeCompare(b); });
+  // the term list per group: built-in terms plus any custom ones the owner added
+  // to that group (custom entries with an unknown/old group fall under Vocabulary)
+  function categorizedTerms() {
+    var byCat = {};
+    TERM_CATEGORIES.forEach(function (c) { byCat[c.key] = c.terms.slice(); });
+    loadCustomDefs().forEach(function (d) {
+      var cat = (d.cat && byCat[d.cat]) ? d.cat : 'vocab';
+      var exists = byCat[cat].some(function (t0) { return t0.toLowerCase() === d.term.toLowerCase(); });
+      if (!exists) byCat[cat].push(d.term);
+    });
+    return TERM_CATEGORIES.map(function (c) {
+      return { key: c.key, label: t(c.labelKey), terms: byCat[c.key].slice().sort(byName) };
+    });
   }
 
   function submitDefinition(term) {
@@ -5890,60 +5933,107 @@
     document.getElementById('definitions-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   }
 
-  // A-Z browser: a letter dropdown that filters, plus terms grouped by letter.
+  // A-Z browser: a group dropdown (People / Places & Maps / Historical Items /
+  // Vocabulary) and a letter dropdown, over per-group A-Z chip sections.
   function renderCommonTerms() {
     var wrap = document.getElementById('definitions-common');
     if (!wrap) return;
     wrap.textContent = '';
     wrap.appendChild(txt('p', 'definitions-common-label', t('definitions.commonHeading')));
 
-    var terms = allDefinitionTerms();
-    // group terms by first letter (non-letters collected under '#')
-    var groups = {}, letters = [];
-    terms.forEach(function (term) {
-      var c = term.charAt(0).toUpperCase();
-      if (!/[A-Z]/.test(c)) c = '#';
-      if (!groups[c]) { groups[c] = []; letters.push(c); }
-      groups[c].push(term);
-    });
-    letters.sort();
+    var cats = categorizedTerms();
 
-    // the letter dropdown (A-Z) — filters which group is shown
+    // two dropdowns: which group, and which letter within it
     var picker = el('div', 'definitions-picker');
-    var sel = el('select', 'definitions-select');
-    sel.setAttribute('aria-label', t('definitions.pickLetter'));
-    var all = el('option'); all.value = ''; all.textContent = t('definitions.allLetters'); sel.appendChild(all);
-    letters.forEach(function (L) {
-      var o = el('option'); o.value = L; o.textContent = L; sel.appendChild(o);
+
+    var catSel = el('select', 'definitions-select');
+    catSel.setAttribute('aria-label', t('definitions.pickCategory'));
+    var allCat = el('option'); allCat.value = ''; allCat.textContent = t('definitions.allCategories'); catSel.appendChild(allCat);
+    cats.forEach(function (c) {
+      var o = el('option'); o.value = c.key; o.textContent = c.label; catSel.appendChild(o);
     });
-    picker.appendChild(sel);
+    picker.appendChild(catSel);
+
+    var letterSel = el('select', 'definitions-select');
+    letterSel.setAttribute('aria-label', t('definitions.pickLetter'));
+    var allL = el('option'); allL.value = ''; allL.textContent = t('definitions.allLetters'); letterSel.appendChild(allL);
+    var lettersSet = {};
+    cats.forEach(function (c) {
+      c.terms.forEach(function (term) {
+        var ch = term.charAt(0).toUpperCase();
+        if (!/[A-Z]/.test(ch)) ch = '#';
+        lettersSet[ch] = 1;
+      });
+    });
+    Object.keys(lettersSet).sort().forEach(function (L) {
+      var o = el('option'); o.value = L; o.textContent = L; letterSel.appendChild(o);
+    });
+    picker.appendChild(letterSel);
     wrap.appendChild(picker);
 
-    // grouped A-Z chip sections
+    // one section per group, each holding A-Z letter subgroups of chips
     var groupsWrap = el('div', 'definitions-groups');
-    letters.forEach(function (L) {
-      var sec = el('div', 'definitions-letter-group');
-      sec.dataset.letter = L;
-      sec.appendChild(txt('h3', 'definitions-letter-head', L));
-      var row = el('div', 'definitions-chips');
-      groups[L].forEach(function (term) {
-        var b = txt('button', 'definitions-chip', term);
-        b.type = 'button';
-        if (customDefFor(term)) b.classList.add('is-custom');
-        b.addEventListener('click', function () { submitDefinition(term); });
-        row.appendChild(b);
+    cats.forEach(function (c) {
+      var catSec = el('div', 'definitions-category');
+      catSec.dataset.cat = c.key;
+      catSec.appendChild(txt('h3', 'definitions-cat-head', c.label));
+
+      var groups = {}, letters = [];
+      c.terms.forEach(function (term) {
+        var ch = term.charAt(0).toUpperCase();
+        if (!/[A-Z]/.test(ch)) ch = '#';
+        if (!groups[ch]) { groups[ch] = []; letters.push(ch); }
+        groups[ch].push(term);
       });
-      sec.appendChild(row);
-      groupsWrap.appendChild(sec);
+      letters.sort();
+
+      if (!letters.length) {
+        catSec.appendChild(txt('p', 'definitions-cat-empty', t('definitions.catEmpty')));
+      }
+      letters.forEach(function (L) {
+        var sec = el('div', 'definitions-letter-group');
+        sec.dataset.letter = L;
+        sec.dataset.cat = c.key;
+        sec.appendChild(txt('h4', 'definitions-letter-head', L));
+        var row = el('div', 'definitions-chips');
+        groups[L].forEach(function (term) {
+          var b = txt('button', 'definitions-chip', term);
+          b.type = 'button';
+          if (customDefFor(term)) b.classList.add('is-custom');
+          b.addEventListener('click', function () { submitDefinition(term); });
+          row.appendChild(b);
+        });
+        sec.appendChild(row);
+        catSec.appendChild(sec);
+      });
+      groupsWrap.appendChild(catSec);
     });
     wrap.appendChild(groupsWrap);
 
-    sel.addEventListener('change', function () {
-      var pick = sel.value;
-      groupsWrap.querySelectorAll('.definitions-letter-group').forEach(function (g) {
-        g.hidden = pick && g.dataset.letter !== pick;
+    // apply both dropdowns together; hide a group entirely if nothing shows
+    function applyFilter() {
+      var pc = catSel.value, pl = letterSel.value;
+      groupsWrap.querySelectorAll('.definitions-category').forEach(function (cs) {
+        var catMatch = !pc || cs.dataset.cat === pc;
+        var anyVisible = false;
+        cs.querySelectorAll('.definitions-letter-group').forEach(function (g) {
+          var show = catMatch && (!pl || g.dataset.letter === pl);
+          g.hidden = !show;
+          if (show) anyVisible = true;
+        });
+        cs.hidden = !catMatch || !anyVisible;
       });
-    });
+    }
+    catSel.addEventListener('change', applyFilter);
+    letterSel.addEventListener('change', applyFilter);
+    applyFilter();
+  }
+
+  // the display label for a group key (falls back to Vocabulary)
+  function categoryLabel(key) {
+    var c = TERM_CATEGORIES.filter(function (x) { return x.key === key; })[0];
+    if (!c) c = TERM_CATEGORIES[TERM_CATEGORIES.length - 1];
+    return t(c.labelKey);
   }
 
   /* admin panel: add / remove your own definitions */
@@ -5959,7 +6049,10 @@
     defs.slice().reverse().forEach(function (d, ri) {
       var idx = defs.length - 1 - ri; // real index in the stored array
       var card = el('div', 'def-admin-item');
-      card.appendChild(txt('span', 'def-admin-term-name', d.term));
+      var head = el('div', 'def-admin-item-head');
+      head.appendChild(txt('span', 'def-admin-term-name', d.term));
+      head.appendChild(txt('span', 'def-admin-term-cat', categoryLabel((d.cat && CATEGORY_KEYS.indexOf(d.cat) >= 0) ? d.cat : 'vocab')));
+      card.appendChild(head);
       card.appendChild(txt('p', 'def-admin-def-text', d.def));
       var del = txt('button', 'def-admin-del', t('definitions.adminDelete'));
       del.type = 'button';
@@ -5980,18 +6073,29 @@
     if (!form) return;
     var term = document.getElementById('def-admin-term');
     var def = document.getElementById('def-admin-def');
+    var cat = document.getElementById('def-admin-cat');
     var status = document.getElementById('def-admin-status');
+    // populate the group dropdown from the same category list the browser uses
+    if (cat && !cat.dataset.built) {
+      cat.dataset.built = '1';
+      TERM_CATEGORIES.forEach(function (c) {
+        var o = el('option'); o.value = c.key; o.textContent = t(c.labelKey);
+        if (c.key === 'vocab') o.selected = true;
+        cat.appendChild(o);
+      });
+    }
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var tVal = term.value.trim(), dVal = def.value.trim();
+      var cVal = (cat && CATEGORY_KEYS.indexOf(cat.value) >= 0) ? cat.value : 'vocab';
       if (!tVal || !dVal) return;
       var defs = loadCustomDefs();
       // replace an existing entry with the same term, else add
       var lower = tVal.toLowerCase();
       var existing = -1;
       defs.forEach(function (d, i) { if (d.term.toLowerCase() === lower) existing = i; });
-      if (existing >= 0) defs[existing] = { term: tVal, def: dVal };
-      else defs.push({ term: tVal, def: dVal });
+      if (existing >= 0) defs[existing] = { term: tVal, def: dVal, cat: cVal };
+      else defs.push({ term: tVal, def: dVal, cat: cVal });
       saveCustomDefs(defs);
       term.value = ''; def.value = '';
       setStatus(status, t('definitions.adminSaved', { term: tVal }), false);
@@ -6057,7 +6161,7 @@
       { title: 'Greek then Roman rule over Judea' },
       { title: 'The Maccabean revolt and rededicated temple' }
     ]},
-    { era: 'The Life of Jesus', dates: 'c. 5 BC–30 AD', events: [
+    { era: 'The Life of Jesus', dates: 'c. 4 BC–30 AD', events: [
       { title: 'The birth of Jesus', ref: 'Luke 2' },
       { title: 'Jesus begins his ministry', ref: 'Mark 1' },
       { title: 'The Sermon on the Mount', ref: 'Matthew 5' },
@@ -6108,100 +6212,128 @@
   /* ---------- detailed dated timeline ----------
      Major milestones with approximate BC/AD dates, grouped into the classic
      redemptive-history periods and rendered as a single vertical timeline with
-     period bands. Each event links into the reader. Dates follow the standard
-     conservative chronology; the earliest are debated. */
+     period bands. Each event links into the reader. Dates and the parallel
+     `world` context follow a standard study-Bible chronology ("A Chronology of
+     the Bible"); the earliest dates are debated. */
   var DETAILED_TIMELINE = [
     { era: 'Creation & the Early World', events: [
       { date: 'In the beginning', title: 'God creates the heavens and the earth', ref: 'Genesis 1' },
       { date: 'The beginning', title: 'Adam and Eve in the garden', ref: 'Genesis 2' },
       { date: 'The beginning', title: 'The fall of man', ref: 'Genesis 3' },
       { date: 'Early world', title: 'Cain and Abel', ref: 'Genesis 4' },
-      { date: 'c. 2500 BC', title: 'The Great Flood and Noah’s ark', ref: 'Genesis 7' },
+      { date: 'c. 2500 BC', title: 'The Great Flood and Noah’s ark', ref: 'Genesis 7', world: 'First Egyptian dynasty (c. 3100 BC); wheeled vehicles used in Mesopotamia.' },
       { date: 'After the flood', title: 'God’s covenant with Noah', ref: 'Genesis 9' },
-      { date: 'Before 2100 BC', title: 'The tower of Babel', ref: 'Genesis 11' }
+      { date: 'Before 2100 BC', title: 'The tower of Babel', ref: 'Genesis 11', world: 'First Sumerian empire founded; Babylonians draw maps on clay tablets.' }
     ]},
     { era: 'The Patriarchs', events: [
-      { date: '2091 BC', title: 'God calls Abram', ref: 'Genesis 12' },
+      { date: '2166 BC', title: 'Abram is born', ref: 'Genesis 11', world: 'Ur-Nammu law code published in Ur.' },
+      { date: '2091 BC', title: 'God calls Abram', ref: 'Genesis 12', world: 'Abram enters Canaan; the Bronze Age begins in Europe.' },
       { date: '2081 BC', title: 'God’s covenant with Abram', ref: 'Genesis 15' },
+      { date: '2080 BC', title: 'Ishmael is born', ref: 'Genesis 16' },
       { date: '2067 BC', title: 'The covenant of circumcision', ref: 'Genesis 17' },
       { date: 'c. 2067 BC', title: 'The destruction of Sodom and Gomorrah', ref: 'Genesis 19' },
-      { date: '2066 BC', title: 'Isaac is born', ref: 'Genesis 21' },
+      { date: '2066 BC', title: 'Isaac is born', ref: 'Genesis 21', world: 'Wooden ships developed in Crete.' },
       { date: 'c. 2050 BC', title: 'Abraham is tested to offer Isaac', ref: 'Genesis 22' },
+      { date: '2029 BC', title: 'Sarah dies', ref: 'Genesis 23' },
+      { date: '2026 BC', title: 'Isaac marries Rebekah', ref: 'Genesis 24' },
       { date: '2006 BC', title: 'Jacob and Esau are born', ref: 'Genesis 25' },
-      { date: 'c. 1929 BC', title: 'Jacob’s ladder at Bethel', ref: 'Genesis 28' },
+      { date: '1929 BC', title: 'Jacob’s ladder at Bethel', ref: 'Genesis 28', world: 'Jacob goes to Haran.' },
+      { date: '1915 BC', title: 'Joseph is born', ref: 'Genesis 30' },
       { date: '1898 BC', title: 'Joseph sold into slavery', ref: 'Genesis 37' },
-      { date: '1885 BC', title: 'Joseph rises to power in Egypt', ref: 'Genesis 41' },
-      { date: '1876 BC', title: 'Jacob’s family settles in Egypt', ref: 'Genesis 46' }
+      { date: '1885 BC', title: 'Joseph rises to power in Egypt', ref: 'Genesis 41', world: 'Sumerian Epic of Gilgamesh compiled.' },
+      { date: '1876 BC', title: 'Jacob’s family settles in Egypt', ref: 'Genesis 46' },
+      { date: '1859 BC', title: 'Jacob dies', ref: 'Genesis 49' },
+      { date: '1805 BC', title: 'Joseph dies', ref: 'Genesis 50', world: 'Stonehenge constructed (c. 1800 BC).' }
     ]},
     { era: 'Egypt & the Exodus', events: [
-      { date: 'c. 1730 BC', title: 'Israel enslaved in Egypt', ref: 'Exodus 1' },
-      { date: '1526 BC', title: 'Birth of Moses', ref: 'Exodus 2' },
+      { date: 'c. 1730 BC', title: 'Israel enslaved in Egypt', ref: 'Exodus 1', world: 'Law Code of Hammurabi published in Babylon.' },
+      { date: '1527 BC', title: 'Birth of Moses', ref: 'Exodus 2', world: 'Thutmose III rules Egypt.' },
+      { date: '1500 BC', title: 'Moses flees to Midian', ref: 'Exodus 2' },
       { date: '1446 BC', title: 'Moses and the burning bush', ref: 'Exodus 3' },
       { date: '1446 BC', title: 'The plagues and the first Passover', ref: 'Exodus 12' },
       { date: '1446 BC', title: 'Crossing the Red Sea', ref: 'Exodus 14' },
-      { date: '1446 BC', title: 'The Ten Commandments at Sinai', ref: 'Exodus 20' },
+      { date: '1446 BC', title: 'The Ten Commandments at Sinai', ref: 'Exodus 20', world: 'The Law is given at Mount Sinai.' },
       { date: 'c. 1445 BC', title: 'The tabernacle is built', ref: 'Exodus 40' },
       { date: '1444 BC', title: 'The twelve spies and forty years of wandering', ref: 'Numbers 14' },
       { date: '1406 BC', title: 'Moses’ final words; his death', ref: 'Deuteronomy 34' }
     ]},
     { era: 'Conquest & the Judges', events: [
       { date: '1406 BC', title: 'Israel crosses the Jordan', ref: 'Joshua 3' },
-      { date: '1406 BC', title: 'The fall of Jericho', ref: 'Joshua 6' },
-      { date: 'c. 1375 BC', title: 'The era of the judges begins', ref: 'Judges 2' },
-      { date: 'c. 1191 BC', title: 'Gideon delivers Israel', ref: 'Judges 7' },
+      { date: '1406 BC', title: 'The fall of Jericho', ref: 'Joshua 6', world: 'The conquest of Canaan begins.' },
+      { date: '1399 BC', title: 'Canaanite power broken; the land divided', ref: 'Joshua 13' },
+      { date: 'c. 1375 BC', title: 'The era of the judges begins', ref: 'Judges 2', world: 'Othniel, the first judge (1374–1334 BC).' },
+      { date: 'c. 1235 BC', title: 'Oppression by Jabin and Sisera begins', ref: 'Judges 4', world: 'Philistines settle Canaan’s coasts.' },
+      { date: 'c. 1216 BC', title: 'The victory of Deborah and Barak', ref: 'Judges 4' },
+      { date: 'c. 1200 BC', title: 'Midianite oppression begins', ref: 'Judges 6', world: 'Iron Age begins; the Greeks destroy Troy (c. 1176 BC).' },
+      { date: 'c. 1169 BC', title: 'Gideon delivers Israel', ref: 'Judges 7' },
+      { date: 'c. 1120 BC', title: 'Eli serves as Israel’s high priest', ref: '1 Samuel 1' },
+      { date: 'c. 1085 BC', title: 'Jephthah’s victory over the Ammonites', ref: 'Judges 11' },
       { date: 'c. 1075 BC', title: 'Samson and the Philistines', ref: 'Judges 16' },
       { date: 'c. 1100 BC', title: 'Ruth and Boaz', ref: 'Ruth 1' },
-      { date: 'c. 1100 BC', title: 'Birth of Samuel', ref: '1 Samuel 1' }
+      { date: '1080 BC', title: 'The battle of Shiloh', ref: '1 Samuel 4' },
+      { date: '1063 BC', title: 'Samuel comes to office', ref: '1 Samuel 3' }
     ]},
     { era: 'The United Kingdom', events: [
       { date: '1043 BC', title: 'Saul becomes Israel’s first king', ref: '1 Samuel 10' },
+      { date: '1040 BC', title: 'David is born', ref: 'Ruth 4' },
       { date: '1024 BC', title: 'Samuel anoints David', ref: '1 Samuel 16' },
       { date: '1024 BC', title: 'David kills Goliath', ref: '1 Samuel 17' },
-      { date: '1010 BC', title: 'David becomes king', ref: '2 Samuel 5' },
+      { date: '1010 BC', title: 'Death of Saul and Jonathan; David made king of Judah', ref: '2 Samuel 2' },
+      { date: '1003 BC', title: 'David becomes king of all Israel and takes Jerusalem', ref: '2 Samuel 5', world: 'Greeks adopt the Phoenician alphabet.' },
       { date: '1000 BC', title: 'The ark brought to Jerusalem', ref: '2 Samuel 6' },
       { date: 'c. 1000 BC', title: 'God’s covenant with David', ref: '2 Samuel 7' },
-      { date: '967 BC', title: 'Solomon becomes king', ref: '1 Kings 2' },
+      { date: '970 BC', title: 'Death of David; Solomon becomes king', ref: '1 Kings 2' },
       { date: 'c. 967 BC', title: 'Solomon asks God for wisdom', ref: '1 Kings 3' },
-      { date: '966 BC', title: 'Building of the temple begins', ref: '1 Kings 6' }
+      { date: '966 BC', title: 'Building of the temple begins', ref: '1 Kings 6' },
+      { date: '959 BC', title: 'The temple is dedicated', ref: '1 Kings 8' }
     ]},
     { era: 'The Divided Kingdom', events: [
-      { date: '931 BC', title: 'The kingdom divides: Israel and Judah', ref: '1 Kings 12' },
+      { date: '930 BC', title: 'Solomon dies; the kingdom is divided', ref: '1 Kings 12', world: 'Rehoboam rules Judah; Jeroboam I rules Israel.' },
       { date: 'c. 863 BC', title: 'Elijah on Mount Carmel', ref: '1 Kings 18' },
       { date: 'c. 848 BC', title: 'Elijah taken up; Elisha succeeds him', ref: '2 Kings 2' },
-      { date: '766 BC', title: 'The prophet Amos', ref: 'Amos 1' },
+      { date: '841 BC', title: 'Jehu becomes king of Israel', ref: '2 Kings 9' },
+      { date: '766 BC', title: 'The prophet Amos', ref: 'Amos 1', world: 'First Olympic games in Greece (776 BC); Rome founded (753 BC).' },
       { date: 'c. 760 BC', title: 'Jonah sent to Nineveh', ref: 'Jonah 1' },
       { date: '739 BC', title: 'Isaiah’s vision and call', ref: 'Isaiah 6' },
-      { date: '722 BC', title: 'Assyria destroys the northern kingdom', ref: '2 Kings 17' },
+      { date: '722 BC', title: 'Assyria destroys the northern kingdom', ref: '2 Kings 17', world: 'Samaria falls to Assyria; the Israelites are exiled.' },
       { date: '701 BC', title: 'Sennacherib threatens Jerusalem', ref: '2 Kings 18' },
+      { date: 'c. 640 BC', title: 'Josiah’s reign and reforms', ref: '2 Kings 22' },
       { date: '627 BC', title: 'The call of Jeremiah', ref: 'Jeremiah 1' },
-      { date: '621 BC', title: 'The lost Book of the Law is found', ref: '2 Kings 22' }
+      { date: '612 BC', title: 'Nineveh falls', ref: 'Nahum 3', world: 'The Assyrian capital is destroyed.' },
+      { date: '609 BC', title: 'The battle of Megiddo; the death of Josiah', ref: '2 Kings 23' }
     ]},
     { era: 'Exile', events: [
-      { date: '605 BC', title: 'Daniel taken to Babylon', ref: 'Daniel 1' },
-      { date: 'c. 600 BC', title: 'The fiery furnace', ref: 'Daniel 3' },
+      { date: '605 BC', title: 'Daniel taken to Babylon', ref: 'Daniel 1', world: 'Nebuchadnezzar reigns over Babylon (605–562 BC).' },
+      { date: 'c. 600 BC', title: 'The fiery furnace', ref: 'Daniel 3', world: 'Invention of coinage by the Lydians.' },
       { date: '593 BC', title: 'Ezekiel’s vision by the Chebar', ref: 'Ezekiel 1' },
-      { date: '586 BC', title: 'Jerusalem falls; the temple destroyed', ref: '2 Kings 25' },
+      { date: '587 BC', title: 'Jerusalem falls; the temple destroyed', ref: '2 Kings 25', world: 'Judah falls to Babylon; the last Jews are exiled.' },
       { date: 'c. 550 BC', title: 'Ezekiel’s valley of dry bones', ref: 'Ezekiel 37' },
-      { date: '539 BC', title: 'Daniel in the lions’ den; Babylon falls', ref: 'Daniel 6' }
+      { date: '539 BC', title: 'Daniel in the lions’ den; Babylon falls', ref: 'Daniel 6', world: 'Buddha born (563 BC); Confucius born (551 BC).' }
     ]},
     { era: 'Return & Restoration', events: [
-      { date: '537 BC', title: 'The exiles return under Cyrus', ref: 'Ezra 1' },
-      { date: '515 BC', title: 'The second temple is completed', ref: 'Ezra 6' },
-      { date: '478 BC', title: 'Esther becomes queen', ref: 'Esther 2' },
-      { date: '458 BC', title: 'Ezra returns to Jerusalem', ref: 'Ezra 7' },
+      { date: '538 BC', title: 'The exiles return under Cyrus', ref: 'Ezra 1', world: 'Cyrus crowned in Babylon; the Jews return under Zerubbabel.' },
+      { date: '536 BC', title: 'Foundations laid for the new temple', ref: 'Ezra 3' },
+      { date: '516 BC', title: 'The second temple is completed', ref: 'Ezra 6' },
+      { date: '478 BC', title: 'Esther becomes queen', ref: 'Esther 2', world: 'Roman Republic founded (509 BC); democracy established in Athens.' },
+      { date: '457 BC', title: 'Ezra returns to Jerusalem', ref: 'Ezra 7' },
       { date: '444 BC', title: 'Nehemiah rebuilds the walls', ref: 'Nehemiah 2' },
       { date: '430 BC', title: 'Malachi, the last Old Testament prophet', ref: 'Malachi 1' }
     ]},
     { era: 'Between the Testaments', events: [
-      { date: 'c. 430–5 BC', title: 'Four centuries with no recorded prophet', ref: null }
+      { date: '332 BC', title: 'Alexander the Great conquers the Persian Empire', ref: null },
+      { date: '250–50 BC', title: 'The Hebrew Scriptures translated into Greek (the Septuagint)', ref: null },
+      { date: '167 BC', title: 'Antiochus IV desecrates the temple', ref: null },
+      { date: '165 BC', title: 'The Maccabees rededicate the temple (Hanukkah)', ref: null },
+      { date: '20 BC', title: 'Herod the Great rebuilds the temple in Jerusalem', ref: null, world: 'Julius Caesar had campaigned in Britain (55, 54 BC).' }
     ]},
     { era: 'The Life of Christ', events: [
-      { date: '5 BC', title: 'The birth of Jesus', ref: 'Luke 2' },
+      { date: '4 BC', title: 'The birth of Jesus', ref: 'Luke 2', world: 'Death of Herod the Great.' },
       { date: 'c. 4 BC', title: 'The visit of the magi', ref: 'Matthew 2' },
       { date: '8 AD', title: 'The boy Jesus at the temple', ref: 'Luke 2' },
-      { date: '26 AD', title: 'The baptism of Jesus', ref: 'Matthew 3' },
+      { date: '26 AD', title: 'The baptism of Jesus; his ministry begins', ref: 'Matthew 3', world: 'Pontius Pilate, Roman procurator (AD 26–36).' },
       { date: '26 AD', title: 'The temptation in the wilderness', ref: 'Matthew 4' },
       { date: '27 AD', title: 'The Sermon on the Mount', ref: 'Matthew 5' },
+      { date: 'c. 29 AD', title: 'The death of John the Baptist', ref: 'Mark 6' },
       { date: '29 AD', title: 'Jesus feeds the five thousand', ref: 'John 6' },
       { date: '29 AD', title: 'The transfiguration', ref: 'Matthew 17' },
       { date: '30 AD', title: 'The raising of Lazarus', ref: 'John 11' },
@@ -6214,13 +6346,22 @@
     { era: 'The Early Church', events: [
       { date: '30 AD', title: 'The Holy Spirit comes at Pentecost', ref: 'Acts 2' },
       { date: 'c. 34 AD', title: 'Stephen, the first martyr', ref: 'Acts 7' },
-      { date: '34 AD', title: 'The conversion of Saul (Paul)', ref: 'Acts 9' },
+      { date: '34 AD', title: 'The conversion of Saul (Paul)', ref: 'Acts 9', world: 'Paul is converted on the Damascus road.' },
+      { date: '37 AD', title: 'Paul’s first visit to Jerusalem', ref: 'Acts 9' },
       { date: 'c. 40 AD', title: 'The gospel opens to the Gentiles', ref: 'Acts 10' },
-      { date: '48 AD', title: 'Paul’s first missionary journey', ref: 'Acts 13' },
-      { date: '49 AD', title: 'The council at Jerusalem', ref: 'Acts 15' },
+      { date: '44 AD', title: 'James, the brother of John, is martyred', ref: 'Acts 12', world: 'Death of Herod Agrippa I.' },
+      { date: '47–49 AD', title: 'Paul’s first missionary journey', ref: 'Acts 13' },
+      { date: '50 AD', title: 'The council at Jerusalem', ref: 'Acts 15' },
+      { date: '51–53 AD', title: 'Paul’s second missionary journey', ref: 'Acts 16', world: 'Gallio proconsul of Achaia.' },
+      { date: '54–57 AD', title: 'Paul’s third missionary journey', ref: 'Acts 19' },
       { date: '57 AD', title: 'Paul writes to the Romans', ref: 'Romans 1' },
+      { date: '58 AD', title: 'Paul arrested in Jerusalem, held in Caesarea', ref: 'Acts 21' },
+      { date: '60 AD', title: 'Paul appeals to Caesar', ref: 'Acts 25' },
       { date: '62 AD', title: 'Paul preaches in Rome', ref: 'Acts 28' },
-      { date: '95 AD', title: 'John’s Revelation on Patmos', ref: 'Revelation 1' }
+      { date: 'c. 67 AD', title: 'Paul and Peter executed in Rome', ref: '2 Timothy 4', world: 'Rome burned under Nero (AD 64).' },
+      { date: '70 AD', title: 'Jerusalem falls to Rome under Titus; the temple destroyed', ref: null, world: 'Fall of Masada, the last Jewish stronghold (AD 73).' },
+      { date: '90 AD', title: 'John’s Revelation on Patmos', ref: 'Revelation 1', world: 'Persecution of Christians under Domitian (AD 81–96).' },
+      { date: 'c. 98 AD', title: 'John, the last apostle, dies', ref: null }
     ]}
   ];
 
@@ -6281,6 +6422,8 @@
           b.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
           card.appendChild(b);
         }
+        // parallel world history from the study-Bible chronology
+        if (ev.world) card.appendChild(txt('span', 'tl-h-world', ev.world));
         track.appendChild(card);
       });
     });
