@@ -2807,15 +2807,26 @@
     if (bookGuideKey === key) return;
     bookGuideKey = key;
 
+    // If a verified curated overview exists for this book, show it immediately —
+    // no waiting on the slow (~3 min) backend, and it can never be blocked by a
+    // backend timeout or an empty reply. The backend still loads in the
+    // background to fill the sections the curated entry doesn't cover.
+    var curated = curatedBookOnly();
     body.textContent = '';
-    body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
+    if (curated) {
+      var seed = renderBookOverview(curated);
+      if (seed) body.appendChild(seed);
+      else body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
+    } else {
+      body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
+    }
 
     requestCached('book-insight', { book: bibleState.book.name })
       .then(function (data) {
         if (bookGuideKey !== key) return;
-        body.textContent = '';
         var rich = renderBookOverview(withCuratedBook(data));
-        if (rich) { body.appendChild(rich); return; }
+        if (rich) { body.textContent = ''; body.appendChild(rich); return; }
+        if (curated) return; // keep the curated overview already on screen
         renderInsight(body, [
           { key: 'bible.bookAbout', text: data && data.overview },
           { key: 'bible.pointsToChrist', text: data && data.christ },
@@ -2824,12 +2835,9 @@
       })
       .catch(function (err) {
         if (bookGuideKey !== key) return;
-        // backend down / offline: still show the verified curated overview if we have one
-        var curated = curatedBookOnly();
-        var rich = curated && renderBookOverview(curated);
-        body.textContent = '';
-        if (rich) { body.appendChild(rich); return; }
+        if (curated) return; // the verified overview is already shown; leave it
         bookGuideKey = null;
+        body.textContent = '';
         body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
       });
   }
@@ -3075,13 +3083,23 @@
     var key = bibleState.book.name;
     if (focusKeys.book === key) return;
     focusKeys.book = key;
+    // Show the verified curated overview instantly if we have one; the backend
+    // still loads in the background to fill the remaining sections.
+    var curated = curatedBookOnly();
     body.textContent = '';
-    body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
+    if (curated) {
+      var seed = renderBookOverview(curated);
+      if (seed) body.appendChild(seed);
+      else body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
+    } else {
+      body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
+    }
     requestCached('book-insight', { book: bibleState.book.name })
       .then(function (data) {
         if (focusKeys.book !== key) return;
         var rich = renderBookOverview(withCuratedBook(data));
         if (rich) { body.textContent = ''; body.appendChild(rich); return; }
+        if (curated) return; // keep the curated overview already on screen
         renderInsight(body, [
           { key: 'bible.bookAbout', text: data && data.overview },
           { key: 'bible.pointsToChrist', text: data && data.christ },
@@ -3090,9 +3108,7 @@
       })
       .catch(function (err) {
         if (focusKeys.book !== key) return;
-        var curated = curatedBookOnly();
-        var rich = curated && renderBookOverview(curated);
-        if (rich) { body.textContent = ''; body.appendChild(rich); return; }
+        if (curated) return; // the verified overview is already shown; leave it
         focusKeys.book = null;
         body.textContent = '';
         body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
