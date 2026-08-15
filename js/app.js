@@ -590,8 +590,13 @@
     if (force) adminInvalidate();
     return adminList('definition').then(function (items) {
       globalDefs = items.map(function (it) {
-        return { term: it.term || it.scope || '', def: it.definition || it.def || '', cat: it.group || 'vocab' };
-      }).filter(function (d) { return d.term && d.def; });
+        return {
+          term: it.term || it.scope || '', def: it.definition || it.def || '', cat: it.group || 'vocab',
+          pron: it.pron || '', meaning: it.meaning || '',
+          firstApp: it.firstApp || '', father: it.father || '', mother: it.mother || '',
+          siblings: it.siblings || '', children: it.children || ''
+        };
+      }).filter(function (d) { return d.term && (d.def || d.meaning); });
       globalDefsLoaded = true;
       return globalDefs;
     });
@@ -6146,10 +6151,58 @@
   function saveCustomDefs(a) {
     try { window.localStorage.setItem(CUSTOM_DEFS_KEY, JSON.stringify(a)); } catch (e) { /* view-only */ }
   }
+  // returns the full stored record (term, cat, def, pron, meaning, genealogy) or null
   function customDefFor(term) {
     var key = String(term).toLowerCase();
     var found = allCustomDefs().filter(function (d) { return d.term.toLowerCase() === key; });
-    return found.length ? found[found.length - 1].def : null;
+    return found.length ? found[found.length - 1] : null;
+  }
+
+  /* Render a structured custom/global definition into a container: an optional
+     pronunciation and meaning line, the definition body, and — for People
+     entries — a family & first-appearance block. */
+  function renderDefinitionInto(container, rec) {
+    container.textContent = '';
+    if (rec.pron && rec.pron.trim()) {
+      var pr = el('p', 'def-pron');
+      pr.appendChild(txt('span', 'def-section-label', t('definitions.pronLabel')));
+      pr.appendChild(txt('span', 'def-pron-text', cleanAIText(rec.pron.trim())));
+      container.appendChild(pr);
+    }
+    if (rec.meaning && rec.meaning.trim()) {
+      var mn = el('p', 'def-meaning');
+      mn.appendChild(txt('span', 'def-section-label', t('definitions.meaningLabel')));
+      mn.appendChild(txt('span', 'def-meaning-text', cleanAIText(rec.meaning.trim())));
+      container.appendChild(mn);
+    }
+    if (rec.def && rec.def.trim()) {
+      var body = el('div', 'def-body');
+      cleanAIText(rec.def.trim()).split(/\n{2,}/).forEach(function (para) {
+        var p = para.trim();
+        if (p) body.appendChild(txt('p', null, p));
+      });
+      container.appendChild(body);
+    }
+    if (rec.cat === 'people') {
+      var rows = [
+        ['definitions.firstAppLabel', rec.firstApp],
+        ['definitions.fatherLabel', rec.father],
+        ['definitions.motherLabel', rec.mother],
+        ['definitions.siblingsLabel', rec.siblings],
+        ['definitions.childrenLabel', rec.children]
+      ].filter(function (r) { return r[1] && String(r[1]).trim(); });
+      if (rows.length) {
+        var gen = el('div', 'def-genealogy');
+        gen.appendChild(txt('h4', 'def-gen-head', t('definitions.genealogyHeading')));
+        var dl = el('dl', 'def-gen-list');
+        rows.forEach(function (r) {
+          dl.appendChild(txt('dt', 'def-gen-term', t(r[0])));
+          dl.appendChild(txt('dd', 'def-gen-desc', cleanAIText(String(r[1]).trim())));
+        });
+        gen.appendChild(dl);
+        container.appendChild(gen);
+      }
+    }
   }
   // the term list per group: built-in terms plus any custom ones the owner added
   // to that group (custom entries with an unknown/old group fall under Vocabulary)
@@ -6174,7 +6227,7 @@
     if (custom) {
       var result = document.getElementById('definitions-result');
       var status = document.getElementById('definitions-status');
-      result.textContent = cleanAIText(custom.trim());
+      renderDefinitionInto(result, custom);
       result.hidden = false;
       if (status) setStatus(status, '', false);
       result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -6303,7 +6356,8 @@
       head.appendChild(txt('span', 'def-admin-term-name', d.term));
       head.appendChild(txt('span', 'def-admin-term-cat', categoryLabel((d.cat && CATEGORY_KEYS.indexOf(d.cat) >= 0) ? d.cat : 'vocab')));
       card.appendChild(head);
-      card.appendChild(txt('p', 'def-admin-def-text', d.def));
+      if (d.meaning && d.meaning.trim()) card.appendChild(txt('p', 'def-admin-def-meaning', d.meaning));
+      card.appendChild(txt('p', 'def-admin-def-text', d.def || ''));
       var del = txt('button', 'def-admin-del', t('definitions.adminDelete'));
       del.type = 'button';
       del.addEventListener('click', function () {
@@ -6324,6 +6378,14 @@
     var term = document.getElementById('def-admin-term');
     var def = document.getElementById('def-admin-def');
     var cat = document.getElementById('def-admin-cat');
+    var pron = document.getElementById('def-admin-pron');
+    var meaning = document.getElementById('def-admin-meaning');
+    var people = document.getElementById('def-admin-people');
+    var firstApp = document.getElementById('def-admin-firstapp');
+    var father = document.getElementById('def-admin-father');
+    var mother = document.getElementById('def-admin-mother');
+    var siblings = document.getElementById('def-admin-siblings');
+    var children = document.getElementById('def-admin-children');
     var status = document.getElementById('def-admin-status');
     // populate the group dropdown from the same category list the browser uses
     if (cat && !cat.dataset.built) {
@@ -6334,20 +6396,32 @@
         cat.appendChild(o);
       });
     }
+    // the family fields only make sense for People
+    function syncPeople() { if (people) people.hidden = (cat.value !== 'people'); }
+    if (cat) cat.addEventListener('change', syncPeople);
+    syncPeople();
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var tVal = term.value.trim(), dVal = def.value.trim();
+      var tVal = term.value.trim(), dVal = def.value.trim(), mVal = meaning.value.trim();
       var cVal = (cat && CATEGORY_KEYS.indexOf(cat.value) >= 0) ? cat.value : 'vocab';
-      if (!tVal || !dVal) return;
+      if (!tVal || (!dVal && !mVal)) return; // need a term and at least a meaning or definition
+      var rec = { term: tVal, def: dVal, cat: cVal, pron: pron.value.trim(), meaning: mVal };
+      if (cVal === 'people') {
+        rec.firstApp = firstApp.value.trim();
+        rec.father = father.value.trim();
+        rec.mother = mother.value.trim();
+        rec.siblings = siblings.value.trim();
+        rec.children = children.value.trim();
+      }
       var defs = loadCustomDefs();
       // replace an existing entry with the same term, else add
       var lower = tVal.toLowerCase();
       var existing = -1;
       defs.forEach(function (d, i) { if (d.term.toLowerCase() === lower) existing = i; });
-      if (existing >= 0) defs[existing] = { term: tVal, def: dVal, cat: cVal };
-      else defs.push({ term: tVal, def: dVal, cat: cVal });
+      if (existing >= 0) defs[existing] = rec;
+      else defs.push(rec);
       saveCustomDefs(defs);
-      term.value = ''; def.value = '';
+      [term, def, pron, meaning, firstApp, father, mother, siblings, children].forEach(function (n) { if (n) n.value = ''; });
       setStatus(status, t('definitions.adminSaved', { term: tVal }), false);
       renderDefAdmin();
       renderCommonTerms();
@@ -6436,27 +6510,65 @@
       var o = el('option'); o.value = c.key; o.textContent = t(c.labelKey);
       if (c.key === 'vocab') o.selected = true; group.appendChild(o);
     });
+    var pron = textInput('admin.defPronPh');
+    var meaning = textInput('admin.defMeaningPh');
     var body = areaInput('admin.defDefPh', 5);
     card.appendChild(fieldRow('admin.defTerm', term));
     card.appendChild(fieldRow('admin.group', group));
+    card.appendChild(fieldRow('admin.defPron', pron));
+    card.appendChild(fieldRow('admin.defMeaning', meaning));
     card.appendChild(fieldRow('admin.defDef', body));
+
+    // family & first-appearance fields, shown only for the People group
+    var people = el('div', 'admin-people');
+    people.appendChild(txt('p', 'admin-people-head', t('admin.defPeopleHeading')));
+    var firstApp = textInput('admin.defFirstAppPh');
+    var father = textInput('admin.defFatherPh');
+    var mother = textInput('admin.defMotherPh');
+    var siblings = textInput('admin.defSiblingsPh');
+    var children = textInput('admin.defChildrenPh');
+    people.appendChild(fieldRow('admin.defFirstApp', firstApp));
+    people.appendChild(fieldRow('admin.defFather', father));
+    people.appendChild(fieldRow('admin.defMother', mother));
+    people.appendChild(fieldRow('admin.defSiblings', siblings));
+    people.appendChild(fieldRow('admin.defChildren', children));
+    card.appendChild(people);
+    function syncPeople() { people.hidden = (group.value !== 'people'); }
+    group.addEventListener('change', syncPeople);
+    syncPeople();
+
     var status = txt('p', 'status', '');
     var list = el('div', 'admin-list');
+    function loadInto(it) {
+      term.value = it.term || ''; group.value = it.group || 'vocab';
+      pron.value = it.pron || ''; meaning.value = it.meaning || ''; body.value = it.definition || '';
+      firstApp.value = it.firstApp || ''; father.value = it.father || ''; mother.value = it.mother || '';
+      siblings.value = it.siblings || ''; children.value = it.children || '';
+      syncPeople();
+    }
     var save = txt('button', 'admin-save', t('admin.publish')); save.type = 'button';
     save.addEventListener('click', function () {
-      var tv = term.value.trim(), dv = body.value.trim();
-      if (!tv || !dv) { setStatus(status, t('admin.needTermDef'), true); return; }
+      var tv = term.value.trim(), dv = body.value.trim(), mv = meaning.value.trim();
+      if (!tv || (!dv && !mv)) { setStatus(status, t('admin.needTermDef'), true); return; }
       setStatus(status, t('admin.saving'), false);
-      adminUpsertByScope('definition', tv, { term: tv, group: group.value, definition: dv }).then(function (r) {
+      var fields = { term: tv, group: group.value, definition: dv, pron: pron.value.trim(), meaning: mv };
+      if (group.value === 'people') {
+        fields.firstApp = firstApp.value.trim();
+        fields.father = father.value.trim();
+        fields.mother = mother.value.trim();
+        fields.siblings = siblings.value.trim();
+        fields.children = children.value.trim();
+      }
+      adminUpsertByScope('definition', tv, fields).then(function (r) {
         if (r && r.ok) {
           setStatus(status, t('admin.published', { name: tv }), false);
-          term.value = ''; body.value = ''; globalDefsLoaded = false;
-          adminListInto(list, 'definition', function (it) { term.value = it.term || ''; group.value = it.group || 'vocab'; body.value = it.definition || ''; });
+          loadInto({}); globalDefsLoaded = false;
+          adminListInto(list, 'definition', loadInto);
         } else { setStatus(status, t('admin.failed'), true); }
       });
     });
     card.appendChild(save); card.appendChild(status); card.appendChild(list);
-    adminListInto(list, 'definition', function (it) { term.value = it.term || ''; group.value = it.group || 'vocab'; body.value = it.definition || ''; });
+    adminListInto(list, 'definition', loadInto);
     return card;
   }
 

@@ -4348,7 +4348,66 @@ body.xref-fs-open { overflow: hidden; }
   border-radius: 999px;
   padding: 1px 8px;
 }
+.def-admin-def-meaning { margin: 0 0 4px; font-size: 13px; line-height: 1.5; color: var(--ink); }
 .def-admin-def-text { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft); white-space: pre-wrap; }
+
+/* the People-only family fields in both definition creators */
+.def-admin-people, .admin-people {
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.def-admin-people-head, .admin-people-head {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* structured definition display (pronunciation, meaning, family) */
+.def-section-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin-right: 8px;
+}
+.def-pron { margin: 0 0 6px; }
+.def-pron-text { font-style: italic; color: var(--ink-soft); }
+.def-meaning { margin: 0 0 12px; }
+.def-meaning-text { color: var(--ink); }
+.def-body { margin: 0 0 12px; }
+.def-body p { margin: 0 0 8px; }
+.def-body p:last-child { margin-bottom: 0; }
+.def-genealogy {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.def-gen-head {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.def-gen-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  margin: 0;
+}
+.def-gen-term { font-size: 13px; font-weight: 600; color: var(--gold-dark); }
+.def-gen-desc { margin: 0; font-size: 13px; color: var(--ink-soft); }
+
 .def-admin-del {
   margin-top: 8px;
   font-size: 12px;

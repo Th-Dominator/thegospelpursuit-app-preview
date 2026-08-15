@@ -642,7 +642,17 @@
           <form id="def-admin-form" class="devo-own-form">
             <input id="def-admin-term" type="text" autocomplete="off" data-i18n-placeholder="definitions.adminTermPh" placeholder="Term (e.g. Shalom)" required>
             <select id="def-admin-cat" class="definitions-select" aria-label="Group" data-i18n-aria="definitions.adminCat"></select>
-            <textarea id="def-admin-def" rows="5" data-i18n-placeholder="definitions.adminDefPh" placeholder="Its meaning, roots, and a key verse…" required></textarea>
+            <input id="def-admin-pron" type="text" autocomplete="off" data-i18n-placeholder="definitions.adminPronPh" placeholder="Pronunciation (e.g. shah-LOHM)">
+            <input id="def-admin-meaning" type="text" autocomplete="off" data-i18n-placeholder="definitions.adminMeaningPh" placeholder="Meaning — a short gloss">
+            <textarea id="def-admin-def" rows="5" data-i18n-placeholder="definitions.adminDefPh" placeholder="Its meaning, roots, and a key verse…"></textarea>
+            <div id="def-admin-people" class="def-admin-people" hidden>
+              <p class="def-admin-people-head" data-i18n="definitions.adminPeopleHeading">For people (optional)</p>
+              <input id="def-admin-firstapp" type="text" autocomplete="off" data-i18n-placeholder="definitions.adminFirstAppPh" placeholder="First appearance (e.g. Genesis 12:1)">
+              <input id="def-admin-father" type="text" autocomplete="off" data-i18n-placeholder="definitions.adminFatherPh" placeholder="Father">
+              <input id="def-admin-mother" type="text" autocomplete="off" data-i18n-placeholder="definitions.adminMotherPh" placeholder="Mother">
+              <input id="def-admin-siblings" type="text" autocomplete="off" data-i18n-placeholder="definitions.adminSiblingsPh" placeholder="Siblings">
+              <input id="def-admin-children" type="text" autocomplete="off" data-i18n-placeholder="definitions.adminChildrenPh" placeholder="Children">
+            </div>
             <button type="submit" data-i18n="definitions.adminSave">Save definition</button>
           </form>
           <p id="def-admin-status" class="status" role="status" aria-live="polite"></p>
