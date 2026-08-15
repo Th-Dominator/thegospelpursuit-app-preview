@@ -2730,7 +2730,9 @@
   }
 
   /* Common questions: a FAQ accordion. Each question is its own collapsible
-     row so the section stays scannable; the answer may hold a few paragraphs. */
+     row so the section stays scannable; the answer may hold a few paragraphs,
+     followed by an optional verse reference the backend tags the question with,
+     linked into the reader. */
   function buildFaqSection(arr) {
     if (!Array.isArray(arr) || !arr.length) return null;
     var wrap = el('div', 'faq-list');
@@ -2748,10 +2750,39 @@
         if (p) body.appendChild(txt('p', 'faq-a-text', p));
       });
       if (!body.children.length) body.appendChild(txt('p', 'faq-a-text', an));
+      var verseLine = buildFaqVerse(item && (item.verse || item.reference || item.ref || item.passage));
+      if (verseLine) body.appendChild(verseLine);
       det.appendChild(body);
       wrap.appendChild(det);
     });
     return wrap.children.length ? wrap : null;
+  }
+
+  /* The verse reference a FAQ item points at: "📖 See <ref>", where each
+     resolvable reference links into that chapter of the reader. Accepts a
+     string ("Exodus 3:6"), a list, or several refs separated by ; / , and
+     renders nothing when there's no usable reference. */
+  function buildFaqVerse(val) {
+    if (!val) return null;
+    var refs = (Array.isArray(val) ? val : String(val).split(/\s*[;,]\s*/))
+      .map(function (r) { return String(r).trim(); })
+      .filter(Boolean);
+    if (!refs.length) return null;
+    var p = el('p', 'faq-a-verse');
+    p.appendChild(txt('span', 'faq-verse-label', '📖 ' + t('chap.faqSee') + ' '));
+    refs.forEach(function (reference, i) {
+      if (i) p.appendChild(txt('span', 'faq-verse-sep', '; '));
+      var loc = parseRef(reference);
+      if (loc) {
+        var link = txt('button', 'faq-verse-link', reference);
+        link.type = 'button';
+        link.addEventListener('click', function () { openReaderAt(loc.book, loc.chapter); });
+        p.appendChild(link);
+      } else {
+        p.appendChild(txt('span', 'faq-verse-ref', reference));
+      }
+    });
+    return p;
   }
 
   // --- context & resources: generated per verse by the backend ---
@@ -6135,6 +6166,7 @@
     { key: 'people', labelKey: 'definitions.catPeople', terms: [] },
     { key: 'places', labelKey: 'definitions.catPlaces', terms: [] },
     { key: 'items', labelKey: 'definitions.catItems', terms: [] },
+    { key: 'actions', labelKey: 'definitions.catActions', terms: [] },
     { key: 'vocab', labelKey: 'definitions.catVocab', terms: [] }
   ];
   var CATEGORY_KEYS = TERM_CATEGORIES.map(function (c) { return c.key; });

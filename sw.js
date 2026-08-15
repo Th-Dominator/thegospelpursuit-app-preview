@@ -8,7 +8,7 @@
 
    Lives at the site root so its scope covers the whole app. */
 
-var CACHE = 'tgp-cache-v8';
+var CACHE = 'tgp-cache-v9';
 
 /* The minimum needed to boot the app offline. Dynamically-loaded files
    (xref-data.js, lang/*.js) and Google Fonts are cached at runtime the first
