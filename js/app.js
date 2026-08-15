@@ -5060,10 +5060,10 @@
     ]},
     { cat: 'Release readiness', items: [
       { t: 'Content QA across all 40 languages', done: false, note: 'Spot-check scripture and generated text per language.' },
-      { t: 'Install as an app (PWA) — offline & icon', done: false },
-      { t: 'Usage analytics & error monitoring', done: false },
-      { t: 'Privacy policy & about page', done: false },
-      { t: 'Image credits & licenses', done: false, note: 'Attribute the Wikimedia artwork used across the app.' }
+      { t: 'Install as an app (PWA) — offline & icon', done: true, note: 'Shipped: a precaching service worker (network-first for pages so a new deploy always wins, stale-while-revalidate for assets), web manifest, installable icon and iOS install meta. The shell opens with no connection and installs to the home screen.' },
+      { t: 'Usage analytics & error monitoring', done: false, note: 'No client error capture or usage counters yet — add a privacy-respecting local error log (and optional beacon) so problems surface after launch.' },
+      { t: 'Privacy policy & about page', done: false, note: 'Needed before a public beta: a plain-language privacy note (what Clerk/n8n/localStorage store) and an About page.' },
+      { t: 'Image credits & licenses', done: false, note: 'Attribute the Wikimedia artwork used across the app; the timeline already shows per-image credit + licence, but a single credits page is still missing.' }
     ]}
   ];
 
@@ -5075,14 +5075,14 @@
   var AUDIT_DIMENSIONS = [
     { name: 'Content & study features', score: 95,
       note: 'Reader, search, cross-references, timeline, messianic prophecy, devotionals, plans, apologetics and definitions — an unusually complete study Bible for teaching evangelism and apologetics.' },
-    { name: 'Offline & speed', score: 65,
-      note: 'Drop-downs warm on hover and de-dupe in memory, but nothing survives a reload and the app can’t open with no connection. A caching service worker plus a stored answer cache would make repeat answers instant and work offline.' },
+    { name: 'Offline & speed', score: 88,
+      note: 'Now strong: a precaching service worker serves the whole shell offline (network-first pages, stale-while-revalidate assets), a persistent localStorage answer cache (tgp.genCache.v1) makes chapter guides, context and quizzes reappear instantly across reloads, and drop-downs still warm on hover. Remaining nit: the Definitions endpoint isn’t on the persistent cache yet.' },
     { name: 'Backend robustness', score: 72,
       note: 'The n8n + Claude endpoints all respond, but the search-context and translation settings are ignored by the scripture node, verses save in one language only, and the apologetics prompt still needs its rework.' },
-    { name: 'Accounts & sync', score: 72,
-      note: 'Sign-in is in place: Clerk gives each user an identity, and signing in starts the sync client that mirrors on-device state to the Vercel/Neon backend. What remains is confirming cloud-saved plans, progress and notes actually persist and merge across devices.' },
-    { name: 'Release readiness', score: 45,
-      note: 'No installable PWA/manifest, analytics, error monitoring, privacy policy, or image credits yet — each of these is expected before a public beta.' }
+    { name: 'Accounts & sync', score: 70,
+      note: 'Sign-in genuinely works — Clerk mounts the sign-in / create-account / user button and, once signed in, starts the sync client that mirrors on-device state. Two caveats keep this from an A: it runs on a Clerk dev instance (pk_test key) and the sync API points at a Vercel *preview* origin, and cross-device persistence hasn’t been verified end-to-end. Front-end (GitHub Pages) and API (Vercel) are cross-origin, so CORS/env must be confirmed.' },
+    { name: 'Release readiness', score: 58,
+      note: 'The installable PWA, manifest, icon and offline shell are now shipped — a big lift from before. Still open before a public beta: usage analytics / error monitoring, a privacy policy and About page, an image-credits page, a full 40-language content spot-check, and an accessibility pass (the <html lang> attribute stays "en" when the UI language changes, and there’s no skip-to-content link).' }
   ];
   var AUDIT_WEIGHTS = {
     'Content & study features': 3,
@@ -5107,16 +5107,18 @@
     return { score: score, letter: gradeLetter(score) };
   }
 
-  /* The four things you named, in the order that unblocks a public beta. */
+  /* The remaining path to 100%. Offline/PWA and the persistent answer cache are
+     now shipped, so those earlier priorities are done; what's left is release-
+     hardening and the three backend prompt items. Ordered to unblock beta. */
   var FOCUS_NOW = [
-    { t: 'Finish the Definitions tab',
-      d: 'Pre-bundle the ~100 common terms so they open instantly with no backend call and work offline. The A–Z browser and admin entries are already in place.' },
-    { t: 'Verify verse context',
-      d: 'Spot-check the verse-context endpoint across books so the “context” drop-downs are trustworthy before you teach from them.' },
-    { t: 'Make the interactive drop-downs faster',
-      d: 'Persist the warm cache to storage so any chapter guide, context or quiz you’ve opened before reappears instantly — even after a reload or with no connection.' },
-    { t: 'Optimise offline capability',
-      d: 'Add a caching service worker and a PWA manifest so the whole app opens with no connection and installs to the home screen like a native iOS app.' }
+    { t: 'Harden the backend prompts',
+      d: 'Three n8n items: make the scripture node honour the search-context and translation settings, save/read verses keyed by language, and finish the apologetics system-prompt rework.' },
+    { t: 'Verify accounts & cloud sync end-to-end',
+      d: 'Move Clerk off the dev pk_test key, confirm the Vercel/Neon sync API is reachable cross-origin from GitHub Pages (CORS + env), then check that plans, progress and notes persist and merge across two devices.' },
+    { t: 'Ship the release-readiness pages',
+      d: 'Add a privacy policy, an About page, an image-credits/licences page, and lightweight error monitoring so problems surface after launch.' },
+    { t: 'Accessibility & 40-language QA',
+      d: 'Update <html lang> on language change, add a skip-to-content link, run a keyboard/screen-reader sweep on phone sizes, and spot-check scripture and generated text per language.' }
   ];
 
   function renderAudit(panel) {
@@ -5129,7 +5131,7 @@
     head.appendChild(badge);
     var htext = el('div', 'audit-head-text');
     htext.appendChild(txt('h2', 'audit-title', 'Readiness grade'));
-    htext.appendChild(txt('p', 'audit-sub', 'Feature-complete and content-rich; the remaining points are release-hardening — offline, accounts, and launch checks.'));
+    htext.appendChild(txt('p', 'audit-sub', 'Feature-complete and content-rich, with offline/PWA and the persistent answer cache now shipped. The gap to 100% is release-hardening — backend prompts, verified accounts/sync, and launch checks.'));
     head.appendChild(htext);
     wrap.appendChild(head);
 
@@ -5153,8 +5155,8 @@
 
   function renderFocus(panel) {
     var wrap = el('div', 'beta-callout focus-block');
-    wrap.appendChild(txt('h2', 'beta-callout-title', 'Focus now — the path to beta'));
-    wrap.appendChild(txt('p', 'beta-callout-lede', 'The four things you named, in the order that unblocks a public beta.'));
+    wrap.appendChild(txt('h2', 'beta-callout-title', 'Focus now — the path to 100%'));
+    wrap.appendChild(txt('p', 'beta-callout-lede', 'What remains between today’s grade and a 100% public beta, in the order to tackle it.'));
     var road = el('div', 'beta-road');
     FOCUS_NOW.forEach(function (f, i) {
       var r = el('div', 'beta-road-item');
