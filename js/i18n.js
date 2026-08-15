@@ -359,6 +359,14 @@ var TRANSLATIONS = {
     'ctx.christNT': 'New Testament usage:',
     'ctx.christAlt': 'Alternative view:',
     'ctx.christConfidence': 'Confidence',
+    /* ---- study "go deeper" groups (chapter & book overviews) ---- */
+    'grp.deeper': 'Go deeper',
+    'grp.showLess': 'Show less',
+    'grp.more': '{n} more',
+    'grp.story': 'Story & structure',
+    'grp.world': 'Background & world',
+    'grp.theology': 'Theology & connections',
+    'grp.study': 'Questions & study',
     /* ---- chapter overview: the full chapter study ---- */
     'chap.summary': 'Chapter summary',
     'chap.previously': 'What happened previously',

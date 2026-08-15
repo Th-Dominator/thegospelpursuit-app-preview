@@ -1918,70 +1918,70 @@
      replies aren't rich, so renderChapterOverview returns null and the
      caller falls back to the previous three-heading layout. */
   var CHAPTER_SECTIONS = [
-    { key: 'summary', label: 'chap.summary', type: 'prose' },
-    { key: 'previously', label: 'chap.previously', type: 'prose' },
-    { key: 'placement', label: 'chap.placement', type: 'prose' },
-    { key: 'outline', label: 'chap.outline', type: 'list' },
-    { key: 'events', label: 'chap.events', type: 'list' },
-    { key: 'people', label: 'chap.people', type: 'named' },
-    { key: 'locations', label: 'chap.locations', type: 'named' },
-    { key: 'historical', label: 'chap.historical', type: 'prose' },
-    { key: 'structure', label: 'chap.structure', type: 'prose' },
-    { key: 'themes', label: 'chap.themes', type: 'list' },
-    { key: 'keyVerses', label: 'chap.keyVerses', type: 'refs' },
-    { key: 'difficult', label: 'chap.difficult', type: 'refs' },
-    { key: 'theology', label: 'chap.theology', type: 'prose' },
-    { key: 'connections', label: 'chap.connections', type: 'refs' },
-    { key: 'christ', label: 'chap.christ', type: 'prose' },
-    { key: 'apologetics', label: 'chap.apologetics', type: 'prose' },
-    { key: 'archaeology', label: 'chap.archaeology', type: 'archaeology' },
-    { key: 'places', label: 'chap.places', type: 'geography' },
-    { key: 'timeline', label: 'chap.timeline', type: 'timeline' },
-    { key: 'next', label: 'chap.next', type: 'prose' },
-    { key: 'commonQuestions', label: 'chap.faq', type: 'faq' },
-    { key: 'quiz', label: 'chap.quiz', type: 'quiz' },
-    { key: 'sources', label: 'chap.sources', type: 'list' }
+    { key: 'summary', label: 'chap.summary', type: 'prose', group: 'essentials' },
+    { key: 'christ', label: 'chap.christ', type: 'prose', group: 'essentials' },
+    { key: 'keyVerses', label: 'chap.keyVerses', type: 'refs', group: 'essentials' },
+    { key: 'quiz', label: 'chap.quiz', type: 'quiz', group: 'essentials' },
+    { key: 'previously', label: 'chap.previously', type: 'prose', group: 'story' },
+    { key: 'placement', label: 'chap.placement', type: 'prose', group: 'story' },
+    { key: 'outline', label: 'chap.outline', type: 'list', group: 'story' },
+    { key: 'events', label: 'chap.events', type: 'list', group: 'story' },
+    { key: 'structure', label: 'chap.structure', type: 'prose', group: 'story' },
+    { key: 'next', label: 'chap.next', type: 'prose', group: 'story' },
+    { key: 'people', label: 'chap.people', type: 'named', group: 'world' },
+    { key: 'locations', label: 'chap.locations', type: 'named', group: 'world' },
+    { key: 'historical', label: 'chap.historical', type: 'prose', group: 'world' },
+    { key: 'archaeology', label: 'chap.archaeology', type: 'archaeology', group: 'world' },
+    { key: 'places', label: 'chap.places', type: 'geography', group: 'world' },
+    { key: 'timeline', label: 'chap.timeline', type: 'timeline', group: 'world' },
+    { key: 'themes', label: 'chap.themes', type: 'list', group: 'theology' },
+    { key: 'theology', label: 'chap.theology', type: 'prose', group: 'theology' },
+    { key: 'connections', label: 'chap.connections', type: 'refs', group: 'theology' },
+    { key: 'apologetics', label: 'chap.apologetics', type: 'prose', group: 'theology' },
+    { key: 'difficult', label: 'chap.difficult', type: 'refs', group: 'study' },
+    { key: 'commonQuestions', label: 'chap.faq', type: 'faq', group: 'study' },
+    { key: 'sources', label: 'chap.sources', type: 'list', group: 'study' }
   ];
 
   /* The whole-book study, shown when a book is selected and in the verse
      study view. Same accordion machinery as the chapter overview. */
   var BOOK_SECTIONS = [
-    { key: 'name', label: 'book.name', type: 'prose' },
-    { key: 'nameMeaning', label: 'book.nameMeaning', type: 'prose' },
-    { key: 'testament', label: 'book.testament', type: 'prose' },
-    { key: 'category', label: 'book.category', type: 'prose' },
-    { key: 'author', label: 'book.author', type: 'prose' },
-    { key: 'authorship', label: 'book.authorship', type: 'prose' },
-    { key: 'date', label: 'book.date', type: 'prose' },
-    { key: 'dating', label: 'book.dating', type: 'prose' },
-    { key: 'audience', label: 'book.audience', type: 'prose' },
-    { key: 'historical', label: 'book.historical', type: 'prose' },
-    { key: 'political', label: 'book.political', type: 'prose' },
-    { key: 'cultural', label: 'book.cultural', type: 'prose' },
-    { key: 'geography', label: 'book.geography', type: 'prose' },
-    { key: 'genre', label: 'book.genre', type: 'prose' },
-    { key: 'purpose', label: 'book.purpose', type: 'prose' },
-    { key: 'summary', label: 'book.summary', type: 'prose' },
-    { key: 'outline', label: 'book.outline', type: 'list' },
-    { key: 'people', label: 'book.people', type: 'named' },
-    { key: 'locations', label: 'book.locations', type: 'named' },
-    { key: 'events', label: 'book.events', type: 'list' },
-    { key: 'themes', label: 'book.themes', type: 'list' },
-    { key: 'doctrines', label: 'book.doctrines', type: 'named' },
-    { key: 'keyVerses', label: 'book.keyVerses', type: 'refs' },
-    { key: 'keyChapters', label: 'book.keyChapters', type: 'refs' },
-    { key: 'covenants', label: 'book.covenants', type: 'named' },
-    { key: 'neighbors', label: 'book.neighbors', type: 'prose' },
-    { key: 'storyline', label: 'book.storyline', type: 'prose' },
-    { key: 'christ', label: 'book.christ', type: 'prose' },
-    { key: 'connections', label: 'book.connections', type: 'refs' },
-    { key: 'controversies', label: 'book.controversies', type: 'named' },
-    { key: 'archaeology', label: 'book.archaeology', type: 'archaeology' },
-    { key: 'places', label: 'book.places', type: 'geography' },
-    { key: 'timeline', label: 'book.timeline', type: 'timeline' },
-    { key: 'manuscripts', label: 'book.manuscripts', type: 'prose' },
-    { key: 'reception', label: 'book.reception', type: 'prose' },
-    { key: 'sources', label: 'book.sources', type: 'list' }
+    { key: 'summary', label: 'book.summary', type: 'prose', group: 'essentials' },
+    { key: 'purpose', label: 'book.purpose', type: 'prose', group: 'essentials' },
+    { key: 'christ', label: 'book.christ', type: 'prose', group: 'essentials' },
+    { key: 'keyVerses', label: 'book.keyVerses', type: 'refs', group: 'essentials' },
+    { key: 'outline', label: 'book.outline', type: 'list', group: 'story' },
+    { key: 'storyline', label: 'book.storyline', type: 'prose', group: 'story' },
+    { key: 'keyChapters', label: 'book.keyChapters', type: 'refs', group: 'story' },
+    { key: 'events', label: 'book.events', type: 'list', group: 'story' },
+    { key: 'genre', label: 'book.genre', type: 'prose', group: 'story' },
+    { key: 'name', label: 'book.name', type: 'prose', group: 'world' },
+    { key: 'nameMeaning', label: 'book.nameMeaning', type: 'prose', group: 'world' },
+    { key: 'testament', label: 'book.testament', type: 'prose', group: 'world' },
+    { key: 'category', label: 'book.category', type: 'prose', group: 'world' },
+    { key: 'author', label: 'book.author', type: 'prose', group: 'world' },
+    { key: 'authorship', label: 'book.authorship', type: 'prose', group: 'world' },
+    { key: 'date', label: 'book.date', type: 'prose', group: 'world' },
+    { key: 'dating', label: 'book.dating', type: 'prose', group: 'world' },
+    { key: 'audience', label: 'book.audience', type: 'prose', group: 'world' },
+    { key: 'historical', label: 'book.historical', type: 'prose', group: 'world' },
+    { key: 'political', label: 'book.political', type: 'prose', group: 'world' },
+    { key: 'cultural', label: 'book.cultural', type: 'prose', group: 'world' },
+    { key: 'geography', label: 'book.geography', type: 'prose', group: 'world' },
+    { key: 'people', label: 'book.people', type: 'named', group: 'world' },
+    { key: 'locations', label: 'book.locations', type: 'named', group: 'world' },
+    { key: 'neighbors', label: 'book.neighbors', type: 'prose', group: 'world' },
+    { key: 'archaeology', label: 'book.archaeology', type: 'archaeology', group: 'world' },
+    { key: 'places', label: 'book.places', type: 'geography', group: 'world' },
+    { key: 'timeline', label: 'book.timeline', type: 'timeline', group: 'world' },
+    { key: 'themes', label: 'book.themes', type: 'list', group: 'theology' },
+    { key: 'doctrines', label: 'book.doctrines', type: 'named', group: 'theology' },
+    { key: 'covenants', label: 'book.covenants', type: 'named', group: 'theology' },
+    { key: 'connections', label: 'book.connections', type: 'refs', group: 'theology' },
+    { key: 'controversies', label: 'book.controversies', type: 'named', group: 'study' },
+    { key: 'manuscripts', label: 'book.manuscripts', type: 'prose', group: 'study' },
+    { key: 'reception', label: 'book.reception', type: 'prose', group: 'study' },
+    { key: 'sources', label: 'book.sources', type: 'list', group: 'study' }
   ];
 
   /* ---------- curated book overviews (verified) ----------
@@ -2048,10 +2048,42 @@
     return renderSectionedStudy(data, BOOK_SECTIONS, { book: bibleState.book.name });
   }
 
-  /* Shared accordion for the chapter and book studies: each configured
-     section becomes a collapsible panel, the first non-empty one open.
-     Returns null when none of the rich keys are present, so callers can
-     fall back to an older, simpler reply shape. */
+  /* The "go deeper" groups: every non-essential section is folded into one of
+     these labelled clusters, so the reader meets a short guide (the essentials)
+     and opens the rest a group at a time instead of scanning 20-odd headings.
+     Order here is the order the groups appear under the toggle. */
+  var STUDY_GROUPS = [
+    { key: 'story', label: 'grp.story' },
+    { key: 'world', label: 'grp.world' },
+    { key: 'theology', label: 'grp.theology' },
+    { key: 'study', label: 'grp.study' }
+  ];
+
+  /* Build one section's collapsible panel (or null when it has no content).
+     The archaeology / geography / timeline panels lazy-load, so they're always
+     built when a scope is available. */
+  function buildStudySectionNode(d, data, archScope, openState) {
+    if (d.type === 'archaeology') return archScope ? buildArchaeologyPanel(d, archScope) : null;
+    if (d.type === 'geography') return archScope ? buildGeographyPanel(d, archScope) : null;
+    if (d.type === 'timeline') return archScope ? buildTimelinePanel(d, archScope) : null;
+    var content = buildStudySection(d, data[d.key]);
+    if (!content) return null;
+    var det = el('details', 'ctx-section');
+    if (openState) det.open = true;
+    var sum = el('summary', 'ctx-summary');
+    sum.appendChild(txt('span', 'ctx-title', t(d.label)));
+    det.appendChild(sum);
+    var body = el('div', 'ctx-body');
+    body.appendChild(content);
+    det.appendChild(body);
+    return det;
+  }
+
+  /* Shared two-tier study for the chapter and book overviews. Tier 1 is the
+     essentials (shown directly, first one open); tier 2 is everything else,
+     folded into labelled groups behind a "Go deeper" toggle. Returns null when
+     none of the rich keys are present, so callers can fall back to an older,
+     simpler reply shape. */
   function renderSectionedStudy(data, sections, archScope) {
     if (!data) return null;
     // the archaeology panel loads on demand, so it never counts toward "rich"
@@ -2063,32 +2095,57 @@
     if (!hasRich) return null;
 
     var wrap = el('div', 'verse-context');
+
+    // Tier 1 — essentials, shown directly; first non-empty panel open.
     var openFirst = true;
     sections.forEach(function (d) {
-      if (d.type === 'archaeology') {
-        if (archScope) wrap.appendChild(buildArchaeologyPanel(d, archScope));
-        return;
-      }
-      if (d.type === 'geography') {
-        if (archScope) wrap.appendChild(buildGeographyPanel(d, archScope));
-        return;
-      }
-      if (d.type === 'timeline') {
-        if (archScope) wrap.appendChild(buildTimelinePanel(d, archScope));
-        return;
-      }
-      var content = buildStudySection(d, data[d.key]);
-      if (!content) return;
-      var det = el('details', 'ctx-section');
-      if (openFirst) { det.open = true; openFirst = false; }
-      var sum = el('summary', 'ctx-summary');
-      sum.appendChild(txt('span', 'ctx-title', t(d.label)));
-      det.appendChild(sum);
-      var body = el('div', 'ctx-body');
-      body.appendChild(content);
-      det.appendChild(body);
-      wrap.appendChild(det);
+      if ((d.group || 'essentials') !== 'essentials') return;
+      var node = buildStudySectionNode(d, data, archScope, openFirst);
+      if (!node) return;
+      openFirst = false;
+      wrap.appendChild(node);
     });
+
+    // Tier 2 — the rest, grouped, hidden until "Go deeper" is tapped.
+    var deeper = el('div', 'ctx-deeper');
+    deeper.hidden = true;
+    var deeperCount = 0;
+    STUDY_GROUPS.forEach(function (g) {
+      var members = el('div', 'ctx-group');
+      var built = 0;
+      sections.forEach(function (d) {
+        if (d.group !== g.key) return;
+        var node = buildStudySectionNode(d, data, archScope, false);
+        if (!node) return;
+        members.appendChild(node);
+        built++;
+      });
+      if (!built) return;
+      deeper.appendChild(txt('h4', 'ctx-group-title', t(g.label)));
+      deeper.appendChild(members);
+      deeperCount += built;
+    });
+
+    if (deeperCount) {
+      var btn = el('button', 'ctx-deeper-toggle');
+      btn.type = 'button';
+      btn.setAttribute('aria-expanded', 'false');
+      var caret = txt('span', 'ctx-deeper-caret', '▾');
+      var lbl = txt('span', 'ctx-deeper-label', t('grp.deeper'));
+      var count = txt('span', 'ctx-deeper-count', t('grp.more', { n: deeperCount }));
+      btn.appendChild(caret); btn.appendChild(lbl); btn.appendChild(count);
+      btn.addEventListener('click', function () {
+        var show = deeper.hidden;
+        deeper.hidden = !show;
+        btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+        caret.textContent = show ? '▴' : '▾';
+        lbl.textContent = show ? t('grp.showLess') : t('grp.deeper');
+        count.hidden = show;
+      });
+      wrap.appendChild(btn);
+      wrap.appendChild(deeper);
+    }
+
     return wrap.children.length ? wrap : null;
   }
 
@@ -5082,7 +5139,7 @@
     { name: 'Accounts & sync', score: 70,
       note: 'Sign-in genuinely works — Clerk mounts the sign-in / create-account / user button and, once signed in, starts the sync client that mirrors on-device state. Two caveats keep this from an A: it runs on a Clerk dev instance (pk_test key) and the sync API points at a Vercel *preview* origin, and cross-device persistence hasn’t been verified end-to-end. Front-end (GitHub Pages) and API (Vercel) are cross-origin, so CORS/env must be confirmed.' },
     { name: 'Release readiness', score: 58,
-      note: 'The installable PWA, manifest, icon and offline shell are now shipped — a big lift from before. Still open before a public beta: usage analytics / error monitoring, a privacy policy and About page, an image-credits page, a full 40-language content spot-check, and an accessibility pass (the <html lang> attribute stays "en" when the UI language changes, and there’s no skip-to-content link).' }
+      note: 'The installable PWA, manifest, icon and offline shell are now shipped — a big lift from before. Still open before a public beta: usage analytics / error monitoring, a privacy policy and About page, an image-credits page, a full 40-language content spot-check, and an accessibility pass (a keyboard / screen-reader sweep on phone sizes, and a skip-to-content link).' }
   ];
   var AUDIT_WEIGHTS = {
     'Content & study features': 3,
@@ -5118,7 +5175,7 @@
     { t: 'Ship the release-readiness pages',
       d: 'Add a privacy policy, an About page, an image-credits/licences page, and lightweight error monitoring so problems surface after launch.' },
     { t: 'Accessibility & 40-language QA',
-      d: 'Update <html lang> on language change, add a skip-to-content link, run a keyboard/screen-reader sweep on phone sizes, and spot-check scripture and generated text per language.' }
+      d: 'Add a skip-to-content link, run a keyboard/screen-reader sweep on phone sizes, and spot-check scripture and generated text per language. (<html lang> already updates on language change.)' }
   ];
 
   function renderAudit(panel) {
