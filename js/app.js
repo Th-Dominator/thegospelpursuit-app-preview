@@ -6121,52 +6121,16 @@
      People, Places & Maps, Historical Items, and Vocabulary. Each term still
      opens the same "define-term" lookup. Custom (admin) entries are merged into
      their chosen group. */
+  /* The preloaded term catalog was cleared on 2026-08-15 so the owner can
+     populate the Definitions tab entirely from the Admin view, in their own
+     order. The four groups are kept as empty buckets so admin-published
+     definitions still sort into People / Places / Items / Vocabulary. (The old
+     ~230-term list lives in git history if it's ever wanted back.) */
   var TERM_CATEGORIES = [
-    { key: 'people', labelKey: 'definitions.catPeople', terms: [
-      'Aaron', 'Abraham', 'Adam', 'Andrew', 'Barnabas', 'Bathsheba', 'Boaz', 'Caiaphas',
-      'Cain', 'Cyrus', 'Daniel', 'David', 'Deborah', 'Delilah', 'Elijah', 'Elisha',
-      'Esau', 'Esther', 'Eve', 'Ezekiel', 'Ezra', 'Gideon', 'Goliath', 'Hannah',
-      'Herod the Great', 'Isaac', 'Isaiah', 'Ishmael', 'Jacob', 'James', 'Jeremiah',
-      'Jesus', 'Jezebel', 'Job', 'John the Apostle', 'John the Baptist', 'Jonah',
-      'Jonathan', 'Joseph', 'Joshua', 'Josiah', 'Judas Iscariot', 'Lazarus', 'Luke',
-      'Mark', 'Mary Magdalene', 'Mary, mother of Jesus', 'Matthew', 'Melchizedek',
-      'Moses', 'Naomi', 'Nebuchadnezzar', 'Nehemiah', 'Nicodemus', 'Noah', 'Paul',
-      'Peter', 'Pontius Pilate', 'Rachel', 'Rahab', 'Rebekah', 'Ruth', 'Samson',
-      'Samuel', 'Sarah', 'Saul (king)', 'Solomon', 'Stephen', 'Thomas', 'Timothy',
-      'Zechariah'
-    ]},
-    { key: 'places', labelKey: 'definitions.catPlaces', terms: [
-      'Antioch', 'Assyria', 'Babylon', 'Bethel', 'Bethlehem', 'Caesarea', 'Canaan',
-      'Capernaum', 'Corinth', 'Damascus', 'Dead Sea', 'Eden', 'Egypt', 'Ephesus',
-      'Galilee', 'Gethsemane', 'Golgotha (Calvary)', 'Haran', 'Hebron', 'Jericho',
-      'Jerusalem', 'Jordan River', 'Judea', 'Mount Carmel', 'Mount of Olives',
-      'Mount Sinai', 'Nazareth', 'Nineveh', 'Patmos', 'Persia', 'Philippi', 'Red Sea',
-      'Rome', 'Samaria', 'Shiloh', 'Sodom and Gomorrah', 'Tarsus', 'Ur', 'Zion'
-    ]},
-    { key: 'items', labelKey: 'definitions.catItems', terms: [
-      'Altar', 'Ark of the Covenant', 'Bronze serpent', 'Burning bush', 'Ephod',
-      'Golden calf', 'Incense', 'Manna', 'Menorah', 'Mercy seat', 'Noah’s ark',
-      'Passover lamb', 'Phylacteries', 'Scroll', 'Septuagint', 'Showbread', 'Shofar',
-      'Tabernacle', 'Temple', 'Ten Commandments', 'Tent of meeting', 'Unleavened bread',
-      'Urim and Thummim', 'Veil of the temple'
-    ]},
-    { key: 'vocab', labelKey: 'definitions.catVocab', terms: [
-      'Adoption', 'Advocate', 'Angel', 'Anoint', 'Apostle', 'Ascension', 'Atonement',
-      'Baptism', 'Blasphemy', 'Blessing', 'Born again', 'Canon', 'Christ', 'Church',
-      'Circumcision', 'Communion', 'Confession', 'Conscience', 'Conversion', 'Covenant',
-      'Creation', 'Cross', 'Crucifixion', 'Curse', 'Deacon', 'Disciple', 'Doctrine',
-      'Election', 'Eternal life', 'Evangelism', 'Exodus', 'Faith', 'Fasting', 'Fear of the Lord',
-      'Fellowship', 'Forgiveness', 'Fruit of the Spirit', 'Gentile', 'Glory', 'Gospel',
-      'Grace', 'Heaven', 'Hell', 'Holiness', 'Holy Spirit', 'Hope', 'Idolatry', 'Incarnation',
-      'Intercession', 'Israel', 'Judgment', 'Justification', 'Kingdom of God', 'Lamb of God',
-      'Law', 'Lord', 'Love', 'Mercy', 'Messiah', 'Miracle', 'New birth', 'Obedience',
-      'Offering', 'Parable', 'Passover', 'Peace', 'Pentecost', 'Prayer', 'Predestination',
-      'Priest', 'Prophecy', 'Prophet', 'Propitiation', 'Providence', 'Reconciliation',
-      'Redemption', 'Regeneration', 'Repentance', 'Resurrection', 'Revelation', 'Righteousness',
-      'Sabbath', 'Sacrament', 'Sacrifice', 'Saint', 'Salvation', 'Sanctification', 'Savior',
-      'Scripture', 'Second coming', 'Sin', 'Soul', 'Sovereignty', 'Temptation',
-      'Testament', 'Tithe', 'Transgression', 'Trinity', 'Truth', 'Wisdom', 'Worship', 'Wrath'
-    ]}
+    { key: 'people', labelKey: 'definitions.catPeople', terms: [] },
+    { key: 'places', labelKey: 'definitions.catPlaces', terms: [] },
+    { key: 'items', labelKey: 'definitions.catItems', terms: [] },
+    { key: 'vocab', labelKey: 'definitions.catVocab', terms: [] }
   ];
   var CATEGORY_KEYS = TERM_CATEGORIES.map(function (c) { return c.key; });
   function byName(a, b) { return a.localeCompare(b); }
