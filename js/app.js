@@ -374,7 +374,8 @@
     if (name === 'apologetics') { apoloStage = null; renderApologetics(); }
     // the timeline and definitions build their static content on first view
     if (name === 'timeline') { renderDetailedTimeline(); renderBibleTimeline(); }
-    if (name === 'definitions') { renderCommonTerms(); renderDefAdmin(); }
+    if (name === 'definitions') { renderCommonTerms(); renderDefAdmin(); loadGlobalDefs().then(function () { renderCommonTerms(); }); }
+    if (name === 'admin') renderAdminView();
     if (name === 'devotional') renderMyDevotionals();
     if (name === 'progress') renderReadingProgress();
     if (name === 'messianic') renderMessianic();
@@ -391,7 +392,7 @@
 
   document.querySelectorAll('.nav-link, .feature-card, .explore-card, .dash-badges-link').forEach(function (el) {
     el.addEventListener('click', function () {
-      showView(el.dataset.view);
+      if (el.dataset.view) showView(el.dataset.view);
     });
   });
 
@@ -550,6 +551,53 @@
     genCache[key] = p;
     return p;
   }
+
+  /* ---------- admin content (global, key-gated) ----------
+     A single always-active n8n workflow ("admin-content") is a shared store:
+     the owner types maps, archaeology, chapter FAQs and definitions in the
+     Admin view and they reach every visitor. Reads are public; writes carry a
+     secret admin key the owner enters once (kept only on their device). The same
+     endpoint also receives "report a problem" submissions. */
+  var ADMIN_KEY_LS = 'tgp.adminKey';
+  function adminKey() { try { return window.localStorage.getItem(ADMIN_KEY_LS) || ''; } catch (e) { return ''; } }
+  function setAdminKeyStored(k) { try { window.localStorage.setItem(ADMIN_KEY_LS, k || ''); } catch (e) { /* ignore */ } }
+  function isAdminUnlocked() { return !!adminKey(); }
+
+  var adminCache = {};
+  function adminList(type, scope) {
+    var key = (type || '') + '|' + (scope || '');
+    if (adminCache[key]) return adminCache[key];
+    var p = request('admin-content', { action: 'list', type: type, scope: scope })
+      .then(function (d) { return (d && Array.isArray(d.items)) ? d.items : []; },
+            function () { return []; });
+    adminCache[key] = p;
+    return p;
+  }
+  function adminInvalidate() { adminCache = {}; }
+  function adminWrite(action, item) {
+    return request('admin-content', { action: action, key: adminKey(), item: item });
+  }
+  function adminReport(payload) {
+    var body = { action: 'report' };
+    Object.keys(payload || {}).forEach(function (k) { body[k] = payload[k]; });
+    return request('admin-content', body);
+  }
+  // global (owner-published) definitions, merged into the on-device list below
+  var globalDefs = [];
+  var globalDefsLoaded = false;
+  function loadGlobalDefs(force) {
+    if (globalDefsLoaded && !force) return Promise.resolve(globalDefs);
+    if (force) adminInvalidate();
+    return adminList('definition').then(function (items) {
+      globalDefs = items.map(function (it) {
+        return { term: it.term || it.scope || '', def: it.definition || it.def || '', cat: it.group || 'vocab' };
+      }).filter(function (d) { return d.term && d.def; });
+      globalDefsLoaded = true;
+      return globalDefs;
+    });
+  }
+  // the on-device custom definitions plus the owner's globally published ones
+  function allCustomDefs() { return loadCustomDefs().concat(globalDefs); }
 
   /* Warm a drop-down before it opens: the moment the pointer or keyboard focus
      lands on it, kick off its generation so the content is ready (or already on
@@ -818,7 +866,7 @@
      in focus, and the whole chapter's verses so prev/next can move through it. */
   var bibleState = {
     screen: 'testaments', testament: 0, book: null, chapter: 1,
-    verse: 1, chapterVerses: [], focusAfterLoad: null
+    verse: 1, chapterVerses: [], focusAfterLoad: null, showOriginal: false
   };
 
   var bibleScreens = {
@@ -982,7 +1030,16 @@
     { id: 'api:61fd76eafa1577c2-02', label: 'Good News Translation (GNT)' }
   ];
 
+  /* Original-language texts on API.Bible (served through the existing
+     bible-chapter proxy via the "api:" version prefix): the Westminster
+     Leningrad Codex for the Hebrew Old Testament and the Text-Critical Greek
+     New Testament. Chosen by the current testament. */
+  var ORIGINAL_OT = 'api:0b262f1ed7f084a6-01'; // Hebrew — WLC
+  var ORIGINAL_NT = 'api:7644de2e4c5188e5-01'; // Greek — Text-Critical GNT
+  function isOriginalHebrew() { return bibleState.showOriginal && bibleState.testament === 0; }
+
   function currentVersion() {
+    if (bibleState.showOriginal) return bibleState.testament === 0 ? ORIGINAL_OT : ORIGINAL_NT;
     return (settings && settings.version) || '';
   }
 
@@ -1011,6 +1068,28 @@
     if (setting) setting.value = this.value;
     loadChapter();
   });
+
+  // toggle between the reader's version and the original Hebrew/Greek text
+  var bibleOriginalPaint = null;
+  (function wireOriginalToggle() {
+    var btn = document.getElementById('bible-original');
+    if (!btn) return;
+    function paint() {
+      btn.classList.toggle('is-on', !!bibleState.showOriginal);
+      btn.setAttribute('aria-pressed', bibleState.showOriginal ? 'true' : 'false');
+      var lbl = btn.querySelector('.bible-original-label');
+      if (lbl) lbl.textContent = bibleState.showOriginal ? t('bible.originalOn') : t('bible.original');
+      var sel = document.getElementById('bible-version');
+      if (sel) sel.disabled = !!bibleState.showOriginal;
+    }
+    btn.addEventListener('click', function () {
+      bibleState.showOriginal = !bibleState.showOriginal;
+      paint();
+      loadChapter();
+    });
+    bibleOriginalPaint = paint;
+    paint();
+  })();
 
   // jumping to a verse from the picker scrolls its card into view
   document.getElementById('bible-verse-select').addEventListener('change', function () {
@@ -1169,6 +1248,8 @@
     // keep the chapter's verses so the study view can read text and step around
     bibleState.chapterVerses = verses;
     var list = document.getElementById('bible-verses');
+    list.classList.toggle('is-original', !!bibleState.showOriginal);
+    list.classList.toggle('is-rtl', isOriginalHebrew());
     list.textContent = '';
     verses.forEach(function (verse) {
       list.appendChild(buildVerseCard(verse));
@@ -2048,6 +2129,63 @@
     return renderSectionedStudy(data, BOOK_SECTIONS, { book: bibleState.book.name });
   }
 
+  /* Owner-published maps & archaeology (from the Admin view) for a scope, shown
+     inside the guide's "Background & world" cluster. Fetched from the shared
+     admin store and injected after the guide renders, so chapters with nothing
+     curated stay clean. */
+  function buildAdminWorldPanel(maps, arch) {
+    if ((!maps || !maps.length) && (!arch || !arch.length)) return null;
+    var det = el('details', 'ctx-section ctx-admin-world');
+    var sum = el('summary', 'ctx-summary');
+    sum.appendChild(txt('span', 'ctx-title', t('admin.worldPanel')));
+    det.appendChild(sum);
+    var body = el('div', 'ctx-body');
+    (maps || []).forEach(function (m) {
+      var fig = el('figure', 'ctx-map');
+      if (m.imageUrl) {
+        var img = document.createElement('img');
+        img.src = m.imageUrl; img.alt = m.title || 'map'; img.loading = 'lazy';
+        img.className = 'ctx-map-img';
+        fig.appendChild(img);
+      }
+      var cap = [m.title, m.caption].filter(Boolean).join(' — ');
+      if (cap) fig.appendChild(txt('figcaption', 'ctx-map-cap', cap));
+      if (fig.children.length) body.appendChild(fig);
+    });
+    (arch || []).forEach(function (a) {
+      var card = el('div', 'ctx-find');
+      if (a.title) card.appendChild(txt('h5', 'ctx-find-title', a.title));
+      if (a.imageUrl) {
+        var im = document.createElement('img');
+        im.src = a.imageUrl; im.alt = a.title || 'artifact'; im.loading = 'lazy';
+        im.className = 'ctx-find-img';
+        card.appendChild(im);
+      }
+      if (a.description) card.appendChild(txt('p', 'ctx-text', a.description));
+      if (card.children.length) body.appendChild(card);
+    });
+    if (!body.children.length) return null;
+    det.appendChild(body);
+    return det;
+  }
+
+  function injectAdminWorld(container, scope) {
+    if (!container || !scope) return;
+    Promise.all([adminList('map', scope), adminList('archaeology', scope)]).then(function (res) {
+      if (container.querySelector('.ctx-admin-world')) return; // already injected
+      var panel = buildAdminWorldPanel(res[0], res[1]);
+      if (!panel) return;
+      var world = container.querySelector('.ctx-group[data-group="world"]');
+      if (world) { world.insertBefore(panel, world.firstChild); return; }
+      var deeper = container.querySelector('.ctx-deeper') || container;
+      var wrap = el('div', 'ctx-group');
+      wrap.dataset.group = 'world';
+      wrap.appendChild(panel);
+      deeper.appendChild(txt('h4', 'ctx-group-title', t('grp.world')));
+      deeper.appendChild(wrap);
+    });
+  }
+
   /* The "go deeper" groups: every non-essential section is folded into one of
      these labelled clusters, so the reader meets a short guide (the essentials)
      and opens the rest a group at a time instead of scanning 20-odd headings.
@@ -2112,6 +2250,7 @@
     var deeperCount = 0;
     STUDY_GROUPS.forEach(function (g) {
       var members = el('div', 'ctx-group');
+      members.dataset.group = g.key;
       var built = 0;
       sections.forEach(function (d) {
         if (d.group !== g.key) return;
@@ -2821,15 +2960,24 @@
       .then(function (data) {
         // a late reply for a chapter we've since left shouldn't overwrite the new one
         if (chapterGuideKey !== key) return;
-        body.textContent = '';
-        var rich = renderChapterOverview(data);
-        if (rich) { body.appendChild(rich); return; }
-        // fall back to the older overview / points-to-Christ / background layout
-        renderInsight(body, [
-          { key: 'bible.overview', text: data && data.overview },
-          { key: 'bible.pointsToChrist', text: data && data.christ },
-          { key: 'bible.background', text: data && data.history }
-        ], 'bible.guideUnavailable');
+        var scope = bibleState.book.name + ' ' + bibleState.chapter;
+        // fold in any owner-published FAQ (replaces the generated one), then render
+        adminList('faq', scope).then(function (faqs) {
+          if (chapterGuideKey !== key) return;
+          var merged = data;
+          if (faqs && faqs.length && Array.isArray(faqs[0].qa) && faqs[0].qa.length) {
+            merged = Object.assign({}, data || {}, { commonQuestions: faqs[0].qa });
+          }
+          body.textContent = '';
+          var rich = renderChapterOverview(merged);
+          if (rich) { body.appendChild(rich); injectAdminWorld(body, scope); return; }
+          // fall back to the older overview / points-to-Christ / background layout
+          renderInsight(body, [
+            { key: 'bible.overview', text: data && data.overview },
+            { key: 'bible.pointsToChrist', text: data && data.christ },
+            { key: 'bible.background', text: data && data.history }
+          ], 'bible.guideUnavailable');
+        });
       })
       .catch(function (err) {
         chapterGuideKey = null; // allow a retry on the next open
@@ -2872,7 +3020,7 @@
     body.textContent = '';
     if (curated) {
       var seed = renderBookOverview(curated);
-      if (seed) body.appendChild(seed);
+      if (seed) { body.appendChild(seed); injectAdminWorld(body, key); }
       else body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
     } else {
       body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
@@ -2882,7 +3030,7 @@
       .then(function (data) {
         if (bookGuideKey !== key) return;
         var rich = renderBookOverview(withCuratedBook(data));
-        if (rich) { body.textContent = ''; body.appendChild(rich); return; }
+        if (rich) { body.textContent = ''; body.appendChild(rich); injectAdminWorld(body, key); return; }
         if (curated) return; // keep the curated overview already on screen
         renderInsight(body, [
           { key: 'bible.bookAbout', text: data && data.overview },
@@ -6036,7 +6184,7 @@
   }
   function customDefFor(term) {
     var key = String(term).toLowerCase();
-    var found = loadCustomDefs().filter(function (d) { return d.term.toLowerCase() === key; });
+    var found = allCustomDefs().filter(function (d) { return d.term.toLowerCase() === key; });
     return found.length ? found[found.length - 1].def : null;
   }
   // the term list per group: built-in terms plus any custom ones the owner added
@@ -6044,7 +6192,7 @@
   function categorizedTerms() {
     var byCat = {};
     TERM_CATEGORIES.forEach(function (c) { byCat[c.key] = c.terms.slice(); });
-    loadCustomDefs().forEach(function (d) {
+    allCustomDefs().forEach(function (d) {
       var cat = (d.cat && byCat[d.cat]) ? d.cat : 'vocab';
       var exists = byCat[cat].some(function (t0) { return t0.toLowerCase() === d.term.toLowerCase(); });
       if (!exists) byCat[cat].push(d.term);
@@ -6240,6 +6388,330 @@
       renderDefAdmin();
       renderCommonTerms();
     });
+  })();
+
+  /* ---------- admin view (owner-only, key-gated) ----------
+     One screen to publish shared content to every visitor: definitions, maps,
+     archaeology, and per-chapter questions. Everything routes through the
+     admin-content workflow; writes carry the secret key entered below (kept on
+     this device only). Reads elsewhere in the app are public. */
+  function revealAdminNav() {
+    var link = document.getElementById('nav-admin');
+    if (link) link.hidden = !isAdminUnlocked();
+  }
+
+  function fieldRow(labelKey, control) {
+    var wrap = el('label', 'admin-field');
+    wrap.appendChild(txt('span', 'admin-field-label', t(labelKey)));
+    wrap.appendChild(control);
+    return wrap;
+  }
+  function textInput(phKey) {
+    var i = el('input', 'admin-input'); i.type = 'text';
+    if (phKey) i.placeholder = t(phKey);
+    return i;
+  }
+  function areaInput(phKey, rows) {
+    var a = el('textarea', 'admin-area'); a.rows = rows || 4;
+    if (phKey) a.placeholder = t(phKey);
+    return a;
+  }
+
+  // reuse an existing item's id for the same (type, scope) so re-publish overwrites
+  function adminUpsertByScope(type, scope, fields) {
+    return adminList(type, scope).then(function (items) {
+      var norm = String(scope).toLowerCase().trim();
+      var existing = items.filter(function (it) { return String(it.scope || '').toLowerCase().trim() === norm; })[0];
+      var item = Object.assign({ type: type, scope: scope }, fields);
+      if (existing && existing.id) item.id = existing.id;
+      return adminWrite('upsert', item).then(function (r) { adminInvalidate(); return r; });
+    });
+  }
+
+  function adminListInto(listEl, type, onPick) {
+    listEl.textContent = '';
+    listEl.appendChild(txt('p', 'admin-list-busy', t('admin.loading')));
+    adminInvalidate();
+    adminList(type).then(function (items) {
+      listEl.textContent = '';
+      if (!items.length) { listEl.appendChild(txt('p', 'admin-empty', t('admin.none'))); return; }
+      items.slice().reverse().forEach(function (it) {
+        var row = el('div', 'admin-item');
+        var main = el('button', 'admin-item-main'); main.type = 'button';
+        var label = it.term || it.title || it.scope || '(untitled)';
+        main.appendChild(txt('span', 'admin-item-name', label));
+        var sub = [it.scope, it.group].filter(Boolean).join(' · ');
+        if (it.type === 'faq' && Array.isArray(it.qa)) sub = it.scope + ' · ' + it.qa.length + ' Q&A';
+        if (sub) main.appendChild(txt('span', 'admin-item-sub', sub));
+        if (onPick) main.addEventListener('click', function () { onPick(it); });
+        row.appendChild(main);
+        var del = txt('button', 'admin-item-del', t('admin.delete')); del.type = 'button';
+        del.addEventListener('click', function () {
+          adminWrite('delete', { type: it.type, id: it.id }).then(function () {
+            adminInvalidate(); adminListInto(listEl, type, onPick);
+          });
+        });
+        row.appendChild(del);
+        listEl.appendChild(row);
+      });
+    });
+  }
+
+  function adminCardShell(titleKey, hintKey) {
+    var card = el('section', 'admin-card');
+    card.appendChild(txt('h2', 'admin-card-title', t(titleKey)));
+    if (hintKey) card.appendChild(txt('p', 'admin-card-hint', t(hintKey)));
+    return card;
+  }
+
+  function buildDefinitionAdmin() {
+    var card = adminCardShell('admin.defTitle', 'admin.defHint');
+    var term = textInput('admin.defTermPh');
+    var group = el('select', 'admin-input');
+    TERM_CATEGORIES.forEach(function (c) {
+      var o = el('option'); o.value = c.key; o.textContent = t(c.labelKey);
+      if (c.key === 'vocab') o.selected = true; group.appendChild(o);
+    });
+    var body = areaInput('admin.defDefPh', 5);
+    card.appendChild(fieldRow('admin.defTerm', term));
+    card.appendChild(fieldRow('admin.group', group));
+    card.appendChild(fieldRow('admin.defDef', body));
+    var status = txt('p', 'status', '');
+    var list = el('div', 'admin-list');
+    var save = txt('button', 'admin-save', t('admin.publish')); save.type = 'button';
+    save.addEventListener('click', function () {
+      var tv = term.value.trim(), dv = body.value.trim();
+      if (!tv || !dv) { setStatus(status, t('admin.needTermDef'), true); return; }
+      setStatus(status, t('admin.saving'), false);
+      adminUpsertByScope('definition', tv, { term: tv, group: group.value, definition: dv }).then(function (r) {
+        if (r && r.ok) {
+          setStatus(status, t('admin.published', { name: tv }), false);
+          term.value = ''; body.value = ''; globalDefsLoaded = false;
+          adminListInto(list, 'definition', function (it) { term.value = it.term || ''; group.value = it.group || 'vocab'; body.value = it.definition || ''; });
+        } else { setStatus(status, t('admin.failed'), true); }
+      });
+    });
+    card.appendChild(save); card.appendChild(status); card.appendChild(list);
+    adminListInto(list, 'definition', function (it) { term.value = it.term || ''; group.value = it.group || 'vocab'; body.value = it.definition || ''; });
+    return card;
+  }
+
+  function buildMapAdmin() {
+    var card = adminCardShell('admin.mapTitle', 'admin.mapHint');
+    var scope = textInput('admin.scopePh');
+    var title = textInput('admin.mapTitlePh');
+    var url = textInput('admin.imgUrlPh');
+    var cap = textInput('admin.mapCapPh');
+    card.appendChild(fieldRow('admin.scope', scope));
+    card.appendChild(fieldRow('admin.mapName', title));
+    card.appendChild(fieldRow('admin.imgUrl', url));
+    card.appendChild(fieldRow('admin.mapCap', cap));
+    var status = txt('p', 'status', '');
+    var list = el('div', 'admin-list');
+    var save = txt('button', 'admin-save', t('admin.publish')); save.type = 'button';
+    save.addEventListener('click', function () {
+      var sv = scope.value.trim();
+      if (!sv || !url.value.trim()) { setStatus(status, t('admin.needScopeImg'), true); return; }
+      setStatus(status, t('admin.saving'), false);
+      adminWrite('upsert', { type: 'map', scope: sv, title: title.value.trim(), imageUrl: url.value.trim(), caption: cap.value.trim() }).then(function (r) {
+        if (r && r.ok) {
+          setStatus(status, t('admin.published', { name: title.value.trim() || sv }), false);
+          title.value = ''; url.value = ''; cap.value = ''; adminInvalidate();
+          adminListInto(list, 'map', function (it) { scope.value = it.scope || ''; title.value = it.title || ''; url.value = it.imageUrl || ''; cap.value = it.caption || ''; });
+        } else { setStatus(status, t('admin.failed'), true); }
+      });
+    });
+    card.appendChild(save); card.appendChild(status); card.appendChild(list);
+    adminListInto(list, 'map', function (it) { scope.value = it.scope || ''; title.value = it.title || ''; url.value = it.imageUrl || ''; cap.value = it.caption || ''; });
+    return card;
+  }
+
+  function buildArchAdmin() {
+    var card = adminCardShell('admin.archTitle', 'admin.archHint');
+    var scope = textInput('admin.scopePh');
+    var title = textInput('admin.archNamePh');
+    var url = textInput('admin.imgUrlOptPh');
+    var desc = areaInput('admin.archDescPh', 5);
+    card.appendChild(fieldRow('admin.scope', scope));
+    card.appendChild(fieldRow('admin.archName', title));
+    card.appendChild(fieldRow('admin.imgUrlOpt', url));
+    card.appendChild(fieldRow('admin.archDesc', desc));
+    var status = txt('p', 'status', '');
+    var list = el('div', 'admin-list');
+    var save = txt('button', 'admin-save', t('admin.publish')); save.type = 'button';
+    save.addEventListener('click', function () {
+      var sv = scope.value.trim();
+      if (!sv || !desc.value.trim()) { setStatus(status, t('admin.needScopeDesc'), true); return; }
+      setStatus(status, t('admin.saving'), false);
+      adminWrite('upsert', { type: 'archaeology', scope: sv, title: title.value.trim(), imageUrl: url.value.trim(), description: desc.value.trim() }).then(function (r) {
+        if (r && r.ok) {
+          setStatus(status, t('admin.published', { name: title.value.trim() || sv }), false);
+          title.value = ''; url.value = ''; desc.value = ''; adminInvalidate();
+          adminListInto(list, 'archaeology', function (it) { scope.value = it.scope || ''; title.value = it.title || ''; url.value = it.imageUrl || ''; desc.value = it.description || ''; });
+        } else { setStatus(status, t('admin.failed'), true); }
+      });
+    });
+    card.appendChild(save); card.appendChild(status); card.appendChild(list);
+    adminListInto(list, 'archaeology', function (it) { scope.value = it.scope || ''; title.value = it.title || ''; url.value = it.imageUrl || ''; desc.value = it.description || ''; });
+    return card;
+  }
+
+  function buildFaqAdmin() {
+    var card = adminCardShell('admin.faqTitle', 'admin.faqHint');
+    var scope = textInput('admin.faqScopePh');
+    card.appendChild(fieldRow('admin.faqScope', scope));
+    var rows = el('div', 'admin-faq-rows');
+    function addRow(q, a) {
+      var row = el('div', 'admin-faq-row');
+      var qi = textInput('admin.faqQPh'); qi.value = q || ''; qi.classList.add('admin-faq-q');
+      var ai = areaInput('admin.faqAPh', 3); ai.value = a || ''; ai.classList.add('admin-faq-a');
+      var rm = txt('button', 'admin-faq-rm', '✕'); rm.type = 'button';
+      rm.addEventListener('click', function () { rows.removeChild(row); });
+      row.appendChild(qi); row.appendChild(ai); row.appendChild(rm);
+      rows.appendChild(row);
+    }
+    var addBtn = txt('button', 'admin-faq-add', t('admin.faqAdd')); addBtn.type = 'button';
+    addBtn.addEventListener('click', function () { addRow('', ''); });
+    card.appendChild(rows); card.appendChild(addBtn);
+    var status = txt('p', 'status', '');
+    var list = el('div', 'admin-list');
+    var save = txt('button', 'admin-save', t('admin.publishFaq')); save.type = 'button';
+    save.addEventListener('click', function () {
+      var sv = scope.value.trim();
+      var qa = [];
+      rows.querySelectorAll('.admin-faq-row').forEach(function (r) {
+        var q = r.querySelector('.admin-faq-q').value.trim();
+        var a = r.querySelector('.admin-faq-a').value.trim();
+        if (q && a) qa.push({ q: q, a: a });
+      });
+      if (!sv || !qa.length) { setStatus(status, t('admin.needScopeQa'), true); return; }
+      setStatus(status, t('admin.saving'), false);
+      adminUpsertByScope('faq', sv, { qa: qa }).then(function (r) {
+        if (r && r.ok) {
+          setStatus(status, t('admin.publishedFaq', { scope: sv, n: qa.length }), false);
+          adminListInto(list, 'faq', function (it) { loadFaqIntoForm(it); });
+        } else { setStatus(status, t('admin.failed'), true); }
+      });
+    });
+    function loadFaqIntoForm(it) {
+      scope.value = it.scope || '';
+      rows.textContent = '';
+      (it.qa || []).forEach(function (p) { addRow(p.q || p.question, p.a || p.answer); });
+      if (!rows.children.length) addRow('', '');
+    }
+    addRow('', '');
+    card.appendChild(save); card.appendChild(status); card.appendChild(list);
+    adminListInto(list, 'faq', function (it) { loadFaqIntoForm(it); });
+    return card;
+  }
+
+  function buildAdminUnlock() {
+    var box = el('div', 'admin-unlock');
+    box.appendChild(txt('p', 'admin-unlock-lede', t('admin.unlockLede')));
+    var input = el('input', 'admin-input'); input.type = 'password'; input.placeholder = t('admin.keyPh');
+    input.autocomplete = 'off';
+    box.appendChild(fieldRow('admin.key', input));
+    var status = txt('p', 'status', '');
+    var btn = txt('button', 'admin-save', t('admin.unlock')); btn.type = 'button';
+    function submit() {
+      var v = input.value.trim();
+      if (!v) return;
+      setStatus(status, t('admin.checking'), false);
+      // validate by attempting a harmless keyed no-op (bad_action) — unauthorized means wrong key
+      request('admin-content', { action: 'validate', key: v, item: { type: 'definition' } }).then(function (r) {
+        if (r && r.error === 'unauthorized') { setStatus(status, t('admin.badKey'), true); return; }
+        setAdminKeyStored(v); revealAdminNav(); renderAdminView();
+      }, function () { setStatus(status, t('admin.failed'), true); });
+    }
+    btn.addEventListener('click', submit);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+    box.appendChild(btn); box.appendChild(status);
+    return box;
+  }
+
+  function buildAdminToolbar() {
+    var bar = el('div', 'admin-toolbar');
+    bar.appendChild(txt('span', 'admin-unlocked', t('admin.unlocked')));
+    var lock = txt('button', 'admin-lock', t('admin.lock')); lock.type = 'button';
+    lock.addEventListener('click', function () { setAdminKeyStored(''); revealAdminNav(); showView('home'); });
+    bar.appendChild(lock);
+    return bar;
+  }
+
+  function renderAdminView() {
+    var root = document.getElementById('admin-root');
+    if (!root) return;
+    root.textContent = '';
+    if (!isAdminUnlocked()) { root.appendChild(buildAdminUnlock()); return; }
+    revealAdminNav();
+    root.appendChild(buildAdminToolbar());
+    root.appendChild(buildDefinitionAdmin());
+    root.appendChild(buildMapAdmin());
+    root.appendChild(buildArchAdmin());
+    root.appendChild(buildFaqAdmin());
+  }
+
+  /* ---------- report a problem ----------
+     A visitor-facing button that posts to the shared store; the owner gets a
+     daily email digest via the Report Digest workflow. */
+  function reportContext() {
+    var view = document.querySelector('.view.is-active');
+    var page = view ? view.id.replace(/^view-/, '') : '';
+    var ctx = '';
+    if (page === 'bible' && bibleState.book) {
+      ctx = bibleState.book.name + ' ' + bibleState.chapter;
+      if (bibleState.screen === 'verse') ctx += ':' + bibleState.verse;
+      if (bibleState.showOriginal) ctx += ' (original)';
+    }
+    return { page: page, context: ctx };
+  }
+  (function wireReport() {
+    var modal = document.getElementById('report-modal');
+    var scrim = document.getElementById('report-scrim');
+    var openBtn = document.getElementById('nav-report');
+    var closeBtn = document.getElementById('report-close');
+    var sendBtn = document.getElementById('report-send');
+    var textEl = document.getElementById('report-text');
+    var statusEl = document.getElementById('report-status');
+    var ctxEl = document.getElementById('report-context');
+    if (!modal || !openBtn) return;
+    function open() {
+      var c = reportContext();
+      if (ctxEl) {
+        if (c.context) { ctxEl.textContent = t('report.on', { where: c.context }); ctxEl.hidden = false; }
+        else ctxEl.hidden = true;
+      }
+      setStatus(statusEl, '', false);
+      modal.hidden = false; scrim.hidden = false;
+      closeSidebar();
+      setTimeout(function () { textEl.focus(); }, 50);
+    }
+    function close() { modal.hidden = true; scrim.hidden = true; }
+    openBtn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    scrim.addEventListener('click', close);
+    sendBtn.addEventListener('click', function () {
+      var msg = textEl.value.trim();
+      if (!msg) { setStatus(statusEl, t('report.needText'), true); return; }
+      var c = reportContext();
+      setStatus(statusEl, t('report.sending'), false);
+      adminReport({ message: msg, context: c.context, page: c.page }).then(function (r) {
+        if (r && r.ok) {
+          textEl.value = '';
+          setStatus(statusEl, t('report.thanks'), false);
+          setTimeout(close, 1200);
+        } else { setStatus(statusEl, t('report.failed'), true); }
+      }, function () { setStatus(statusEl, t('report.failed'), true); });
+    });
+  })();
+
+  // show the Admin nav link if this device is already unlocked; the first way in
+  // (when locked) is the #admin address, which opens the key prompt.
+  revealAdminNav();
+  (function adminHash() {
+    function check() { if (location.hash === '#admin') showView('admin'); }
+    window.addEventListener('hashchange', check);
+    check();
   })();
 
   /* ---------- whole-Bible timeline (curated) ----------
