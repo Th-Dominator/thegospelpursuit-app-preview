@@ -592,7 +592,7 @@
       globalDefs = items.map(function (it) {
         return {
           term: it.term || it.scope || '', def: it.definition || it.def || '', cat: it.group || 'vocab',
-          pron: it.pron || '', meaning: it.meaning || '',
+          pron: it.pron || '', meaning: it.meaning || '', photos: normPhotos(it.photos),
           firstApp: it.firstApp || '', father: it.father || '', mother: it.mother || '',
           siblings: it.siblings || '', children: it.children || ''
         };
@@ -6151,7 +6151,13 @@
   function saveCustomDefs(a) {
     try { window.localStorage.setItem(CUSTOM_DEFS_KEY, JSON.stringify(a)); } catch (e) { /* view-only */ }
   }
-  // returns the full stored record (term, cat, def, pron, meaning, genealogy) or null
+  // photos are stored as an array of image URLs; accept an array or newline text
+  function normPhotos(v) {
+    var arr = Array.isArray(v) ? v : String(v || '').split('\n');
+    return arr.map(function (s) { return String(s).trim(); }).filter(Boolean);
+  }
+
+  // returns the full stored record (term, cat, def, pron, meaning, photos, genealogy) or null
   function customDefFor(term) {
     var key = String(term).toLowerCase();
     var found = allCustomDefs().filter(function (d) { return d.term.toLowerCase() === key; });
@@ -6174,6 +6180,21 @@
       mn.appendChild(txt('span', 'def-section-label', t('definitions.meaningLabel')));
       mn.appendChild(txt('span', 'def-meaning-text', cleanAIText(rec.meaning.trim())));
       container.appendChild(mn);
+    }
+    var photos = normPhotos(rec.photos);
+    if (photos.length) {
+      var gal = el('div', 'def-photos');
+      var grid = el('div', 'def-photos-grid');
+      photos.forEach(function (src) {
+        var fig = el('figure', 'def-photo');
+        var img = el('img', 'def-photo-img');
+        img.src = src; img.alt = rec.term || ''; img.loading = 'lazy';
+        img.addEventListener('error', function () { fig.remove(); });
+        fig.appendChild(img);
+        grid.appendChild(fig);
+      });
+      gal.appendChild(grid);
+      container.appendChild(gal);
     }
     if (rec.def && rec.def.trim()) {
       var body = el('div', 'def-body');
@@ -6339,7 +6360,11 @@
     return t(c.labelKey);
   }
 
-  /* admin panel: add / remove your own definitions */
+  /* set by wireDefAdmin so the list's Edit buttons can load a record back into
+     the form for editing */
+  var fillDefAdminForm = null;
+
+  /* admin panel: add / edit / remove your own definitions */
   function renderDefAdmin() {
     var list = document.getElementById('def-admin-list');
     if (!list) return;
@@ -6358,6 +6383,13 @@
       card.appendChild(head);
       if (d.meaning && d.meaning.trim()) card.appendChild(txt('p', 'def-admin-def-meaning', d.meaning));
       card.appendChild(txt('p', 'def-admin-def-text', d.def || ''));
+      var nPhotos = normPhotos(d.photos).length;
+      if (nPhotos) card.appendChild(txt('p', 'def-admin-def-photos', '📷 ' + nPhotos));
+      var actions = el('div', 'def-admin-item-actions');
+      var edit = txt('button', 'def-admin-edit', t('definitions.adminEdit'));
+      edit.type = 'button';
+      edit.addEventListener('click', function () { if (fillDefAdminForm) fillDefAdminForm(d); });
+      actions.appendChild(edit);
       var del = txt('button', 'def-admin-del', t('definitions.adminDelete'));
       del.type = 'button';
       del.addEventListener('click', function () {
@@ -6367,7 +6399,8 @@
         renderDefAdmin();
         renderCommonTerms(); // refresh the A-Z list
       });
-      card.appendChild(del);
+      actions.appendChild(del);
+      card.appendChild(actions);
       list.appendChild(card);
     });
   }
@@ -6380,6 +6413,7 @@
     var cat = document.getElementById('def-admin-cat');
     var pron = document.getElementById('def-admin-pron');
     var meaning = document.getElementById('def-admin-meaning');
+    var photos = document.getElementById('def-admin-photos');
     var people = document.getElementById('def-admin-people');
     var firstApp = document.getElementById('def-admin-firstapp');
     var father = document.getElementById('def-admin-father');
@@ -6400,12 +6434,25 @@
     function syncPeople() { if (people) people.hidden = (cat.value !== 'people'); }
     if (cat) cat.addEventListener('change', syncPeople);
     syncPeople();
+    // load a stored record back into the form for editing (used by the list's Edit button)
+    fillDefAdminForm = function (rec) {
+      term.value = rec.term || ''; cat.value = (rec.cat && CATEGORY_KEYS.indexOf(rec.cat) >= 0) ? rec.cat : 'vocab';
+      pron.value = rec.pron || ''; meaning.value = rec.meaning || ''; def.value = rec.def || '';
+      photos.value = normPhotos(rec.photos).join('\n');
+      firstApp.value = rec.firstApp || ''; father.value = rec.father || ''; mother.value = rec.mother || '';
+      siblings.value = rec.siblings || ''; children.value = rec.children || '';
+      syncPeople();
+      var det = document.getElementById('definitions-admin');
+      if (det) det.open = true;
+      term.focus();
+      term.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var tVal = term.value.trim(), dVal = def.value.trim(), mVal = meaning.value.trim();
       var cVal = (cat && CATEGORY_KEYS.indexOf(cat.value) >= 0) ? cat.value : 'vocab';
       if (!tVal || (!dVal && !mVal)) return; // need a term and at least a meaning or definition
-      var rec = { term: tVal, def: dVal, cat: cVal, pron: pron.value.trim(), meaning: mVal };
+      var rec = { term: tVal, def: dVal, cat: cVal, pron: pron.value.trim(), meaning: mVal, photos: normPhotos(photos.value) };
       if (cVal === 'people') {
         rec.firstApp = firstApp.value.trim();
         rec.father = father.value.trim();
@@ -6421,7 +6468,7 @@
       if (existing >= 0) defs[existing] = rec;
       else defs.push(rec);
       saveCustomDefs(defs);
-      [term, def, pron, meaning, firstApp, father, mother, siblings, children].forEach(function (n) { if (n) n.value = ''; });
+      [term, def, pron, meaning, photos, firstApp, father, mother, siblings, children].forEach(function (n) { if (n) n.value = ''; });
       setStatus(status, t('definitions.adminSaved', { term: tVal }), false);
       renderDefAdmin();
       renderCommonTerms();
@@ -6513,11 +6560,13 @@
     var pron = textInput('admin.defPronPh');
     var meaning = textInput('admin.defMeaningPh');
     var body = areaInput('admin.defDefPh', 5);
+    var photos = areaInput('admin.defPhotosPh', 2);
     card.appendChild(fieldRow('admin.defTerm', term));
     card.appendChild(fieldRow('admin.group', group));
     card.appendChild(fieldRow('admin.defPron', pron));
     card.appendChild(fieldRow('admin.defMeaning', meaning));
     card.appendChild(fieldRow('admin.defDef', body));
+    card.appendChild(fieldRow('admin.defPhotos', photos));
 
     // family & first-appearance fields, shown only for the People group
     var people = el('div', 'admin-people');
@@ -6542,6 +6591,7 @@
     function loadInto(it) {
       term.value = it.term || ''; group.value = it.group || 'vocab';
       pron.value = it.pron || ''; meaning.value = it.meaning || ''; body.value = it.definition || '';
+      photos.value = normPhotos(it.photos).join('\n');
       firstApp.value = it.firstApp || ''; father.value = it.father || ''; mother.value = it.mother || '';
       siblings.value = it.siblings || ''; children.value = it.children || '';
       syncPeople();
@@ -6551,7 +6601,7 @@
       var tv = term.value.trim(), dv = body.value.trim(), mv = meaning.value.trim();
       if (!tv || (!dv && !mv)) { setStatus(status, t('admin.needTermDef'), true); return; }
       setStatus(status, t('admin.saving'), false);
-      var fields = { term: tv, group: group.value, definition: dv, pron: pron.value.trim(), meaning: mv };
+      var fields = { term: tv, group: group.value, definition: dv, pron: pron.value.trim(), meaning: mv, photos: normPhotos(photos.value) };
       if (group.value === 'people') {
         fields.firstApp = firstApp.value.trim();
         fields.father = father.value.trim();

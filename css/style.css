@@ -4408,6 +4408,40 @@ body.xref-fs-open { overflow: hidden; }
 .def-gen-term { font-size: 13px; font-weight: 600; color: var(--gold-dark); }
 .def-gen-desc { margin: 0; font-size: 13px; color: var(--ink-soft); }
 
+/* photo gallery shown in a definition */
+.def-photos { margin: 0 0 12px; }
+.def-photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.def-photo { margin: 0; }
+.def-photo-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--gold-tint);
+  display: block;
+}
+
+/* the Edit / Delete row on each stored custom definition */
+.def-admin-def-photos { margin: 4px 0 0; font-size: 12px; color: var(--ink-muted); }
+.def-admin-item-actions { display: flex; gap: 8px; margin-top: 8px; }
+.def-admin-item-actions .def-admin-del { margin-top: 0; }
+.def-admin-edit {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold-dark);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.def-admin-edit:hover { border-color: var(--gold); background: var(--gold-tint); }
+
 .def-admin-del {
   margin-top: 8px;
   font-size: 12px;
