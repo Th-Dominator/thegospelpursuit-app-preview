@@ -166,11 +166,12 @@ var TRANSLATIONS = {
     'admin.archDesc': 'Description',
     'admin.archDescPh': 'What it is and why it matters…',
     'admin.faqTitle': 'Chapter questions',
-    'admin.faqHint': 'Write the common questions for a chapter. These replace the generated ones in the chapter guide.',
+    'admin.faqHint': 'Write the common questions for a chapter. Add an optional verse for each so readers can jump to it. These replace the generated ones in the chapter guide.',
     'admin.faqScope': 'Chapter',
     'admin.faqScopePh': 'e.g. Genesis 1',
     'admin.faqQPh': 'Question',
     'admin.faqAPh': 'Answer',
+    'admin.faqVersePh': 'Verse (optional, e.g. Genesis 1:3)',
     'admin.faqAdd': 'Add another question',
     'admin.worldPanel': 'Maps & archaeology (curated)',
 

@@ -6719,17 +6719,18 @@
     var scope = textInput('admin.faqScopePh');
     card.appendChild(fieldRow('admin.faqScope', scope));
     var rows = el('div', 'admin-faq-rows');
-    function addRow(q, a) {
+    function addRow(q, a, v) {
       var row = el('div', 'admin-faq-row');
       var qi = textInput('admin.faqQPh'); qi.value = q || ''; qi.classList.add('admin-faq-q');
       var ai = areaInput('admin.faqAPh', 3); ai.value = a || ''; ai.classList.add('admin-faq-a');
+      var vi = textInput('admin.faqVersePh'); vi.value = v || ''; vi.classList.add('admin-faq-v');
       var rm = txt('button', 'admin-faq-rm', '✕'); rm.type = 'button';
       rm.addEventListener('click', function () { rows.removeChild(row); });
-      row.appendChild(qi); row.appendChild(ai); row.appendChild(rm);
+      row.appendChild(qi); row.appendChild(ai); row.appendChild(vi); row.appendChild(rm);
       rows.appendChild(row);
     }
     var addBtn = txt('button', 'admin-faq-add', t('admin.faqAdd')); addBtn.type = 'button';
-    addBtn.addEventListener('click', function () { addRow('', ''); });
+    addBtn.addEventListener('click', function () { addRow('', '', ''); });
     card.appendChild(rows); card.appendChild(addBtn);
     var status = txt('p', 'status', '');
     var list = el('div', 'admin-list');
@@ -6740,7 +6741,8 @@
       rows.querySelectorAll('.admin-faq-row').forEach(function (r) {
         var q = r.querySelector('.admin-faq-q').value.trim();
         var a = r.querySelector('.admin-faq-a').value.trim();
-        if (q && a) qa.push({ q: q, a: a });
+        var v = r.querySelector('.admin-faq-v').value.trim();
+        if (q && a) qa.push({ q: q, a: a, verse: v });
       });
       if (!sv || !qa.length) { setStatus(status, t('admin.needScopeQa'), true); return; }
       setStatus(status, t('admin.saving'), false);
@@ -6754,10 +6756,10 @@
     function loadFaqIntoForm(it) {
       scope.value = it.scope || '';
       rows.textContent = '';
-      (it.qa || []).forEach(function (p) { addRow(p.q || p.question, p.a || p.answer); });
-      if (!rows.children.length) addRow('', '');
+      (it.qa || []).forEach(function (p) { addRow(p.q || p.question, p.a || p.answer, p.verse || p.reference || p.ref || p.passage); });
+      if (!rows.children.length) addRow('', '', '');
     }
-    addRow('', '');
+    addRow('', '', '');
     card.appendChild(save); card.appendChild(status); card.appendChild(list);
     adminListInto(list, 'faq', function (it) { loadFaqIntoForm(it); });
     return card;

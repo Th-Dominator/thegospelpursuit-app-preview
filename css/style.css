@@ -4693,7 +4693,7 @@ body.xref-fs-open { overflow: hidden; }
 .admin-item-del:hover { border-color: var(--error); }
 .admin-faq-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
 .admin-faq-row {
-  display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; align-items: start;
+  display: grid; grid-template-columns: 1fr 2fr 1fr auto; gap: 8px; align-items: start;
 }
 .admin-faq-rm {
   border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft);
