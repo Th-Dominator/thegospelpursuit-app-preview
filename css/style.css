@@ -1534,7 +1534,7 @@ button.verse-num:hover { text-decoration: underline; }
 .verse-focus .bible-reader-nav { margin-top: 18px; }
 
 /* ---------- original-language panel (verse study) ---------- */
-.vf-original { display: flex; flex-direction: column; }
+.vf-original { display: flex; flex-direction: column; position: relative; }
 .vf-original-lang {
   margin: 0 0 6px;
   font-size: 11px;
@@ -1558,12 +1558,60 @@ button.verse-num:hover { text-decoration: underline; }
   transition: border-color 0.18s ease, background 0.18s ease;
 }
 .vf-original-text.is-rtl { direction: rtl; text-align: right; }
-.vf-original-text:hover,
-.vf-original-text:focus-visible {
+.vf-original-text:not(.is-interlinear):hover,
+.vf-original-text:not(.is-interlinear):focus-visible {
   border-color: var(--gold);
   background: color-mix(in srgb, var(--gold) 8%, var(--surface-2));
   outline: none;
 }
+
+/* interlinear: each word is its own hoverable chip */
+.vf-original-text.is-interlinear { cursor: default; font-size: 23px; line-height: 1.95; }
+.vf-word {
+  display: inline-block;
+  padding: 1px 3px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+/* a soft underline marks a word that has a gloss to show */
+.vf-word.has-gloss {
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--gold) 40%, transparent);
+}
+.vf-word:hover,
+.vf-word:focus-visible {
+  background: color-mix(in srgb, var(--gold) 20%, var(--surface-2));
+  outline: none;
+}
+
+/* the shared word tooltip, positioned under the active word */
+.vf-tip {
+  position: absolute;
+  z-index: 20;
+  transform: translateX(-50%);
+  max-width: 260px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  font-family: var(--font-body);
+  text-align: left;
+  direction: ltr;
+  pointer-events: none;
+}
+.vf-tip-word {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--ink);
+  unicode-bidi: plaintext;
+}
+.vf-tip-head { display: flex; gap: 8px; align-items: baseline; margin-top: 5px; }
+.vf-tip-translit { font-style: italic; font-size: 14px; color: var(--ink); }
+.vf-tip-strong { font-size: 11px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.vf-tip-gloss { display: block; margin-top: 2px; font-size: 13px; line-height: 1.4; color: var(--ink-soft); }
+.vf-original-credit { margin: 8px 0 0; font-size: 10.5px; color: var(--ink-muted); }
 .vf-original-hint {
   margin: 8px 0 0;
   font-size: 12px;

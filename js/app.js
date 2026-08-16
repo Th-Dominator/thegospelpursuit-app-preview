@@ -3289,31 +3289,163 @@
     return '';
   }
 
-  /* The Original-language panel: the Hebrew (OT) or Greek (NT) behind this verse,
-     alongside the reader's own version. Hovering, tapping, or focusing the
-     original reveals the translation, so the reader can compare the two. */
-  function renderOriginalInteractive(original, translation, isHebrew, transLabel) {
+  /* ---- word-level interlinear (Strong's) ----
+     The Original-language panel shows the Hebrew/Greek tagged with Strong's
+     numbers (bolls.life: WLCa for the OT, TISCH for the NT). Each word is a
+     chip; hovering, tapping, or focusing it shows its transliteration and a
+     concise gloss from window.STRONGS_GLOSS (js/strongs-gloss.js, loaded on
+     demand). The reader's own translation still reveals for the whole verse. */
+  var BOLLS_OT = 'WLCa', BOLLS_NT = 'TISCH';
+  var bollsCache = {};        // url -> Promise of a chapter's verse array
+  var glossPromise = null;    // resolves once the gloss dictionary is loaded
+
+  // bolls numbers the books 1-66 in the standard canon, matching BIBLE_BOOKS order
+  var BOLLS_BOOK_NO = (function () {
+    var map = {}, n = 0;
+    BIBLE_BOOKS.forEach(function (grp) {
+      grp.books.forEach(function (b) { map[b.name] = ++n; });
+    });
+    return map;
+  })();
+
+  // load the Strong's gloss dictionary once, on first use of the panel
+  function ensureGloss() {
+    if (window.STRONGS_GLOSS) return Promise.resolve(window.STRONGS_GLOSS);
+    if (glossPromise) return glossPromise;
+    glossPromise = new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = 'js/strongs-gloss.js';
+      s.onload = function () { resolve(window.STRONGS_GLOSS || {}); };
+      s.onerror = function () { resolve({}); };   // words still show without a gloss
+      document.head.appendChild(s);
+    });
+    return glossPromise;
+  }
+
+  // fetch one bolls chapter (cached in-session), returning its verse array
+  function fetchBolls(trans, bookNo, chapter) {
+    var url = 'https://bolls.life/get-text/' + trans + '/' + bookNo + '/' + chapter + '/';
+    if (!bollsCache[url]) {
+      bollsCache[url] = fetch(url).then(function (r) {
+        if (!r.ok) throw new Error('bolls ' + r.status);
+        return r.json();
+      }).catch(function (e) { delete bollsCache[url]; throw e; });
+    }
+    return bollsCache[url];
+  }
+  function pickBollsVerse(arr, number) {
+    if (!Array.isArray(arr)) return '';
+    var want = String(number);
+    for (var i = 0; i < arr.length; i++) {
+      if (String(arr[i].verse) === want) return arr[i].text || '';
+    }
+    return '';
+  }
+
+  // split a Strong's-tagged verse ("word<S>7225</S> …") into word tokens, each
+  // carrying its Strong's number(s), transliteration, and gloss
+  function parseStrongTokens(text, isHebrew, gloss) {
+    var out = [];
+    String(text || '').split(/\s+/).forEach(function (chunk) {
+      if (!chunk) return;
+      var nums = [], m, re = /<S>(\d+)<\/S>/g;
+      while ((m = re.exec(chunk))) nums.push(m[1]);
+      // drop the whole <S>number</S> spans, then any other stray tags
+      var word = chunk.replace(/<S>\d+<\/S>/g, '').replace(/<[^>]*>/g, '').trim();
+      if (!word && !nums.length) return;
+      var entries = nums.map(function (num) {
+        var key = (isHebrew ? 'H' : 'G') + num;
+        var g = gloss && gloss[key];
+        return { strong: key, translit: g ? g[0] : '', gloss: g ? g[1] : '' };
+      });
+      out.push({ word: word, entries: entries });
+    });
+    return out;
+  }
+
+  // the shared tooltip: fill it for a word, then place it under that word
+  function fillWordTip(tip, tk) {
+    tip.textContent = '';
+    tip.appendChild(txt('span', 'vf-tip-word', tk.word));
+    if (!tk.entries.length) {
+      tip.appendChild(txt('span', 'vf-tip-gloss', t('bible.originalNoGloss')));
+      return;
+    }
+    tk.entries.forEach(function (e) {
+      var head = el('div', 'vf-tip-head');
+      if (e.translit) head.appendChild(txt('span', 'vf-tip-translit', e.translit));
+      head.appendChild(txt('span', 'vf-tip-strong', e.strong));
+      tip.appendChild(head);
+      tip.appendChild(txt('span', 'vf-tip-gloss', e.gloss || t('bible.originalNoGloss')));
+    });
+  }
+  function placeWordTip(tip, wordEl, wrap) {
+    tip.hidden = false;                       // must be visible to measure width
+    var wrapR = wrap.getBoundingClientRect();
+    var wr = wordEl.getBoundingClientRect();
+    var top = wr.bottom - wrapR.top + 6;
+    var left = wr.left - wrapR.left + wr.width / 2;
+    var half = tip.offsetWidth / 2;
+    left = Math.max(half + 4, Math.min(left, wrapR.width - half - 4));
+    tip.style.top = top + 'px';
+    tip.style.left = left + 'px';
+  }
+
+  function renderOriginalInteractive(tokens, plainOriginal, translation, isHebrew, transLabel) {
     var wrap = el('div', 'vf-original');
+    var interlinear = !!(tokens && tokens.length);
 
-    var lang = txt('p', 'vf-original-lang', isHebrew ? t('bible.originalHebrew') : t('bible.originalGreek'));
-    wrap.appendChild(lang);
+    wrap.appendChild(txt('p', 'vf-original-lang', isHebrew ? t('bible.originalHebrew') : t('bible.originalGreek')));
 
-    var orig = txt('p', 'vf-original-text', original);
-    orig.setAttribute('tabindex', '0');
-    if (isHebrew) { orig.setAttribute('dir', 'rtl'); orig.classList.add('is-rtl'); }
-    wrap.appendChild(orig);
+    var line = el('p', 'vf-original-text');
+    if (isHebrew) { line.setAttribute('dir', 'rtl'); line.classList.add('is-rtl'); }
 
-    var hint = txt('p', 'vf-original-hint', t('bible.originalHoverHint', { version: transLabel }));
-    wrap.appendChild(hint);
+    var tip = el('div', 'vf-tip'); tip.hidden = true;
+
+    if (interlinear) {
+      line.classList.add('is-interlinear');
+      tokens.forEach(function (tk) {
+        var w = txt('span', 'vf-word', tk.word);
+        w.setAttribute('tabindex', '0');
+        if (tk.entries.some(function (e) { return e.gloss || e.translit; })) w.classList.add('has-gloss');
+        function show() { fillWordTip(tip, tk); placeWordTip(tip, w, wrap); tip._active = w; }
+        function hide() { tip.hidden = true; tip._active = null; }
+        w.addEventListener('mouseenter', show);
+        w.addEventListener('mouseleave', hide);
+        w.addEventListener('focus', show);
+        w.addEventListener('blur', hide);
+        w.addEventListener('click', function (e) {
+          e.stopPropagation();               // don't also toggle the verse translation
+          // tap this word to show it; tap the same word again to dismiss (touch)
+          if (!tip.hidden && tip._active === w) hide(); else show();
+        });
+        line.appendChild(w);
+        line.appendChild(document.createTextNode(' '));
+      });
+    } else {
+      line.textContent = plainOriginal;
+      line.setAttribute('tabindex', '0');
+    }
+    wrap.appendChild(line);
+    wrap.appendChild(tip);
+
+    wrap.appendChild(txt('p', 'vf-original-hint',
+      t(interlinear ? 'bible.originalWordHint' : 'bible.originalHoverHint', { version: transLabel })));
 
     var trans = el('div', 'vf-original-trans');
     trans.appendChild(txt('span', 'vf-original-trans-label', t('bible.originalTransLabel', { version: transLabel })));
     trans.appendChild(txt('span', 'vf-original-trans-text', translation || t('bible.originalNoTrans')));
     wrap.appendChild(trans);
 
-    // hover and keyboard focus reveal the translation via CSS (:hover / :focus-within);
-    // tapping toggles it for touch devices that have no hover
-    orig.addEventListener('click', function () { wrap.classList.toggle('is-shown'); });
+    if (interlinear) wrap.appendChild(txt('p', 'vf-original-credit', t('bible.originalCredit')));
+
+    if (interlinear) {
+      // the whole-verse translation stays visible so words can be compared to it
+      wrap.classList.add('is-shown');
+    } else {
+      // plain fallback: hover / focus reveal the translation, tap toggles it
+      line.addEventListener('click', function () { wrap.classList.toggle('is-shown'); });
+    }
     return wrap;
   }
 
@@ -3336,23 +3468,37 @@
 
     var wantVerse = bibleState.verse;
     var book = bibleState.book.name, chap = bibleState.chapter;
+    var bookNo = BOLLS_BOOK_NO[book];
+    var bollsTrans = isHebrew ? BOLLS_OT : BOLLS_NT;
 
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('bible.originalBusy')));
 
+    // bolls gives the Strong's-tagged words; n8n gives the plain original (a
+    // fallback if bolls is down) and the reader's own translation
+    var quiet = function () { return null; };
     Promise.all([
-      requestCached('bible-chapter', { book: book, chapter: chap, version: originalId }),
-      requestCached('bible-chapter', { book: book, chapter: chap, version: mainId })
+      bookNo ? fetchBolls(bollsTrans, bookNo, chap).catch(quiet) : Promise.resolve(null),
+      requestCached('bible-chapter', { book: book, chapter: chap, version: mainId }).catch(quiet),
+      requestCached('bible-chapter', { book: book, chapter: chap, version: originalId }).catch(quiet),
+      ensureGloss()
     ]).then(function (res) {
       if (focusKeys.original !== key) return;
-      var orig = pickVerseText(res[0], wantVerse);
-      var trans = pickVerseText(res[1], wantVerse);
+      var bollsArr = res[0], transData = res[1], plainData = res[2], gloss = res[3];
+      var tokens = null, plainOriginal = '';
+      var tagged = pickBollsVerse(bollsArr, wantVerse);
+      if (tagged) {
+        tokens = parseStrongTokens(tagged, isHebrew, gloss);
+        plainOriginal = tagged.replace(/<S>\d+<\/S>/g, '').replace(/<[^>]*>/g, '');
+      }
+      if (!plainOriginal) plainOriginal = pickVerseText(plainData, wantVerse);
+      var trans = pickVerseText(transData, wantVerse);
       body.textContent = '';
-      if (!orig) {
+      if (!tokens && !plainOriginal) {
         body.appendChild(txt('p', 'verse-panel-note', t('bible.originalUnavailable')));
         return;
       }
-      body.appendChild(renderOriginalInteractive(orig, trans, isHebrew, transLabel));
+      body.appendChild(renderOriginalInteractive(tokens, plainOriginal, trans, isHebrew, transLabel));
     }).catch(function (err) {
       if (focusKeys.original !== key) return;
       focusKeys.original = null;
