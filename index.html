@@ -210,6 +210,25 @@
     <p class="report-lede" data-i18n="report.lede">Found a wrong verse, an odd translation, or anything broken? Tell me here — I get a daily summary by email.</p>
     <p id="report-context" class="report-context" hidden></p>
     <textarea id="report-text" rows="5" data-i18n-placeholder="report.placeholder" placeholder="Describe what looks wrong…"></textarea>
+
+    <!-- how the report is signed: anonymous, or first name + last initial -->
+    <fieldset class="report-identity">
+      <legend class="report-identity-legend" data-i18n="report.identityLegend">How should we sign this?</legend>
+      <label class="report-radio">
+        <input type="radio" name="report-identity" value="anon" checked>
+        <span data-i18n="report.anon">Stay anonymous</span>
+      </label>
+      <label class="report-radio">
+        <input type="radio" name="report-identity" value="named">
+        <span data-i18n="report.useName">Add my name (first name + last initial)</span>
+      </label>
+      <div id="report-name-fields" class="report-name-fields" hidden>
+        <input type="text" id="report-first-name" class="report-input" maxlength="40" autocomplete="given-name" data-i18n-placeholder="report.firstNamePh" placeholder="First name">
+        <input type="text" id="report-last-initial" class="report-input report-input-initial" maxlength="1" autocomplete="off" data-i18n-placeholder="report.lastInitialPh" placeholder="Last initial">
+      </div>
+      <p id="report-signedin" class="report-signedin" hidden data-i18n="report.signedInNote">You're signed in, so we can email you a reply. Anonymous reports get no email.</p>
+    </fieldset>
+
     <button type="button" id="report-send" class="report-send" data-i18n="report.send">Send report</button>
     <p id="report-status" class="status" role="status" aria-live="polite"></p>
   </aside>
@@ -424,10 +443,6 @@
             <span class="bible-control-label" data-i18n="bible.version">Version</span>
             <select id="bible-version"></select>
           </label>
-          <button type="button" id="bible-original" class="bible-original" aria-pressed="false" title="Show the original Hebrew / Greek text">
-            <span class="bible-original-glyph" aria-hidden="true">א/Ω</span>
-            <span class="bible-original-label" data-i18n="bible.original">Original</span>
-          </button>
           <button type="button" id="bible-save-notes" class="bible-save-notes" data-i18n="bible.notesSaved">Notes saved</button>
         </div>
 

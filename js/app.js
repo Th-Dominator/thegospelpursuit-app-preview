@@ -582,6 +582,73 @@
     Object.keys(payload || {}).forEach(function (k) { body[k] = payload[k]; });
     return request('admin-content', body);
   }
+
+  /* A stable, non-identifying id for this device. It lets the server route a
+     notification (an admin broadcast, a reply to a report) back to the right
+     person's in-app feed without needing an account. Random, kept on-device. */
+  var DEVICE_ID_LS = 'tgp.deviceId';
+  function deviceId() {
+    try {
+      var id = window.localStorage.getItem(DEVICE_ID_LS);
+      if (!id) {
+        id = 'd-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+        window.localStorage.setItem(DEVICE_ID_LS, id);
+      }
+      return id;
+    } catch (e) { return ''; }
+  }
+  // the signed-in Clerk account, when present, gives us a real name + email
+  function clerkUser() {
+    try { return (window.Clerk && window.Clerk.user) || null; } catch (e) { return null; }
+  }
+  function signedInEmail() {
+    var u = clerkUser();
+    try { return (u && u.primaryEmailAddress && u.primaryEmailAddress.emailAddress) || ''; }
+    catch (e) { return ''; }
+  }
+  function signedInName() {
+    var u = clerkUser();
+    return { first: (u && u.firstName) || '', last: (u && u.lastName) || '' };
+  }
+
+  /* Server-sent notifications (admin broadcasts / replies) are pulled for this
+     device + signed-in email and merged into the same on-device feed the app
+     already shows. Each carries a server id ("sid") so re-fetching never
+     duplicates. Called on load and whenever the notification panel opens. */
+  var serverNotifsBusy = false;
+  function syncServerNotifs() {
+    if (serverNotifsBusy) return Promise.resolve();
+    serverNotifsBusy = true;
+    return request('admin-content', { action: 'notifs', deviceId: deviceId(), email: signedInEmail() })
+      .then(function (d) {
+        var items = (d && Array.isArray(d.items)) ? d.items : [];
+        if (!items.length) return;
+        var p = loadProgress();
+        if (!Array.isArray(p.notifs)) p.notifs = [];
+        var have = {};
+        p.notifs.forEach(function (n) { if (n.sid) have[n.sid] = true; });
+        var added = 0;
+        items.forEach(function (it) {
+          if (!it || !it.sid || have[it.sid]) return;
+          p.notifs.unshift({
+            id: 'srv-' + it.sid, sid: it.sid,
+            type: it.type || 'message',
+            title: it.title || '', body: it.body || '',
+            ts: it.ts || Date.now(), read: false
+          });
+          added++;
+        });
+        if (added) {
+          p.notifs.sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+          if (p.notifs.length > 40) p.notifs = p.notifs.slice(0, 40);
+          saveProgress(p);
+          renderNotifUI();
+          if (!document.getElementById('notif-panel').hidden) renderNotifList();
+        }
+      })
+      .catch(function () { /* offline / not wired yet — ignore */ })
+      .then(function () { serverNotifsBusy = false; });
+  }
   // global (owner-published) definitions, merged into the on-device list below
   var globalDefs = [];
   var globalDefsLoaded = false;
@@ -1074,27 +1141,11 @@
     loadChapter();
   });
 
-  // toggle between the reader's version and the original Hebrew/Greek text
-  var bibleOriginalPaint = null;
-  (function wireOriginalToggle() {
-    var btn = document.getElementById('bible-original');
-    if (!btn) return;
-    function paint() {
-      btn.classList.toggle('is-on', !!bibleState.showOriginal);
-      btn.setAttribute('aria-pressed', bibleState.showOriginal ? 'true' : 'false');
-      var lbl = btn.querySelector('.bible-original-label');
-      if (lbl) lbl.textContent = bibleState.showOriginal ? t('bible.originalOn') : t('bible.original');
-      var sel = document.getElementById('bible-version');
-      if (sel) sel.disabled = !!bibleState.showOriginal;
-    }
-    btn.addEventListener('click', function () {
-      bibleState.showOriginal = !bibleState.showOriginal;
-      paint();
-      loadChapter();
-    });
-    bibleOriginalPaint = paint;
-    paint();
-  })();
+  // The reader's whole-chapter original-language toggle was retired: the Hebrew/
+  // Greek behind a verse now lives only in the single-verse study screen's
+  // "Original language" panel (alongside Video and Context & meaning), so the
+  // reader stays in the reader's chosen translation. bibleState.showOriginal is
+  // left in place (permanently false) so currentVersion()/reportContext stay safe.
 
   // jumping to a verse from the picker scrolls its card into view
   document.getElementById('bible-verse-select').addEventListener('change', function () {
@@ -5234,6 +5285,14 @@
 
   /* ---- notifications: a stored feed plus a transient toast ---- */
 
+  // icon per notification kind: badges, streaks, and messages from the team
+  function notifIcon(type) {
+    if (type === 'badge') return '🏅';
+    if (type === 'message') return '✉️';
+    if (type === 'report') return '📩';
+    return '🔥';
+  }
+
   function notify(type, title, body) {
     var p = loadProgress();
     p.notifs.unshift({
@@ -5372,7 +5431,7 @@
     var stack = document.getElementById('toast-stack');
     if (!stack) return;
     var toast = el('div', 'toast toast-' + type);
-    toast.appendChild(txt('span', 'toast-icon', type === 'badge' ? '🏅' : '🔥'));
+    toast.appendChild(txt('span', 'toast-icon', notifIcon(type)));
     var textWrap = el('div', 'toast-text');
     textWrap.appendChild(txt('p', 'toast-title', title));
     if (body) textWrap.appendChild(txt('p', 'toast-body', body));
@@ -5409,7 +5468,7 @@
     }
     notifs.forEach(function (n) {
       var item = el('div', 'notif-item notif-' + n.type);
-      item.appendChild(txt('span', 'notif-item-icon', n.type === 'badge' ? '🏅' : '🔥'));
+      item.appendChild(txt('span', 'notif-item-icon', notifIcon(n.type)));
       var body = el('div', 'notif-item-body');
       body.appendChild(txt('p', 'notif-item-title', n.title));
       if (n.body) body.appendChild(txt('p', 'notif-item-text', n.body));
@@ -5421,6 +5480,8 @@
   function openNotif() {
     var panel = document.getElementById('notif-panel');
     var scrim = document.getElementById('notif-scrim');
+    // pull any team messages waiting for this device, then render
+    syncServerNotifs();
     renderNotifList();
     panel.hidden = false;
     scrim.hidden = false;
@@ -7091,6 +7152,41 @@
     return bar;
   }
 
+  /* Message everyone who has ever reported a problem: the store fans the note
+     out to every reporter's device (in-app notification) and emails the ones
+     who left an address. One composer, both channels. */
+  function buildBroadcastAdmin() {
+    var card = adminCardShell('admin.msgTitle', 'admin.msgHint');
+    var title = textInput('admin.msgSubjectPh');
+    var bodyEl = areaInput('admin.msgBodyPh', 5);
+    card.appendChild(fieldRow('admin.msgSubject', title));
+    card.appendChild(fieldRow('admin.msgBody', bodyEl));
+    var status = txt('p', 'status', '');
+    var send = txt('button', 'admin-save', t('admin.msgSend')); send.type = 'button';
+    send.addEventListener('click', function () {
+      var msg = bodyEl.value.trim();
+      if (!msg) { setStatus(status, t('admin.msgNeedBody'), true); return; }
+      if (!window.confirm(t('admin.msgConfirm'))) return;
+      setStatus(status, t('admin.msgSending'), false);
+      request('admin-content', {
+        action: 'broadcast', key: adminKey(),
+        title: title.value.trim(), message: msg
+      }).then(function (r) {
+        if (r && r.ok) {
+          setStatus(status, t('admin.msgSent', { notified: r.notified || 0, emailed: r.emailed || 0 }), false);
+          bodyEl.value = ''; title.value = '';
+        } else if (r && r.error === 'unauthorized') {
+          setStatus(status, t('admin.badKey'), true);
+        } else {
+          setStatus(status, t('admin.msgFailed'), true);
+        }
+      }, function () { setStatus(status, t('admin.msgFailed'), true); });
+    });
+    card.appendChild(send);
+    card.appendChild(status);
+    return card;
+  }
+
   function renderAdminView() {
     var root = document.getElementById('admin-root');
     if (!root) return;
@@ -7098,6 +7194,7 @@
     if (!isAdminUnlocked()) { root.appendChild(buildAdminUnlock()); return; }
     revealAdminNav();
     root.appendChild(buildAdminToolbar());
+    root.appendChild(buildBroadcastAdmin());
     root.appendChild(buildDefinitionAdmin());
     root.appendChild(buildMapAdmin());
     root.appendChild(buildArchAdmin());
@@ -7127,13 +7224,38 @@
     var textEl = document.getElementById('report-text');
     var statusEl = document.getElementById('report-status');
     var ctxEl = document.getElementById('report-context');
+    var nameFields = document.getElementById('report-name-fields');
+    var firstEl = document.getElementById('report-first-name');
+    var initialEl = document.getElementById('report-last-initial');
+    var signedNote = document.getElementById('report-signedin');
     if (!modal || !openBtn) return;
+
+    function identityChoice() {
+      var picked = modal.querySelector('input[name="report-identity"]:checked');
+      return picked ? picked.value : 'anon';
+    }
+    function syncIdentity() {
+      var named = identityChoice() === 'named';
+      if (nameFields) nameFields.hidden = !named;
+      if (signedNote) signedNote.hidden = !(named && signedInEmail());
+    }
+    modal.querySelectorAll('input[name="report-identity"]').forEach(function (r) {
+      r.addEventListener('change', syncIdentity);
+    });
+
     function open() {
       var c = reportContext();
       if (ctxEl) {
         if (c.context) { ctxEl.textContent = t('report.on', { where: c.context }); ctxEl.hidden = false; }
         else ctxEl.hidden = true;
       }
+      // default back to anonymous each open; prefill the name from the account
+      var anon = modal.querySelector('input[name="report-identity"][value="anon"]');
+      if (anon) anon.checked = true;
+      var who = signedInName();
+      if (firstEl && !firstEl.value) firstEl.value = who.first || '';
+      if (initialEl && !initialEl.value) initialEl.value = (who.last || '').charAt(0).toUpperCase();
+      syncIdentity();
       setStatus(statusEl, '', false);
       modal.hidden = false; scrim.hidden = false;
       closeSidebar();
@@ -7143,20 +7265,50 @@
     openBtn.addEventListener('click', open);
     closeBtn.addEventListener('click', close);
     scrim.addEventListener('click', close);
+
     sendBtn.addEventListener('click', function () {
       var msg = textEl.value.trim();
       if (!msg) { setStatus(statusEl, t('report.needText'), true); return; }
       var c = reportContext();
+
+      // Build the reporter's chosen credit + contact. "Anonymous" attaches
+      // neither a name nor an email, so the report can't be traced back; "Add
+      // my name" attaches "First L." and, when signed in, the account email so
+      // we can reply. The device id always rides along (non-identifying) so
+      // in-app broadcasts can still reach an anonymous reporter's feed.
+      var named = identityChoice() === 'named';
+      var reporterName = '', email = '';
+      if (named) {
+        var first = (firstEl && firstEl.value.trim()) || '';
+        var initial = (initialEl && initialEl.value.trim()) || '';
+        if (initial) initial = initial.charAt(0).toUpperCase() + '.';
+        reporterName = (first + ' ' + initial).trim();
+        email = signedInEmail();
+      }
+
       setStatus(statusEl, t('report.sending'), false);
-      adminReport({ message: msg, context: c.context, page: c.page }).then(function (r) {
+      adminReport({
+        message: msg, context: c.context, page: c.page,
+        reporterName: reporterName, email: email, deviceId: deviceId()
+      }).then(function (r) {
         if (r && r.ok) {
           textEl.value = '';
           setStatus(statusEl, t('report.thanks'), false);
-          setTimeout(close, 1200);
+          // an immediate in-app acknowledgement (the emailed one is sent server-side)
+          notify('report', t('notif.reportAck.title'), t('notif.reportAck.body'));
+          setTimeout(close, 1400);
         } else { setStatus(statusEl, t('report.failed'), true); }
       }, function () { setStatus(statusEl, t('report.failed'), true); });
     });
   })();
+
+  // pull any team messages waiting for this device shortly after load (a small
+  // delay lets Clerk settle so a signed-in email is matched too), then again
+  // whenever the tab is refocused.
+  setTimeout(syncServerNotifs, 2500);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') syncServerNotifs();
+  });
 
   // show the Admin nav link if this device is already unlocked; the first way in
   // (when locked) is the #admin address, which opens the key prompt.

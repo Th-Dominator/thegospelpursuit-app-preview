@@ -4787,6 +4787,22 @@ body.xref-fs-open { overflow: hidden; }
 }
 .report-send:hover { background: var(--gold-dark); }
 
+/* how the report is signed: anonymous, or first name + last initial */
+.report-identity {
+  margin: 12px 0 4px; padding: 12px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius); display: flex; flex-direction: column; gap: 8px;
+}
+.report-identity-legend { padding: 0 4px; font-size: 13px; color: var(--ink-soft); }
+.report-radio { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.report-radio input { accent-color: var(--gold); }
+.report-name-fields { display: flex; gap: 8px; margin-top: 2px; }
+.report-input {
+  flex: 1; min-width: 0; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); font-family: var(--font-body); font-size: 14px;
+}
+.report-input-initial { flex: 0 0 96px; text-align: center; }
+.report-signedin { margin: 2px 0 0; font-size: 12px; color: var(--ink-soft); }
+
 /* admin view */
 .admin-root { display: flex; flex-direction: column; gap: 20px; max-width: 720px; }
 .admin-toolbar {
