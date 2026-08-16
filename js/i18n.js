@@ -105,6 +105,10 @@ var TRANSLATIONS = {
     'bible.originalCredit': 'Tagged text: bolls.life · Strong’s glosses: openscriptures (CC BY-SA)',
     'bible.originalTransLabel': 'In {version}',
     'bible.originalDefaultLabel': 'your translation',
+    'bible.originalTransOT': 'JPS Tanakh (1917)',
+    'bible.originalTransNT': 'Text-Critical English NT',
+    'bible.originalTransCreditOT': 'JPS Tanakh (1917) · public domain',
+    'bible.originalTransCreditNT': 'Text-Critical English NT © Robert Adam Boyd · CC BY 4.0 (creativecommons.org/licenses/by/4.0)',
     'bible.originalNoTrans': 'Translation unavailable.',
 
     'report.title': 'Report a problem',

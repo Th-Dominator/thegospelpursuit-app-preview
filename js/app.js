@@ -1108,6 +1108,13 @@
      New Testament. Chosen by the current testament. */
   var ORIGINAL_OT = 'api:0b262f1ed7f084a6-01'; // Hebrew — WLC
   var ORIGINAL_NT = 'api:7644de2e4c5188e5-01'; // Greek — Text-Critical GNT
+  // The scholarly English translation paired with the original text in the
+  // verse-study panel: a Jewish translation for the Hebrew OT and a
+  // critical-text rendering for the Greek/Aramaic NT. Both are properly
+  // licensed through the API.Bible proxy (the copyrighted NJPS/NRSV/NRSVue/NASB
+  // aren't in the catalogue, so these are the closest licensed equivalents).
+  var STUDY_TRANS_OT = 'api:bf8f1c7f3f9045a5-01'; // JPS Tanakh (1917)
+  var STUDY_TRANS_NT = 'api:32339cf2f720ff8e-01'; // Text-Critical English NT
   function isOriginalHebrew() { return bibleState.showOriginal && bibleState.testament === 0; }
 
   function currentVersion() {
@@ -3621,6 +3628,11 @@
     trans.appendChild(txt('span', 'vf-original-trans-text', translation || t('bible.originalNoTrans')));
     wrap.appendChild(trans);
 
+    // attribution for the paired translation — required for the CC BY New
+    // Testament text, and a courtesy note for the public-domain Hebrew one
+    wrap.appendChild(txt('p', 'vf-original-trans-credit',
+      t(isHebrew ? 'bible.originalTransCreditOT' : 'bible.originalTransCreditNT')));
+
     if (interlinear) wrap.appendChild(txt('p', 'vf-original-credit', t('bible.originalCredit')));
 
     if (interlinear) {
@@ -3642,13 +3654,10 @@
 
     var isHebrew = bibleState.testament === 0;
     var originalId = isHebrew ? ORIGINAL_OT : ORIGINAL_NT;
-    // "your language" is the reader's configured main version ('' = the default
-    // translation); guard against the original ids so it's never original-vs-original
-    var mainId = (settings && typeof settings.version === 'string') ? settings.version : '';
-    if (mainId === ORIGINAL_OT || mainId === ORIGINAL_NT) mainId = '';
-    // the default version's own label ("Recommended…") reads oddly inside
-    // "read it in {version}", so use a plain phrase when no version is chosen
-    var transLabel = mainId ? versionLabelFor(mainId) : t('bible.originalDefaultLabel');
+    // the original is paired with a fixed scholarly translation — a Jewish
+    // rendering for the Hebrew OT, a critical-text one for the Greek/Aramaic NT
+    var studyId = isHebrew ? STUDY_TRANS_OT : STUDY_TRANS_NT;
+    var transLabel = t(isHebrew ? 'bible.originalTransOT' : 'bible.originalTransNT');
 
     var wantVerse = bibleState.verse;
     var book = bibleState.book.name, chap = bibleState.chapter;
@@ -3659,11 +3668,11 @@
     body.appendChild(txt('p', 'verse-panel-note', t('bible.originalBusy')));
 
     // bolls gives the Strong's-tagged words; n8n gives the plain original (a
-    // fallback if bolls is down) and the reader's own translation
+    // fallback if bolls is down) and the paired scholarly translation
     var quiet = function () { return null; };
     Promise.all([
       bookNo ? fetchBolls(bollsTrans, bookNo, chap).catch(quiet) : Promise.resolve(null),
-      requestCached('bible-chapter', { book: book, chapter: chap, version: mainId }).catch(quiet),
+      requestCached('bible-chapter', { book: book, chapter: chap, version: studyId }).catch(quiet),
       requestCached('bible-chapter', { book: book, chapter: chap, version: originalId }).catch(quiet),
       ensureGloss()
     ]).then(function (res) {
