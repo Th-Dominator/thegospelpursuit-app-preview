@@ -1543,6 +1543,37 @@ button.verse-num:hover { text-decoration: underline; }
   text-transform: uppercase;
   color: var(--ink-soft);
 }
+/* the Written / Spoken sections stacked under the language label */
+.vf-original-section { display: flex; flex-direction: column; margin-top: 10px; }
+.vf-original-section:first-of-type { margin-top: 0; }
+.vf-original-section-label {
+  margin: 0 0 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+/* Spoken: the transliteration, always read left-to-right in italics */
+.vf-original-translit {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  direction: ltr;
+  text-align: left;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+.vf-original-translit.is-empty {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
 .vf-original-text {
   margin: 0;
   padding: 12px 14px;

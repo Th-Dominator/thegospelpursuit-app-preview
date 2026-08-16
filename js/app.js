@@ -3442,11 +3442,30 @@
     tip.style.left = left + 'px';
   }
 
+  // join the per-word transliterations into a single spoken-form line, in the
+  // verse's own reading order (the first entry that carries a translit per word)
+  function buildTransliteration(tokens) {
+    if (!tokens || !tokens.length) return '';
+    var parts = [];
+    tokens.forEach(function (tk) {
+      var tr = '';
+      for (var i = 0; i < tk.entries.length; i++) {
+        if (tk.entries[i].translit) { tr = tk.entries[i].translit; break; }
+      }
+      if (tr) parts.push(tr);
+    });
+    return parts.join(' ');
+  }
+
   function renderOriginalInteractive(tokens, plainOriginal, translation, isHebrew, transLabel) {
     var wrap = el('div', 'vf-original');
     var interlinear = !!(tokens && tokens.length);
 
     wrap.appendChild(txt('p', 'vf-original-lang', isHebrew ? t('bible.originalHebrew') : t('bible.originalGreek')));
+
+    // --- Written: the Hebrew/Greek script itself ---
+    var written = el('div', 'vf-original-section vf-original-written');
+    written.appendChild(txt('p', 'vf-original-section-label', t('bible.originalWritten')));
 
     var line = el('p', 'vf-original-text');
     if (isHebrew) { line.setAttribute('dir', 'rtl'); line.classList.add('is-rtl'); }
@@ -3477,8 +3496,23 @@
       line.textContent = plainOriginal;
       line.setAttribute('tabindex', '0');
     }
-    wrap.appendChild(line);
+    written.appendChild(line);
+    wrap.appendChild(written);
     wrap.appendChild(tip);
+
+    // --- Spoken: a transliteration of how the verse sounds read aloud ---
+    // (only the interlinear source carries per-word transliterations)
+    if (interlinear) {
+      var translit = buildTransliteration(tokens);
+      var spoken = el('div', 'vf-original-section vf-original-spoken');
+      spoken.appendChild(txt('p', 'vf-original-section-label', t('bible.originalSpoken')));
+      if (translit) {
+        spoken.appendChild(txt('p', 'vf-original-translit', translit));
+      } else {
+        spoken.appendChild(txt('p', 'vf-original-translit is-empty', t('bible.originalSpokenUnavailable')));
+      }
+      wrap.appendChild(spoken);
+    }
 
     wrap.appendChild(txt('p', 'vf-original-hint',
       t(interlinear ? 'bible.originalWordHint' : 'bible.originalHoverHint', { version: transLabel })));
