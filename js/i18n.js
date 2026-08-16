@@ -109,6 +109,11 @@ var TRANSLATIONS = {
     'bible.originalTransNT': 'Text-Critical English NT',
     'bible.originalTransCreditOT': 'JPS Tanakh (1917) · public domain',
     'bible.originalTransCreditNT': 'Text-Critical English NT © Robert Adam Boyd · CC BY 4.0 (creativecommons.org/licenses/by/4.0)',
+    'bible.originalTransASV': 'ASV (1901)',
+    'bible.originalTransCreditASV': 'American Standard Version (1901) · public domain',
+    'bible.originalTargum': 'Aramaic tradition (Targum Onkelos)',
+    'bible.originalTargumNote': 'How the ancient Aramaic Targum Onkelos rendered this verse — J.W. Etheridge’s English, 1862.',
+    'bible.originalTargumCredit': 'Targum Onkelos, tr. J.W. Etheridge (1862) · public domain',
     'bible.originalNoTrans': 'Translation unavailable.',
 
     'report.title': 'Report a problem',

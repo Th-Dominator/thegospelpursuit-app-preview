@@ -1115,6 +1115,13 @@
   // aren't in the catalogue, so these are the closest licensed equivalents).
   var STUDY_TRANS_OT = 'api:bf8f1c7f3f9045a5-01'; // JPS Tanakh (1917)
   var STUDY_TRANS_NT = 'api:32339cf2f720ff8e-01'; // Text-Critical English NT
+  // a second, formal-equivalent translation shown alongside the first in both
+  // testaments — the ASV 1901, the public-domain parent of the NRSV and NASB lines
+  var STUDY_TRANS_ASV = 'api:06125adad2d5898a-01'; // American Standard Version (1901)
+  // the ancient Aramaic Targum of the Torah (Onkelos), in Etheridge's 1862
+  // English — shown only on Genesis–Deuteronomy, the books it covers
+  var TARGUM_ONKELOS = 'api:ec290b5045ff54a5-01';
+  var TORAH_BOOKS = { Genesis: 1, Exodus: 1, Leviticus: 1, Numbers: 1, Deuteronomy: 1 };
   function isOriginalHebrew() { return bibleState.showOriginal && bibleState.testament === 0; }
 
   function currentVersion() {
@@ -3547,9 +3554,10 @@
     return parts.join(' ');
   }
 
-  function renderOriginalInteractive(tokens, plainOriginal, translation, isHebrew, transLabel, aramaic) {
+  function renderOriginalInteractive(tokens, plainOriginal, translations, isHebrew, aramaic, targum) {
     var wrap = el('div', 'vf-original');
     var interlinear = !!(tokens && tokens.length);
+    translations = translations || [];
 
     wrap.appendChild(txt('p', 'vf-original-lang', isHebrew ? t('bible.originalHebrew') : t('bible.originalGreek')));
 
@@ -3620,18 +3628,32 @@
       wrap.appendChild(ar);
     }
 
+    // --- Aramaic tradition (OT Torah): the ancient Targum Onkelos rendering ---
+    if (targum && targum.text) {
+      var tg = el('div', 'vf-original-section vf-original-targum');
+      tg.appendChild(txt('p', 'vf-original-section-label', t('bible.originalTargum')));
+      tg.appendChild(txt('p', 'vf-original-aramaic-note', t('bible.originalTargumNote')));
+      tg.appendChild(txt('p', 'vf-original-targum-text', targum.text));
+      if (targum.credit) tg.appendChild(txt('p', 'vf-original-trans-credit', targum.credit));
+      wrap.appendChild(tg);
+    }
+
+    // the reveal hint names the first (primary) translation
+    var primaryLabel = (translations[0] && translations[0].label) || t('bible.originalDefaultLabel');
     wrap.appendChild(txt('p', 'vf-original-hint',
-      t(interlinear ? 'bible.originalWordHint' : 'bible.originalHoverHint', { version: transLabel })));
+      t(interlinear ? 'bible.originalWordHint' : 'bible.originalHoverHint', { version: primaryLabel })));
 
+    // one or more paired translations, each with its own attribution (required
+    // for the CC BY New Testament text, a courtesy note for the public-domain ones)
     var trans = el('div', 'vf-original-trans');
-    trans.appendChild(txt('span', 'vf-original-trans-label', t('bible.originalTransLabel', { version: transLabel })));
-    trans.appendChild(txt('span', 'vf-original-trans-text', translation || t('bible.originalNoTrans')));
+    translations.forEach(function (tr) {
+      var item = el('div', 'vf-original-trans-item');
+      item.appendChild(txt('span', 'vf-original-trans-label', t('bible.originalTransLabel', { version: tr.label })));
+      item.appendChild(txt('span', 'vf-original-trans-text', tr.text || t('bible.originalNoTrans')));
+      if (tr.credit) item.appendChild(txt('p', 'vf-original-trans-credit', tr.credit));
+      trans.appendChild(item);
+    });
     wrap.appendChild(trans);
-
-    // attribution for the paired translation — required for the CC BY New
-    // Testament text, and a courtesy note for the public-domain Hebrew one
-    wrap.appendChild(txt('p', 'vf-original-trans-credit',
-      t(isHebrew ? 'bible.originalTransCreditOT' : 'bible.originalTransCreditNT')));
 
     if (interlinear) wrap.appendChild(txt('p', 'vf-original-credit', t('bible.originalCredit')));
 
@@ -3655,29 +3677,35 @@
     var isHebrew = bibleState.testament === 0;
     var originalId = isHebrew ? ORIGINAL_OT : ORIGINAL_NT;
     // the original is paired with a fixed scholarly translation — a Jewish
-    // rendering for the Hebrew OT, a critical-text one for the Greek/Aramaic NT
+    // rendering for the Hebrew OT, a critical-text one for the Greek/Aramaic NT —
+    // plus the ASV as a second, formal-equivalent reading in both testaments
     var studyId = isHebrew ? STUDY_TRANS_OT : STUDY_TRANS_NT;
-    var transLabel = t(isHebrew ? 'bible.originalTransOT' : 'bible.originalTransNT');
+    var primaryLabel = t(isHebrew ? 'bible.originalTransOT' : 'bible.originalTransNT');
+    var primaryCredit = t(isHebrew ? 'bible.originalTransCreditOT' : 'bible.originalTransCreditNT');
 
     var wantVerse = bibleState.verse;
     var book = bibleState.book.name, chap = bibleState.chapter;
     var bookNo = BOLLS_BOOK_NO[book];
     var bollsTrans = isHebrew ? BOLLS_OT : BOLLS_NT;
+    // the Aramaic Targum Onkelos covers only the Torah (Genesis–Deuteronomy)
+    var wantTargum = isHebrew && !!TORAH_BOOKS[book];
 
     body.textContent = '';
     body.appendChild(txt('p', 'verse-panel-note', t('bible.originalBusy')));
 
     // bolls gives the Strong's-tagged words; n8n gives the plain original (a
-    // fallback if bolls is down) and the paired scholarly translation
+    // fallback if bolls is down) and the paired translations
     var quiet = function () { return null; };
     Promise.all([
       bookNo ? fetchBolls(bollsTrans, bookNo, chap).catch(quiet) : Promise.resolve(null),
       requestCached('bible-chapter', { book: book, chapter: chap, version: studyId }).catch(quiet),
       requestCached('bible-chapter', { book: book, chapter: chap, version: originalId }).catch(quiet),
-      ensureGloss()
+      ensureGloss(),
+      requestCached('bible-chapter', { book: book, chapter: chap, version: STUDY_TRANS_ASV }).catch(quiet),
+      wantTargum ? requestCached('bible-chapter', { book: book, chapter: chap, version: TARGUM_ONKELOS }).catch(quiet) : Promise.resolve(null)
     ]).then(function (res) {
       if (focusKeys.original !== key) return;
-      var bollsArr = res[0], transData = res[1], plainData = res[2], gloss = res[3];
+      var bollsArr = res[0], transData = res[1], plainData = res[2], gloss = res[3], asvData = res[4], targumData = res[5];
       var tokens = null, plainOriginal = '';
       var tagged = pickBollsVerse(bollsArr, wantVerse);
       if (tagged) {
@@ -3685,15 +3713,25 @@
         plainOriginal = tagged.replace(/<S>\d+<\/S>/g, '').replace(/<[^>]*>/g, '');
       }
       if (!plainOriginal) plainOriginal = pickVerseText(plainData, wantVerse);
-      var trans = pickVerseText(transData, wantVerse);
-      // NT only: any Aramaic words the Greek text keeps in their spoken form
+
+      // the paired translations, primary (JPS/TCENT) first, then the ASV
+      var translations = [];
+      var primaryText = pickVerseText(transData, wantVerse);
+      if (primaryText) translations.push({ label: primaryLabel, text: primaryText, credit: primaryCredit });
+      var asvText = pickVerseText(asvData, wantVerse);
+      if (asvText) translations.push({ label: t('bible.originalTransASV'), text: asvText, credit: t('bible.originalTransCreditASV') });
+
+      // NT: Aramaic words preserved in the Greek; OT Torah: the Targum Onkelos rendering
       var aramaic = isHebrew ? null : aramaicWordsFor(book, chap, wantVerse);
+      var targumText = wantTargum ? pickVerseText(targumData, wantVerse) : '';
+      var targum = targumText ? { text: targumText, credit: t('bible.originalTargumCredit') } : null;
+
       body.textContent = '';
       if (!tokens && !plainOriginal) {
         body.appendChild(txt('p', 'verse-panel-note', t('bible.originalUnavailable')));
         return;
       }
-      body.appendChild(renderOriginalInteractive(tokens, plainOriginal, trans, isHebrew, transLabel, aramaic));
+      body.appendChild(renderOriginalInteractive(tokens, plainOriginal, translations, isHebrew, aramaic, targum));
     }).catch(function (err) {
       if (focusKeys.original !== key) return;
       focusKeys.original = null;

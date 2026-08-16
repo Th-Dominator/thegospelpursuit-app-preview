@@ -1678,23 +1678,26 @@ button.verse-num:hover { text-decoration: underline; }
   font-size: 12px;
   color: var(--ink-muted);
 }
-/* the translation is tucked away until the original is hovered, focused, or tapped */
+/* the translations are tucked away until the original is hovered, focused, or tapped */
 .vf-original-trans {
   overflow: hidden;
   max-height: 0;
   opacity: 0;
   margin: 0;
-  border-left: 3px solid var(--gold);
-  padding: 0 0 0 12px;
-  transition: max-height 0.24s ease, opacity 0.24s ease, margin 0.24s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: max-height 0.28s ease, opacity 0.28s ease, margin 0.28s ease;
 }
 .vf-original:hover .vf-original-trans,
 .vf-original:focus-within .vf-original-trans,
 .vf-original.is-shown .vf-original-trans {
-  max-height: 340px;
+  max-height: 900px;
   opacity: 1;
   margin: 12px 0 2px;
 }
+/* each paired translation gets the gold accent */
+.vf-original-trans-item { border-left: 3px solid var(--gold); padding-left: 12px; }
 .vf-original-trans-label {
   display: block;
   font-size: 11px;
@@ -1709,6 +1712,18 @@ button.verse-num:hover { text-decoration: underline; }
   font-family: var(--font-display);
   font-size: 17px;
   line-height: 1.55;
+  color: var(--ink);
+}
+/* the Targum Onkelos (Aramaic tradition) rendering, styled like a reading */
+.vf-original-targum-text {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.6;
   color: var(--ink);
 }
 
