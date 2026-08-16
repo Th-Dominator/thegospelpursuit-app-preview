@@ -97,6 +97,8 @@ var TRANSLATIONS = {
     'bible.originalWritten': 'Written',
     'bible.originalSpoken': 'Spoken',
     'bible.originalSpokenUnavailable': 'A pronunciation guide isn’t available for this verse.',
+    'bible.originalAramaic': 'Aramaic behind the Greek',
+    'bible.originalAramaicNote': 'The New Testament was written in Greek, but it preserves some words in the Aramaic they were first spoken — including sayings of Jesus.',
     'bible.originalHoverHint': 'Hover, tap, or focus the text to read it in {version}.',
     'bible.originalWordHint': 'Hover, tap, or focus any word to see its transliteration and meaning.',
     'bible.originalNoGloss': 'No gloss available.',

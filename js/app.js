@@ -3442,6 +3442,39 @@
     tip.style.left = left + 'px';
   }
 
+  /* The New Testament was written in Koine Greek, but its authors sometimes kept
+     a word in the Aramaic it was actually spoken — often a saying of Jesus, and
+     usually translated by the text itself. This curated table surfaces those
+     genuine Aramaic words on the verses where they appear (keyed "Book Ch:Vs");
+     it is not a claim that the NT was composed in Aramaic. Each entry carries a
+     standard transliteration and the meaning. */
+  var NT_ARAMAIC = {
+    'Matthew 5:22':  [{ translit: 'raca (rēqā)', meaning: 'a word of contempt — “empty-headed”, “worthless”' }],
+    'Matthew 6:24':  [{ translit: 'mammon (māmōnā)', meaning: 'money or wealth personified as a master' }],
+    'Matthew 27:33': [{ translit: 'Golgotha (gulgaltā)', meaning: '“place of a skull” — the text translates it' }],
+    'Matthew 27:46': [{ translit: 'Eli, Eli, lema sabachthani', meaning: '“My God, my God, why have you forsaken me?” (Psalm 22:1); “Eli” is the Hebrew form of the Aramaic “Eloi”' }],
+    'Mark 3:17':     [{ translit: 'Boanerges (bnē reges)', meaning: '“sons of thunder” — the name Jesus gave James and John' }],
+    'Mark 5:41':     [{ translit: 'Talitha koum (ṭlīthā qūm)', meaning: '“Little girl, I say to you, arise” — the text translates it' }],
+    'Mark 7:11':     [{ translit: 'Corban (qorbān)', meaning: '“given to God” — a gift dedicated as an offering' }],
+    'Mark 7:34':     [{ translit: 'Ephphatha (ethpataḥ)', meaning: '“Be opened” — spoken as Jesus healed a deaf man' }],
+    'Mark 10:51':    [{ translit: 'Rabbouni (rabbūnī)', meaning: '“my teacher / my master” — blind Bartimaeus to Jesus' }],
+    'Mark 14:36':    [{ translit: 'Abba (abbā)', meaning: '“Father” — Jesus’ intimate address to God in Gethsemane' }],
+    'Mark 15:22':    [{ translit: 'Golgotha (gulgaltā)', meaning: '“place of a skull” — the text translates it' }],
+    'Mark 15:34':    [{ translit: 'Eloi, Eloi, lema sabachthani', meaning: '“My God, my God, why have you forsaken me?” (Psalm 22:1) — Jesus’ cry from the cross' }],
+    'Luke 16:13':    [{ translit: 'mammon (māmōnā)', meaning: 'money or wealth personified as a master' }],
+    'John 1:42':     [{ translit: 'Cephas (kēphā)', meaning: '“rock” — which the text renders as Peter' }],
+    'John 19:13':    [{ translit: 'Gabbatha (gabbethā)', meaning: '“the Stone Pavement” — the text names it in Aramaic' }],
+    'John 19:17':    [{ translit: 'Golgotha (gulgaltā)', meaning: '“place of a skull” — the text translates it' }],
+    'John 20:16':    [{ translit: 'Rabbouni (rabbūnī)', meaning: '“Teacher” — Mary Magdalene’s cry to the risen Jesus; the text translates it' }],
+    'Acts 1:19':     [{ translit: 'Akeldama (ḥăqēl dmā)', meaning: '“Field of Blood” — named in the local Aramaic' }],
+    'Romans 8:15':   [{ translit: 'Abba (abbā)', meaning: '“Father” — the Aramaic cry of God’s adopted children' }],
+    '1 Corinthians 16:22': [{ translit: 'Maranatha (māranā thā)', meaning: '“Our Lord, come!” — an early Aramaic prayer' }],
+    'Galatians 4:6': [{ translit: 'Abba (abbā)', meaning: '“Father” — the Spirit’s cry within believers' }]
+  };
+  function aramaicWordsFor(book, chapter, verse) {
+    return NT_ARAMAIC[book + ' ' + chapter + ':' + verse] || null;
+  }
+
   // join the per-word transliterations into a single spoken-form line, in the
   // verse's own reading order (the first entry that carries a translit per word)
   function buildTransliteration(tokens) {
@@ -3457,7 +3490,7 @@
     return parts.join(' ');
   }
 
-  function renderOriginalInteractive(tokens, plainOriginal, translation, isHebrew, transLabel) {
+  function renderOriginalInteractive(tokens, plainOriginal, translation, isHebrew, transLabel, aramaic) {
     var wrap = el('div', 'vf-original');
     var interlinear = !!(tokens && tokens.length);
 
@@ -3512,6 +3545,22 @@
         spoken.appendChild(txt('p', 'vf-original-translit is-empty', t('bible.originalSpokenUnavailable')));
       }
       wrap.appendChild(spoken);
+    }
+
+    // --- Aramaic: words the Greek text preserves in the language they were spoken ---
+    if (aramaic && aramaic.length) {
+      var ar = el('div', 'vf-original-section vf-original-aramaic');
+      ar.appendChild(txt('p', 'vf-original-section-label', t('bible.originalAramaic')));
+      ar.appendChild(txt('p', 'vf-original-aramaic-note', t('bible.originalAramaicNote')));
+      var arList = el('ul', 'vf-aramaic-list');
+      aramaic.forEach(function (a) {
+        var li = el('li', 'vf-aramaic-item');
+        li.appendChild(txt('span', 'vf-aramaic-word', a.translit));
+        li.appendChild(txt('span', 'vf-aramaic-gloss', a.meaning));
+        arList.appendChild(li);
+      });
+      ar.appendChild(arList);
+      wrap.appendChild(ar);
     }
 
     wrap.appendChild(txt('p', 'vf-original-hint',
@@ -3578,12 +3627,14 @@
       }
       if (!plainOriginal) plainOriginal = pickVerseText(plainData, wantVerse);
       var trans = pickVerseText(transData, wantVerse);
+      // NT only: any Aramaic words the Greek text keeps in their spoken form
+      var aramaic = isHebrew ? null : aramaicWordsFor(book, chap, wantVerse);
       body.textContent = '';
       if (!tokens && !plainOriginal) {
         body.appendChild(txt('p', 'verse-panel-note', t('bible.originalUnavailable')));
         return;
       }
-      body.appendChild(renderOriginalInteractive(tokens, plainOriginal, trans, isHebrew, transLabel));
+      body.appendChild(renderOriginalInteractive(tokens, plainOriginal, trans, isHebrew, transLabel, aramaic));
     }).catch(function (err) {
       if (focusKeys.original !== key) return;
       focusKeys.original = null;
