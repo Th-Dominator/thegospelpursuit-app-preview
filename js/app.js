@@ -1266,7 +1266,10 @@
     list.textContent = '';
     setCopyright('');
     resetChapterGuide();
+    // the FAQ tab shows only where a curated FAQ exists, so decide its
+    // visibility up front with the cheap admin-store read
     resetChapterFaq();
+    loadChapterFaq();
     setStatus(status, t('bible.busyStatus'), false);
     updateBibleCrumbs();
     updatePrevNext();
@@ -3082,10 +3085,12 @@
   }
 
   /* The chapter's "Frequently asked questions" panel — its own section in the
-     reader, separate from the chapter guide. It prefers the owner-published FAQ
-     for this chapter (from the shared admin store) and falls back to the
-     questions the chapter-insight endpoint generates. Loaded lazily on open,
-     like the chapter guide, so no work happens until the reader asks for it. */
+     reader, separate from the chapter guide. It shows ONLY the owner-published
+     FAQ for this chapter (from the shared admin store); there is no generated
+     fallback. The whole panel stays hidden on chapters without a curated FAQ,
+     so the tab appears only where questions have actually been written. It
+     loads eagerly on chapter open (one cheap, cached admin-store read) to decide
+     that visibility up front. */
   var chapterFaqKey = null;
 
   function resetChapterFaq() {
@@ -3093,43 +3098,33 @@
     var body = document.getElementById('chapter-faq-body');
     if (!faq || !body) return;
     faq.open = false;
+    faq.hidden = true;
     body.textContent = '';
     chapterFaqKey = null;
   }
 
   function loadChapterFaq() {
+    var faq = document.getElementById('chapter-faq');
     var body = document.getElementById('chapter-faq-body');
-    if (!body || !bibleState.book) return;
+    if (!faq || !body || !bibleState.book) return;
     var key = bibleState.book.name + '|' + bibleState.chapter;
     if (chapterFaqKey === key) return;
     chapterFaqKey = key;
-
     var scope = bibleState.book.name + ' ' + bibleState.chapter;
-    body.textContent = '';
-    body.appendChild(txt('p', 'verse-panel-note', t('bible.faqBusy')));
 
-    var show = function (qa) {
-      if (chapterFaqKey !== key) return;
-      body.textContent = '';
-      body.appendChild(buildFaqSection(qa) || txt('p', 'verse-panel-note', t('bible.faqNone')));
-    };
-    var fail = function (err) {
-      if (chapterFaqKey !== key) return;
-      chapterFaqKey = null;   // allow a retry on the next open
-      body.textContent = '';
-      body.appendChild(txt('p', 'verse-panel-note is-error', (err && err.message) || String(err)));
-    };
-
-    // the owner-published FAQ renders as soon as it's ready; only when there
-    // is none do we wait on the (slower) generated chapter-insight questions
     adminList('faq', scope).then(function (faqs) {
       if (chapterFaqKey !== key) return;
-      if (faqs && faqs.length && Array.isArray(faqs[0].qa) && faqs[0].qa.length) { show(faqs[0].qa); return; }
-      requestCached('chapter-insight', { book: bibleState.book.name, chapter: bibleState.chapter })
-        .then(function (insight) {
-          show(insight && Array.isArray(insight.commonQuestions) ? insight.commonQuestions : null);
-        }, fail);
-    }, fail);
+      var qa = (faqs && faqs.length && Array.isArray(faqs[0].qa)) ? faqs[0].qa : null;
+      var node = buildFaqSection(qa);
+      if (!node) { faq.hidden = true; body.textContent = ''; return; }  // no owner FAQ → hide the tab
+      body.textContent = '';
+      body.appendChild(node);
+      faq.hidden = false;
+    }, function () {
+      if (chapterFaqKey !== key) return;
+      chapterFaqKey = null;   // a failed read shouldn't stick; allow a retry
+      faq.hidden = true;
+    });
   }
 
   document.getElementById('chapter-faq').addEventListener('toggle', function () {
