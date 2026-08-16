@@ -448,6 +448,10 @@ var TRANSLATIONS = {
     'bible.background': 'History & background',
     'bible.guideBusy': 'Preparing the chapter guide…',
     'bible.guideUnavailable': 'The chapter guide isn’t available right now.',
+    'bible.chapterFaq': 'Frequently asked questions',
+    'bible.chapterFaqHint': 'Common questions about this chapter, answered',
+    'bible.faqBusy': 'Loading the questions…',
+    'bible.faqNone': 'No questions for this chapter yet.',
 
     /* ---- single-verse study view ---- */
     'bible.studyVerse': 'Study this verse',

@@ -1252,6 +1252,7 @@
     list.textContent = '';
     setCopyright('');
     resetChapterGuide();
+    resetChapterFaq();
     setStatus(status, t('bible.busyStatus'), false);
     updateBibleCrumbs();
     updatePrevNext();
@@ -2076,7 +2077,8 @@
     { key: 'connections', label: 'chap.connections', type: 'refs', group: 'theology' },
     { key: 'apologetics', label: 'chap.apologetics', type: 'prose', group: 'theology' },
     { key: 'difficult', label: 'chap.difficult', type: 'refs', group: 'study' },
-    { key: 'commonQuestions', label: 'chap.faq', type: 'faq', group: 'study' },
+    // commonQuestions now has its own dedicated "Frequently asked questions"
+    // panel in the reader (loadChapterFaq), so it's no longer folded in here
     { key: 'sources', label: 'chap.sources', type: 'list', group: 'study' }
   ];
 
@@ -3048,23 +3050,15 @@
         // a late reply for a chapter we've since left shouldn't overwrite the new one
         if (chapterGuideKey !== key) return;
         var scope = bibleState.book.name + ' ' + bibleState.chapter;
-        // fold in any owner-published FAQ (replaces the generated one), then render
-        adminList('faq', scope).then(function (faqs) {
-          if (chapterGuideKey !== key) return;
-          var merged = data;
-          if (faqs && faqs.length && Array.isArray(faqs[0].qa) && faqs[0].qa.length) {
-            merged = Object.assign({}, data || {}, { commonQuestions: faqs[0].qa });
-          }
-          body.textContent = '';
-          var rich = renderChapterOverview(merged);
-          if (rich) { body.appendChild(rich); injectAdminWorld(body, scope); return; }
-          // fall back to the older overview / points-to-Christ / background layout
-          renderInsight(body, [
-            { key: 'bible.overview', text: data && data.overview },
-            { key: 'bible.pointsToChrist', text: data && data.christ },
-            { key: 'bible.background', text: data && data.history }
-          ], 'bible.guideUnavailable');
-        });
+        body.textContent = '';
+        var rich = renderChapterOverview(data);
+        if (rich) { body.appendChild(rich); injectAdminWorld(body, scope); return; }
+        // fall back to the older overview / points-to-Christ / background layout
+        renderInsight(body, [
+          { key: 'bible.overview', text: data && data.overview },
+          { key: 'bible.pointsToChrist', text: data && data.christ },
+          { key: 'bible.background', text: data && data.history }
+        ], 'bible.guideUnavailable');
       })
       .catch(function (err) {
         chapterGuideKey = null; // allow a retry on the next open
@@ -3072,6 +3066,62 @@
         body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
       });
   }
+
+  /* The chapter's "Frequently asked questions" panel — its own section in the
+     reader, separate from the chapter guide. It prefers the owner-published FAQ
+     for this chapter (from the shared admin store) and falls back to the
+     questions the chapter-insight endpoint generates. Loaded lazily on open,
+     like the chapter guide, so no work happens until the reader asks for it. */
+  var chapterFaqKey = null;
+
+  function resetChapterFaq() {
+    var faq = document.getElementById('chapter-faq');
+    var body = document.getElementById('chapter-faq-body');
+    if (!faq || !body) return;
+    faq.open = false;
+    body.textContent = '';
+    chapterFaqKey = null;
+  }
+
+  function loadChapterFaq() {
+    var body = document.getElementById('chapter-faq-body');
+    if (!body || !bibleState.book) return;
+    var key = bibleState.book.name + '|' + bibleState.chapter;
+    if (chapterFaqKey === key) return;
+    chapterFaqKey = key;
+
+    var scope = bibleState.book.name + ' ' + bibleState.chapter;
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('bible.faqBusy')));
+
+    var show = function (qa) {
+      if (chapterFaqKey !== key) return;
+      body.textContent = '';
+      body.appendChild(buildFaqSection(qa) || txt('p', 'verse-panel-note', t('bible.faqNone')));
+    };
+    var fail = function (err) {
+      if (chapterFaqKey !== key) return;
+      chapterFaqKey = null;   // allow a retry on the next open
+      body.textContent = '';
+      body.appendChild(txt('p', 'verse-panel-note is-error', (err && err.message) || String(err)));
+    };
+
+    // the owner-published FAQ renders as soon as it's ready; only when there
+    // is none do we wait on the (slower) generated chapter-insight questions
+    adminList('faq', scope).then(function (faqs) {
+      if (chapterFaqKey !== key) return;
+      if (faqs && faqs.length && Array.isArray(faqs[0].qa) && faqs[0].qa.length) { show(faqs[0].qa); return; }
+      requestCached('chapter-insight', { book: bibleState.book.name, chapter: bibleState.chapter })
+        .then(function (insight) {
+          show(insight && Array.isArray(insight.commonQuestions) ? insight.commonQuestions : null);
+        }, fail);
+    }, fail);
+  }
+
+  document.getElementById('chapter-faq').addEventListener('toggle', function () {
+    if (this.open) loadChapterFaq();
+  });
+  warmOnIntent(document.getElementById('chapter-faq'), loadChapterFaq);
 
   document.getElementById('chapter-guide').addEventListener('toggle', function () {
     if (this.open) loadChapterGuide();
