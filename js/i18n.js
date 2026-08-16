@@ -88,6 +88,16 @@ var TRANSLATIONS = {
 
     'bible.original': 'Original',
     'bible.originalOn': 'My language',
+    'bible.originalPanel': 'Original language',
+    'bible.originalPanelHint': 'The Hebrew or Greek behind this verse — hover to see your translation',
+    'bible.originalBusy': 'Loading the original text…',
+    'bible.originalUnavailable': 'The original text isn’t available for this verse.',
+    'bible.originalHebrew': 'Hebrew (Westminster Leningrad Codex)',
+    'bible.originalGreek': 'Greek (Text-Critical GNT)',
+    'bible.originalHoverHint': 'Hover, tap, or focus the text to read it in {version}.',
+    'bible.originalTransLabel': 'In {version}',
+    'bible.originalDefaultLabel': 'your translation',
+    'bible.originalNoTrans': 'Translation unavailable.',
 
     'report.title': 'Report a problem',
     'report.lede': 'Found a wrong verse, an odd translation, or anything broken? Tell me here — I get a daily summary by email.',
@@ -112,6 +122,8 @@ var TRANSLATIONS = {
     'admin.lock': 'Lock',
     'admin.loading': 'Loading…',
     'admin.none': 'Nothing published yet.',
+    'admin.edit': 'Edit',
+    'admin.editHint': 'Tap Edit to load an entry into the form above, change it, then Publish to save.',
     'admin.delete': 'Delete',
     'admin.publish': 'Publish',
     'admin.publishFaq': 'Publish questions',
@@ -827,6 +839,7 @@ var TRANSLATIONS = {
     'definitions.motherLabel': 'Mother',
     'definitions.siblingsLabel': 'Siblings',
     'definitions.childrenLabel': 'Children',
+    'definitions.lookupPerson': 'Look up {name}',
 
     /* ---- messianic prophecy tab ---- */
     'messianic.eyebrow': 'messianic prophecy',

@@ -3138,18 +3138,18 @@
   /* The three expandables (context / chapter / book) each remember which
      verse|chapter|book they last filled, so reopening on the same target is
      free but moving to a new one refetches. */
-  var focusKeys = { context: null, chapter: null, book: null };
+  var focusKeys = { context: null, chapter: null, book: null, original: null };
 
   function resetFocusDetails() {
-    ['verse-focus-context', 'verse-focus-chapter', 'verse-focus-book'].forEach(function (id) {
+    ['verse-focus-original', 'verse-focus-context', 'verse-focus-chapter', 'verse-focus-book'].forEach(function (id) {
       var d = document.getElementById(id);
       if (d) d.open = false;
     });
-    ['verse-focus-context-body', 'verse-focus-chapter-body', 'verse-focus-book-body'].forEach(function (id) {
+    ['verse-focus-original-body', 'verse-focus-context-body', 'verse-focus-chapter-body', 'verse-focus-book-body'].forEach(function (id) {
       var b = document.getElementById(id);
       if (b) b.textContent = '';
     });
-    focusKeys = { context: null, chapter: null, book: null };
+    focusKeys = { context: null, chapter: null, book: null, original: null };
   }
 
   function updateVerseNav() {
@@ -3268,6 +3268,99 @@
     if (!any) body.appendChild(txt('p', 'verse-panel-note', t(emptyKey)));
   }
 
+  // label for a version id, mirroring currentVersionLabel but for any id
+  function versionLabelFor(id) {
+    for (var i = 0; i < BIBLE_VERSIONS.length; i++) {
+      if (BIBLE_VERSIONS[i].id === id) {
+        return BIBLE_VERSIONS[i].labelKey ? t(BIBLE_VERSIONS[i].labelKey) : BIBLE_VERSIONS[i].label;
+      }
+    }
+    return id || t('settings.translationDefault');
+  }
+
+  // pull one verse's text out of a fetched chapter payload; verse numbers can
+  // come back as strings ("1") or ints, so compare them loosely by value
+  function pickVerseText(data, number) {
+    var vs = extractVerses(data);
+    var want = String(number);
+    for (var i = 0; i < vs.length; i++) {
+      if (String(vs[i].number) === want) return vs[i].text;
+    }
+    return '';
+  }
+
+  /* The Original-language panel: the Hebrew (OT) or Greek (NT) behind this verse,
+     alongside the reader's own version. Hovering, tapping, or focusing the
+     original reveals the translation, so the reader can compare the two. */
+  function renderOriginalInteractive(original, translation, isHebrew, transLabel) {
+    var wrap = el('div', 'vf-original');
+
+    var lang = txt('p', 'vf-original-lang', isHebrew ? t('bible.originalHebrew') : t('bible.originalGreek'));
+    wrap.appendChild(lang);
+
+    var orig = txt('p', 'vf-original-text', original);
+    orig.setAttribute('tabindex', '0');
+    if (isHebrew) { orig.setAttribute('dir', 'rtl'); orig.classList.add('is-rtl'); }
+    wrap.appendChild(orig);
+
+    var hint = txt('p', 'vf-original-hint', t('bible.originalHoverHint', { version: transLabel }));
+    wrap.appendChild(hint);
+
+    var trans = el('div', 'vf-original-trans');
+    trans.appendChild(txt('span', 'vf-original-trans-label', t('bible.originalTransLabel', { version: transLabel })));
+    trans.appendChild(txt('span', 'vf-original-trans-text', translation || t('bible.originalNoTrans')));
+    wrap.appendChild(trans);
+
+    // hover and keyboard focus reveal the translation via CSS (:hover / :focus-within);
+    // tapping toggles it for touch devices that have no hover
+    orig.addEventListener('click', function () { wrap.classList.toggle('is-shown'); });
+    return wrap;
+  }
+
+  function loadFocusOriginal() {
+    var body = document.getElementById('verse-focus-original-body');
+    if (!body) return;
+    var key = verseKey(bibleState.verse);
+    if (focusKeys.original === key) return;
+    focusKeys.original = key;
+
+    var isHebrew = bibleState.testament === 0;
+    var originalId = isHebrew ? ORIGINAL_OT : ORIGINAL_NT;
+    // "your language" is the reader's configured main version ('' = the default
+    // translation); guard against the original ids so it's never original-vs-original
+    var mainId = (settings && typeof settings.version === 'string') ? settings.version : '';
+    if (mainId === ORIGINAL_OT || mainId === ORIGINAL_NT) mainId = '';
+    // the default version's own label ("Recommended…") reads oddly inside
+    // "read it in {version}", so use a plain phrase when no version is chosen
+    var transLabel = mainId ? versionLabelFor(mainId) : t('bible.originalDefaultLabel');
+
+    var wantVerse = bibleState.verse;
+    var book = bibleState.book.name, chap = bibleState.chapter;
+
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('bible.originalBusy')));
+
+    Promise.all([
+      requestCached('bible-chapter', { book: book, chapter: chap, version: originalId }),
+      requestCached('bible-chapter', { book: book, chapter: chap, version: mainId })
+    ]).then(function (res) {
+      if (focusKeys.original !== key) return;
+      var orig = pickVerseText(res[0], wantVerse);
+      var trans = pickVerseText(res[1], wantVerse);
+      body.textContent = '';
+      if (!orig) {
+        body.appendChild(txt('p', 'verse-panel-note', t('bible.originalUnavailable')));
+        return;
+      }
+      body.appendChild(renderOriginalInteractive(orig, trans, isHebrew, transLabel));
+    }).catch(function (err) {
+      if (focusKeys.original !== key) return;
+      focusKeys.original = null;
+      body.textContent = '';
+      body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
+    });
+  }
+
   function loadFocusContext() {
     var body = document.getElementById('verse-focus-context-body');
     var key = verseKey(bibleState.verse);
@@ -3356,6 +3449,9 @@
       });
   }
 
+  document.getElementById('verse-focus-original').addEventListener('toggle', function () {
+    if (this.open) loadFocusOriginal();
+  });
   document.getElementById('verse-focus-context').addEventListener('toggle', function () {
     if (this.open) loadFocusContext();
   });
@@ -3366,6 +3462,7 @@
     if (this.open) loadFocusBook();
   });
   // warm each study panel on hover/focus so it's generating before it opens
+  warmOnIntent(document.getElementById('verse-focus-original'), loadFocusOriginal);
   warmOnIntent(document.getElementById('verse-focus-context'), loadFocusContext);
   warmOnIntent(document.getElementById('verse-focus-chapter'), loadFocusChapter);
   warmOnIntent(document.getElementById('verse-focus-book'), loadFocusBook);
@@ -6237,12 +6334,14 @@
       container.appendChild(body);
     }
     if (rec.cat === 'people') {
+      // the last field of each row says whether its value names people (and so
+      // should become clickable links to those people's own definitions)
       var rows = [
-        ['definitions.firstAppLabel', rec.firstApp],
-        ['definitions.fatherLabel', rec.father],
-        ['definitions.motherLabel', rec.mother],
-        ['definitions.siblingsLabel', rec.siblings],
-        ['definitions.childrenLabel', rec.children]
+        ['definitions.firstAppLabel', rec.firstApp, false],
+        ['definitions.fatherLabel', rec.father, true],
+        ['definitions.motherLabel', rec.mother, true],
+        ['definitions.siblingsLabel', rec.siblings, true],
+        ['definitions.childrenLabel', rec.children, true]
       ].filter(function (r) { return r[1] && String(r[1]).trim(); });
       if (rows.length) {
         var gen = el('div', 'def-genealogy');
@@ -6250,12 +6349,45 @@
         var dl = el('dl', 'def-gen-list');
         rows.forEach(function (r) {
           dl.appendChild(txt('dt', 'def-gen-term', t(r[0])));
-          dl.appendChild(txt('dd', 'def-gen-desc', cleanAIText(String(r[1]).trim())));
+          var dd = el('dd', 'def-gen-desc');
+          if (r[2]) fillPeopleLinks(dd, String(r[1]).trim());
+          else dd.textContent = cleanAIText(String(r[1]).trim());
+          dl.appendChild(dd);
         });
         gen.appendChild(dl);
         container.appendChild(gen);
       }
     }
+  }
+
+  /* Family names in a People entry become buttons: tapping one opens that
+     person's own definition. A value can list several people, so it's split on
+     commas / semicolons / slashes / "and" / "&"; words that aren't names
+     (Unknown, None, …) stay plain text. */
+  var NON_NAME_WORDS = {
+    'unknown': 1, 'none': 1, 'n/a': 1, 'na': 1, 'unnamed': 1,
+    'not named': 1, 'various': 1, 'several': 1
+  };
+  function fillPeopleLinks(dd, value) {
+    var clean = cleanAIText(value);
+    var parts = clean.split(/\s*(?:,|;|\/|&|\band\b)\s*/i)
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
+    if (!parts.length) { dd.textContent = clean; return; }
+    parts.forEach(function (name, i) {
+      if (i) dd.appendChild(document.createTextNode(', '));
+      if (NON_NAME_WORDS[name.toLowerCase()]) {
+        dd.appendChild(document.createTextNode(name));
+        return;
+      }
+      // the lookup drops any parenthetical aside, e.g. "Isaac (his son)"
+      var term = name.replace(/\s*\([^)]*\)\s*/g, ' ').trim() || name;
+      var link = txt('button', 'def-gen-link', name);
+      link.type = 'button';
+      link.title = t('definitions.lookupPerson', { name: term });
+      link.addEventListener('click', function () { submitDefinition(term); });
+      dd.appendChild(link);
+    });
   }
   // the term list per group: built-in terms plus any custom ones the owner added
   // to that group (custom entries with an unknown/old group fall under Vocabulary)
@@ -6552,6 +6684,14 @@
     adminList(type).then(function (items) {
       listEl.textContent = '';
       if (!items.length) { listEl.appendChild(txt('p', 'admin-empty', t('admin.none'))); return; }
+      // load a stored entry into this card's form, then bring the form into view
+      function editItem(it) {
+        if (!onPick) return;
+        onPick(it);
+        var card = listEl.closest('.admin-card');
+        var target = card || listEl;
+        if (target.scrollIntoView) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       items.slice().reverse().forEach(function (it) {
         var row = el('div', 'admin-item');
         var main = el('button', 'admin-item-main'); main.type = 'button';
@@ -6560,8 +6700,13 @@
         var sub = [it.scope, it.group].filter(Boolean).join(' · ');
         if (it.type === 'faq' && Array.isArray(it.qa)) sub = it.scope + ' · ' + it.qa.length + ' Q&A';
         if (sub) main.appendChild(txt('span', 'admin-item-sub', sub));
-        if (onPick) main.addEventListener('click', function () { onPick(it); });
+        if (onPick) main.addEventListener('click', function () { editItem(it); });
         row.appendChild(main);
+        if (onPick) {
+          var edit = txt('button', 'admin-item-edit', t('admin.edit')); edit.type = 'button';
+          edit.addEventListener('click', function () { editItem(it); });
+          row.appendChild(edit);
+        }
         var del = txt('button', 'admin-item-del', t('admin.delete')); del.type = 'button';
         del.addEventListener('click', function () {
           adminWrite('delete', { type: it.type, id: it.id }).then(function () {
@@ -6649,7 +6794,9 @@
         } else { setStatus(status, t('admin.failed'), true); }
       });
     });
-    card.appendChild(save); card.appendChild(status); card.appendChild(list);
+    card.appendChild(save); card.appendChild(status);
+    card.appendChild(txt('p', 'admin-list-hint', t('admin.editHint')));
+    card.appendChild(list);
     adminListInto(list, 'definition', loadInto);
     return card;
   }

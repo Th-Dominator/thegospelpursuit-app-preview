@@ -1292,9 +1292,11 @@ html[lang="my"] .dropcap,
   100%    { opacity: 1; transform: translateX(-50%) translateY(10px); }
 }
 
-.hole-feet  { left: 50%; bottom: 26px;  width: 14px; height: 14px; animation-delay: 1.45s; }
-.drip-feet  { left: 50%; bottom: 18px;  height: 26px; animation-delay: 1.55s; }
-.drop-feet  { left: 50%; bottom: -10px; animation-delay: 1.85s; }
+/* feet wound sits on the lower vertical beam (its bottom is ~30px up from the
+   stage floor); the drip runs just past the foot and the drop stays on-stage */
+.hole-feet  { left: 50%; bottom: 44px;  width: 14px; height: 14px; animation-delay: 1.45s; }
+.drip-feet  { left: 50%; bottom: 22px;  height: 24px; animation-delay: 1.55s; }
+.drop-feet  { left: 50%; bottom: 12px;  animation-delay: 1.85s; }
 
 .hole-left  { left: calc(50% - 85px); top: 122px; width: 13px; height: 13px; animation-delay: 1.05s; }
 .drip-left  { left: calc(50% - 85px); top: 134px; height: 22px; animation-delay: 1.15s; }
@@ -1530,6 +1532,76 @@ button.verse-num:hover { text-decoration: underline; }
 /* the context / chapter / book expandables sit a touch tighter than the guide */
 .verse-focus-details { margin-bottom: 12px; }
 .verse-focus .bible-reader-nav { margin-top: 18px; }
+
+/* ---------- original-language panel (verse study) ---------- */
+.vf-original { display: flex; flex-direction: column; }
+.vf-original-lang {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.vf-original-text {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.75;
+  color: var(--ink);
+  cursor: pointer;
+  unicode-bidi: plaintext;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.vf-original-text.is-rtl { direction: rtl; text-align: right; }
+.vf-original-text:hover,
+.vf-original-text:focus-visible {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 8%, var(--surface-2));
+  outline: none;
+}
+.vf-original-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+/* the translation is tucked away until the original is hovered, focused, or tapped */
+.vf-original-trans {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  border-left: 3px solid var(--gold);
+  padding: 0 0 0 12px;
+  transition: max-height 0.24s ease, opacity 0.24s ease, margin 0.24s ease;
+}
+.vf-original:hover .vf-original-trans,
+.vf-original:focus-within .vf-original-trans,
+.vf-original.is-shown .vf-original-trans {
+  max-height: 340px;
+  opacity: 1;
+  margin: 12px 0 2px;
+}
+.vf-original-trans-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  margin-bottom: 3px;
+}
+.vf-original-trans-text {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink);
+}
 
 /* ---------- verse context: the ten-part study accordion ---------- */
 .verse-context { display: flex; flex-direction: column; gap: 8px; }
@@ -4423,6 +4495,27 @@ body.xref-fs-open { overflow: hidden; }
 }
 .def-gen-term { font-size: 13px; font-weight: 600; color: var(--gold-dark); }
 .def-gen-desc { margin: 0; font-size: 13px; color: var(--ink-soft); }
+/* a clickable family name: opens that person's own definition */
+.def-gen-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--gold-dark);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--gold-dark) 45%, transparent);
+  text-underline-offset: 2px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.def-gen-link:hover,
+.def-gen-link:focus-visible {
+  color: var(--gold);
+  text-decoration-color: currentColor;
+  outline: none;
+}
 
 /* photo gallery shown in a definition */
 .def-photos { margin: 0 0 12px; }
@@ -4686,11 +4779,17 @@ body.xref-fs-open { overflow: hidden; }
 }
 .admin-item-name { font-size: 14px; color: var(--ink); }
 .admin-item-sub { font-size: 12px; color: var(--ink-soft); }
+.admin-item-edit {
+  border: 1px solid var(--border); background: var(--surface); color: var(--gold-dark);
+  border-radius: 8px; padding: 5px 10px; font-size: 13px; cursor: pointer;
+}
+.admin-item-edit:hover { border-color: var(--gold); }
 .admin-item-del {
   border: 1px solid var(--border); background: var(--surface); color: var(--error);
   border-radius: 8px; padding: 5px 10px; font-size: 13px; cursor: pointer;
 }
 .admin-item-del:hover { border-color: var(--error); }
+.admin-list-hint { margin: 4px 0 8px; font-size: 12px; color: var(--ink-soft); }
 .admin-faq-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
 .admin-faq-row {
   display: grid; grid-template-columns: 1fr 2fr 1fr auto; gap: 8px; align-items: start;
