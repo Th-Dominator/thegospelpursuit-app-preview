@@ -8,7 +8,17 @@
 
    Lives at the site root so its scope covers the whole app. */
 
-var CACHE = 'tgp-cache-v13';
+var CACHE = 'tgp-cache-v14';
+
+/* The app's own code changes on every deploy, so it must be served
+   network-first (freshest wins online, cache is the offline fallback) — never
+   stale-while-revalidate, which would leave the reader a deploy behind. Large,
+   rarely-changing data (xref-data.js, lang/*.js) stays stale-while-revalidate. */
+var FRESH_CODE = ['js/app.js', 'js/i18n.js', 'js/config.js', 'css/style.css',
+  'js/apologetics-data.js', 'js/apologetics-objections.js'];
+function isFreshCode(url) {
+  return FRESH_CODE.some(function (p) { return url.pathname.endsWith('/' + p) || url.pathname === '/' + p; });
+}
 
 /* The minimum needed to boot the app offline. Dynamically-loaded files
    (xref-data.js, lang/*.js) and Google Fonts are cached at runtime the first
@@ -69,6 +79,21 @@ self.addEventListener('fetch', function (event) {
       }).catch(function () {
         return caches.match('index.html').then(function (m) { return m || caches.match('./'); });
       })
+    );
+    return;
+  }
+
+  // The app's own code: network-first so a new deploy always wins online, with
+  // the cached copy as the offline fallback.
+  if (sameOrigin && isFreshCode(url)) {
+    event.respondWith(
+      fetch(req).then(function (res) {
+        if (res && res.ok) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copy); });
+        }
+        return res;
+      }).catch(function () { return caches.match(req); })
     );
     return;
   }
