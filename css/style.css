@@ -1624,6 +1624,18 @@ button.verse-num:hover { text-decoration: underline; }
   text-transform: uppercase;
   color: var(--ink-soft);
 }
+/* a plain-language welcome for readers meeting the original text for the first time */
+.vf-original-intro {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: rgba(169, 129, 76, 0.10);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 8px 8px 0;
+}
 /* the Written / Spoken sections stacked under the language label */
 .vf-original-section { display: flex; flex-direction: column; margin-top: 10px; }
 .vf-original-section:first-of-type { margin-top: 0; }

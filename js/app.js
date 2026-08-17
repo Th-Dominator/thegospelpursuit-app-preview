@@ -1,6 +1,45 @@
 (function () {
   'use strict';
 
+  /* ---------- lightweight error capture ----------
+     No third-party monitoring service, so instead we keep the last few runtime
+     errors in a small on-device ring buffer and quietly attach them to any
+     "report a problem" a reader chooses to send. That turns silent breakage into
+     something the team can actually see, without shipping anyone's data to an
+     ad/telemetry vendor. Purely additive: capped, best-effort, never throws. */
+  var APP_VERSION = 'tgp-cache-v19';
+  var ERRLOG_KEY = 'tgp.errlog';
+  var ERRLOG_MAX = 15;
+  function logAppError(kind, message, extra) {
+    try {
+      var buf = [];
+      try { buf = JSON.parse(window.localStorage.getItem(ERRLOG_KEY) || '[]'); } catch (e) { buf = []; }
+      if (!Array.isArray(buf)) buf = [];
+      buf.push({
+        at: new Date().toISOString(), kind: kind,
+        msg: String(message || '').slice(0, 300),
+        where: String(extra || '').slice(0, 200)
+      });
+      while (buf.length > ERRLOG_MAX) buf.shift();
+      window.localStorage.setItem(ERRLOG_KEY, JSON.stringify(buf));
+    } catch (e) { /* storage blocked or full — never let logging break the app */ }
+  }
+  // a compact diagnostics blob to ride along with a user-submitted report
+  function errorDiagnostics() {
+    var out = { version: APP_VERSION, ua: '', lang: '', errors: [] };
+    try { out.ua = navigator.userAgent || ''; } catch (e) {}
+    try { out.lang = currentLang || ''; } catch (e) {}
+    try { out.errors = JSON.parse(window.localStorage.getItem(ERRLOG_KEY) || '[]'); } catch (e) {}
+    return out;
+  }
+  window.addEventListener('error', function (ev) {
+    logAppError('error', ev && ev.message, ev && ev.filename ? (ev.filename + ':' + ev.lineno) : '');
+  });
+  window.addEventListener('unhandledrejection', function (ev) {
+    var reason = ev && ev.reason;
+    logAppError('promise', reason && reason.message ? reason.message : reason, '');
+  });
+
   var rays = document.getElementById('rays');
   var loadingScreen = document.getElementById('loading-screen');
   var appShell = document.getElementById('app-shell');
@@ -3574,6 +3613,10 @@
     translations = translations || [];
 
     wrap.appendChild(txt('p', 'vf-original-lang', isHebrew ? t('bible.originalHebrew') : t('bible.originalGreek')));
+
+    // a plain-language welcome so a newcomer meeting Hebrew/Greek for the first
+    // time knows what they're looking at and how to use it (works on touch, too)
+    if (interlinear) wrap.appendChild(txt('p', 'vf-original-intro', t('bible.originalIntro')));
 
     // --- Written: the Hebrew/Greek script itself ---
     var written = el('div', 'vf-original-section vf-original-written');
@@ -7536,7 +7579,8 @@
       setStatus(statusEl, t('report.sending'), false);
       adminReport({
         message: msg, context: c.context, page: c.page,
-        reporterName: reporterName, email: email, copyEmail: copyEmail, deviceId: deviceId()
+        reporterName: reporterName, email: email, copyEmail: copyEmail, deviceId: deviceId(),
+        diagnostics: errorDiagnostics()
       }).then(function (r) {
         if (r && r.ok) {
           textEl.value = '';
