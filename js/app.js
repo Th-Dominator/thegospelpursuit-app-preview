@@ -7,7 +7,7 @@
      "report a problem" a reader chooses to send. That turns silent breakage into
      something the team can actually see, without shipping anyone's data to an
      ad/telemetry vendor. Purely additive: capped, best-effort, never throws. */
-  var APP_VERSION = 'tgp-cache-v23';
+  var APP_VERSION = 'tgp-cache-v24';
   var ERRLOG_KEY = 'tgp.errlog';
   var ERRLOG_MAX = 15;
   function logAppError(kind, message, extra) {
@@ -396,7 +396,25 @@
 
   /* ---------- view routing ---------- */
 
+  // Tabs deferred past the first beta: their full views still exist in the DOM
+  // (nothing was deleted), but selecting them shows a "coming soon" sign instead
+  // of running their heavy renders. Remove a name here to switch a tab back on.
+  var SOON_VIEWS = { apologetics: 'The Road to Apologetics', crossref: 'Cross-references', messianic: 'Messianic prophecy' };
+
   function showView(name) {
+    if (SOON_VIEWS.hasOwnProperty(name)) {
+      document.querySelectorAll('.view').forEach(function (section) {
+        section.classList.toggle('is-active', section.id === 'view-soon');
+      });
+      document.querySelectorAll('.nav-link').forEach(function (link) {
+        link.classList.toggle('is-active', link.dataset.view === name);
+      });
+      var sub = document.getElementById('soon-sub');
+      if (sub) sub.textContent = t('soon.subNamed', { name: SOON_VIEWS[name] });
+      closeSidebar();
+      window.scrollTo(0, 0);
+      return;
+    }
     document.querySelectorAll('.view').forEach(function (section) {
       section.classList.toggle('is-active', section.id === 'view-' + name);
     });
@@ -429,7 +447,7 @@
     window.scrollTo(0, 0);
   }
 
-  document.querySelectorAll('.nav-link, .feature-card, .explore-card, .dash-badges-link, .footer-link').forEach(function (el) {
+  document.querySelectorAll('.nav-link, .feature-card, .explore-card, .dash-badges-link, .footer-link, .soon-back').forEach(function (el) {
     el.addEventListener('click', function () {
       if (el.dataset.view) showView(el.dataset.view);
     });

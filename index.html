@@ -113,13 +113,15 @@
         <span class="nav-icon" aria-hidden="true">⌕</span>
         <span class="nav-text" data-i18n="nav.search">Search scripture</span>
       </button>
-      <button class="nav-link" data-view="crossref">
+      <button class="nav-link nav-link-soon" data-view="crossref">
         <span class="nav-icon" aria-hidden="true">⇄</span>
         <span class="nav-text" data-i18n="nav.crossref">Cross-references</span>
+        <span class="nav-soon" data-i18n="nav.soon">Soon</span>
       </button>
-      <button class="nav-link" data-view="messianic">
+      <button class="nav-link nav-link-soon" data-view="messianic">
         <span class="nav-icon" aria-hidden="true">✡</span>
         <span class="nav-text" data-i18n="nav.messianic">Messianic prophecy</span>
+        <span class="nav-soon" data-i18n="nav.soon">Soon</span>
       </button>
       <button class="nav-link" data-view="timeline">
         <span class="nav-icon" aria-hidden="true">⌛</span>
@@ -137,9 +139,10 @@
         <span class="nav-icon" aria-hidden="true">❖</span>
         <span class="nav-text" data-i18n="nav.plans">Bible plans</span>
       </button>
-      <button class="nav-link" data-view="apologetics">
+      <button class="nav-link nav-link-soon" data-view="apologetics">
         <span class="nav-icon" aria-hidden="true">☩</span>
         <span class="nav-text" data-i18n="nav.apologetics">The Road to Apologetics</span>
+        <span class="nav-soon" data-i18n="nav.soon">Soon</span>
       </button>
       <button class="nav-link" data-view="tips">
         <span class="nav-icon" aria-hidden="true">✿</span>
@@ -1120,6 +1123,16 @@
       </section>
 
       <p id="settings-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- COMING SOON — shown for tabs deferred past the first beta -->
+    <section id="view-soon" class="view soon-view">
+      <div class="soon-panel">
+        <span class="soon-icon" aria-hidden="true">🌱</span>
+        <h1 class="soon-title" data-i18n="soon.title">Coming soon</h1>
+        <p class="soon-sub" id="soon-sub" data-i18n="soon.sub">This part of the app is on the way. We're getting it ready for you.</p>
+        <button type="button" class="soon-back today-btn" data-view="home" data-i18n="soon.back">Back to Today</button>
+      </div>
     </section>
 
     <!-- ABOUT / PRIVACY / CREDITS -->

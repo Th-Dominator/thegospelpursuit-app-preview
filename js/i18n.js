@@ -503,6 +503,11 @@ var TRANSLATIONS = {
     'bible.reviewedNote': 'Reviewed overview, drawn from a study Bible.',
     'bible.originalIntro': 'New to this? Below is the verse in its original Hebrew or Greek. Tap or hover any highlighted word to see what it means — no prior knowledge needed.',
     'a11y.skip': 'Skip to content',
+    'nav.soon': 'Soon',
+    'soon.title': 'Coming soon',
+    'soon.sub': 'This part of the app is on the way. We’re getting it ready for you.',
+    'soon.subNamed': '{name} is on the way. We’re getting it ready for a future update — thanks for your patience.',
+    'soon.back': 'Back to Today',
 
     /* ---- verse context: the ten sections of the study ---- */
     'ctx.immediate': 'Immediate context',

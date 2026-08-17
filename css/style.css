@@ -208,6 +208,51 @@ body {
 }
 .nav-link.is-active .nav-badge { background: var(--surface); }
 
+/* deferred ("coming soon") tabs: greyed but still clickable */
+.nav-link-soon { color: var(--ink-muted); opacity: 0.72; }
+.nav-link-soon .nav-icon { color: var(--ink-muted); }
+.nav-link-soon:hover { opacity: 1; background: var(--gold-tint); }
+.nav-link-soon.is-active { color: var(--ink-soft); background: var(--gold-tint); border-left-color: var(--ink-muted); }
+.nav-link-soon.is-active .nav-icon { color: var(--ink-muted); }
+.nav-soon {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  background: var(--surface-2, var(--gold-tint));
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 7px;
+  flex: none;
+}
+
+/* the "coming soon" sign shown when a deferred tab is opened */
+.soon-view { min-height: 60vh; display: flex; align-items: center; justify-content: center; }
+.soon-panel {
+  text-align: center;
+  max-width: 460px;
+  padding: 48px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.soon-icon {
+  font-size: 56px;
+  line-height: 1;
+  filter: grayscale(0.15);
+}
+.soon-title {
+  font-family: var(--font-display, var(--font-body));
+  font-size: clamp(30px, 6vw, 44px);
+  margin: 0;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.soon-sub { margin: 0; color: var(--ink-muted); font-size: 15px; line-height: 1.6; max-width: 40ch; }
+.soon-back { margin-top: 10px; }
+
 /* settings, pinned to the bottom of the rail */
 .sidebar-foot {
   margin-top: auto;
