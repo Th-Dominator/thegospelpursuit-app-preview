@@ -7,7 +7,7 @@
      "report a problem" a reader chooses to send. That turns silent breakage into
      something the team can actually see, without shipping anyone's data to an
      ad/telemetry vendor. Purely additive: capped, best-effort, never throws. */
-  var APP_VERSION = 'tgp-cache-v19';
+  var APP_VERSION = 'tgp-cache-v20';
   var ERRLOG_KEY = 'tgp.errlog';
   var ERRLOG_MAX = 15;
   function logAppError(kind, message, extra) {
@@ -5848,9 +5848,10 @@
     { cat: 'Release readiness', items: [
       { t: 'Content QA across all 40 languages', done: false, note: 'Spot-check scripture and generated text per language.' },
       { t: 'Install as an app (PWA) — offline & icon', done: true, note: 'Shipped: a precaching service worker (network-first for pages so a new deploy always wins, stale-while-revalidate for assets), web manifest, installable icon and iOS install meta. The shell opens with no connection and installs to the home screen.' },
-      { t: 'Usage analytics & error monitoring', done: false, note: 'No client error capture or usage counters yet — add a privacy-respecting local error log (and optional beacon) so problems surface after launch.' },
-      { t: 'Privacy policy & about page', done: false, note: 'Needed before a public beta: a plain-language privacy note (what Clerk/n8n/localStorage store) and an About page.' },
-      { t: 'Image credits & licenses', done: false, note: 'Attribute the Wikimedia artwork used across the app; the timeline already shows per-image credit + licence, but a single credits page is still missing.' }
+      { t: 'Error monitoring', done: true, note: 'Shipped: a privacy-respecting on-device ring buffer captures the last 15 runtime errors and rides along (with version + user agent) on any problem report a reader sends, so breakage surfaces to the team with no third-party telemetry. Usage counters are still optional/future.' },
+      { t: 'Privacy policy & about page', done: true, note: 'Shipped: an About view (linked from the footer) with what the app is, a plain-language privacy note (on-device storage, optional Clerk sign-in, the AI backend, opt-in push, no ad tracking), and a study-notes trust explainer.' },
+      { t: 'Label AI vs reviewed study content', done: true, note: 'Shipped: every verse-context, chapter and book overview ends with an honest provenance footnote — "AI-assisted" for generated notes, a green "reviewed" mark for the curated ones.' },
+      { t: 'Image / artwork credits page', done: false, note: 'The About page now credits scripture & data sources (bible-api, API.Bible, WLC, Tischendorf, openbible CC BY, Strong\'s); still add the Wikimedia artwork attributions in one place (the timeline already shows per-image credit inline).' }
     ]}
   ];
 
@@ -5868,8 +5869,8 @@
       note: 'The n8n + Claude endpoints all respond, but the search-context and translation settings are ignored by the scripture node, verses save in one language only, and the apologetics prompt still needs its rework.' },
     { name: 'Accounts & sync', score: 70,
       note: 'Sign-in genuinely works — Clerk mounts the sign-in / create-account / user button and, once signed in, starts the sync client that mirrors on-device state. Two caveats keep this from an A: it runs on a Clerk dev instance (pk_test key) and the sync API points at a Vercel *preview* origin, and cross-device persistence hasn’t been verified end-to-end. Front-end (GitHub Pages) and API (Vercel) are cross-origin, so CORS/env must be confirmed.' },
-    { name: 'Release readiness', score: 58,
-      note: 'The installable PWA, manifest, icon and offline shell are now shipped — a big lift from before. Still open before a public beta: usage analytics / error monitoring, a privacy policy and About page, an image-credits page, a full 40-language content spot-check, and an accessibility pass (a keyboard / screen-reader sweep on phone sizes, and a skip-to-content link).' }
+    { name: 'Release readiness', score: 74,
+      note: 'A big lift: the installable PWA/offline shell, an About + privacy page, on-device error capture (attached to reports), and honest AI-vs-reviewed labels on every study note have all shipped. Still open before a public beta: a consolidated artwork-credits page, a full 40-language content spot-check, and an accessibility pass (a keyboard / screen-reader sweep on phone sizes, and a skip-to-content link).' }
   ];
   var AUDIT_WEIGHTS = {
     'Content & study features': 3,
@@ -5902,8 +5903,10 @@
       d: 'Three n8n items: make the scripture node honour the search-context and translation settings, save/read verses keyed by language, and finish the apologetics system-prompt rework.' },
     { t: 'Verify accounts & cloud sync end-to-end',
       d: 'Move Clerk off the dev pk_test key, confirm the Vercel/Neon sync API is reachable cross-origin from GitHub Pages (CORS + env), then check that plans, progress and notes persist and merge across two devices.' },
-    { t: 'Ship the release-readiness pages',
-      d: 'Add a privacy policy, an About page, an image-credits/licences page, and lightweight error monitoring so problems surface after launch.' },
+    { t: 'Curate the on-ramp overviews',
+      d: 'Book & chapter overviews are AI-drafted for 65 of 66 books (Genesis is the reviewed exception). Curate the books a new believer opens first — John, Mark, Luke, Psalms, Romans, Acts — so the "reviewed" mark spreads to high-traffic reading.' },
+    { t: 'Finish the release-readiness pages',
+      d: 'About + privacy, error capture and AI-vs-reviewed labels have shipped. Remaining: a consolidated artwork-credits page, and hiding the Beta/Admin tabs from the public build.' },
     { t: 'Accessibility & 40-language QA',
       d: 'Add a skip-to-content link, run a keyboard/screen-reader sweep on phone sizes, and spot-check scripture and generated text per language. (<html lang> already updates on language change.)' }
   ];
