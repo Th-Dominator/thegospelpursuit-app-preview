@@ -231,6 +231,20 @@
 
     <button type="button" id="report-send" class="report-send" data-i18n="report.send">Send report</button>
     <p id="report-status" class="status" role="status" aria-live="polite"></p>
+
+    <!-- shown in place of the form after a report is sent successfully -->
+    <div id="report-thanks" class="report-thanks" hidden>
+      <h3 class="report-thanks-title" data-i18n="report.ackHeading">Thank you for your report!</h3>
+      <p data-i18n="report.ackP1">We’ve received your report and appreciate you taking the time to help us improve the app. Our team will review the issue, including any relevant content or information provided in your report, and determine whether any changes or corrections are needed.</p>
+      <p data-i18n="report.ackP2">We take reports seriously, especially those involving biblical accuracy, historical or theological context, AI-generated analysis, technical issues, and the overall user experience.</p>
+      <p data-i18n="report.ackP3">If we confirm an issue, we’ll work to address it as soon as possible. In some cases, we may need additional information to investigate the problem further.</p>
+      <p data-i18n="report.ackP4">Thank you for helping us build a more accurate, reliable, and useful resource for studying Scripture, evangelism, and apologetics.</p>
+      <blockquote class="report-thanks-verse">
+        <span data-i18n="report.ackVerse">“Whoever heeds life-giving correction will be at home among the wise.”</span>
+        <cite data-i18n="report.ackVerseRef">Proverbs 15:31-32</cite>
+      </blockquote>
+      <button type="button" id="report-thanks-close" class="report-send" data-i18n="report.ackDone">Close</button>
+    </div>
   </aside>
 
   <div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>

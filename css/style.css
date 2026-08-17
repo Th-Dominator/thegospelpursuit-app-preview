@@ -4863,6 +4863,19 @@ body.xref-fs-open { overflow: hidden; }
 }
 .report-send:hover { background: var(--gold-dark); }
 
+/* the thank-you message shown after a report is sent */
+.report-thanks .report-thanks-title {
+  margin: 4px 0 12px; font-family: var(--font-display); font-size: 20px; color: var(--ink);
+}
+.report-thanks p { margin: 0 0 12px; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
+.report-thanks-verse {
+  margin: 14px 0 4px; padding: 12px 14px; border-left: 3px solid var(--gold);
+  background: var(--gold-tint); border-radius: var(--radius);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.report-thanks-verse span { font-style: italic; font-size: 15px; color: var(--ink); }
+.report-thanks-verse cite { font-style: normal; font-size: 13px; color: var(--gold-dark); }
+
 /* how the report is signed: anonymous, or first name + last initial */
 .report-identity {
   margin: 12px 0 4px; padding: 12px 14px; border: 1px solid var(--border);

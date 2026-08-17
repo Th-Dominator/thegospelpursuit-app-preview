@@ -7405,7 +7405,24 @@
     var firstEl = document.getElementById('report-first-name');
     var initialEl = document.getElementById('report-last-initial');
     var signedNote = document.getElementById('report-signedin');
+    var thanksEl = document.getElementById('report-thanks');
+    var thanksCloseBtn = document.getElementById('report-thanks-close');
     if (!modal || !openBtn) return;
+
+    // the form's own parts, hidden while the thank-you message is showing
+    var formParts = [
+      modal.querySelector('.report-lede'), ctxEl, textEl,
+      modal.querySelector('.report-identity'), sendBtn, statusEl
+    ];
+    function showForm(show) {
+      formParts.forEach(function (el) {
+        if (!el) return;
+        // the context line manages its own hidden state; don't force it visible
+        if (show && el === ctxEl) return;
+        el.hidden = !show;
+      });
+      if (thanksEl) thanksEl.hidden = show;
+    }
 
     function identityChoice() {
       var picked = modal.querySelector('input[name="report-identity"]:checked');
@@ -7434,6 +7451,7 @@
       if (initialEl && !initialEl.value) initialEl.value = (who.last || '').charAt(0).toUpperCase();
       syncIdentity();
       setStatus(statusEl, '', false);
+      showForm(true);           // reset to the form in case a thank-you is still showing
       modal.hidden = false; scrim.hidden = false;
       closeSidebar();
       setTimeout(function () { textEl.focus(); }, 50);
@@ -7442,6 +7460,7 @@
     openBtn.addEventListener('click', open);
     closeBtn.addEventListener('click', close);
     scrim.addEventListener('click', close);
+    if (thanksCloseBtn) thanksCloseBtn.addEventListener('click', close);
 
     sendBtn.addEventListener('click', function () {
       var msg = textEl.value.trim();
@@ -7470,10 +7489,13 @@
       }).then(function (r) {
         if (r && r.ok) {
           textEl.value = '';
-          setStatus(statusEl, t('report.thanks'), false);
-          // an immediate in-app acknowledgement (the emailed one is sent server-side)
+          // swap the form out for the full thank-you message; stays open until
+          // the reader closes it, so there's time to read it through.
+          setStatus(statusEl, '', false);
+          showForm(false);
+          if (thanksEl) thanksEl.scrollTop = 0;
+          // also drop it into the in-app notification feed for later reference
           notify('report', t('notif.reportAck.title'), t('notif.reportAck.body'));
-          setTimeout(close, 1400);
         } else { setStatus(statusEl, t('report.failed'), true); }
       }, function () { setStatus(statusEl, t('report.failed'), true); });
     });
