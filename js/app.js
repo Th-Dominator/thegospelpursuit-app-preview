@@ -7,7 +7,7 @@
      "report a problem" a reader chooses to send. That turns silent breakage into
      something the team can actually see, without shipping anyone's data to an
      ad/telemetry vendor. Purely additive: capped, best-effort, never throws. */
-  var APP_VERSION = 'tgp-cache-v21';
+  var APP_VERSION = 'tgp-cache-v22';
   var ERRLOG_KEY = 'tgp.errlog';
   var ERRLOG_MAX = 15;
   function logAppError(kind, message, extra) {
@@ -5746,9 +5746,46 @@
 
   /* ---- the Home dashboard: streak numbers + badge grid ---- */
 
+  /* First-run "start here": a brand-new reader lands on Today with zeroed stats
+     and no obvious first step. Until they've read a chapter or shown up once, we
+     surface a small, friendly card pointing at three concrete starting points.
+     It disappears the moment they engage, so it never nags a returning reader. */
+  function renderFirstRun() {
+    var host = document.getElementById('first-run');
+    if (!host) return;
+    var p = loadProgress();
+    var isNew = p.daysActive === 0 && chapterCount(p) === 0;
+    if (!isNew) { host.hidden = true; host.textContent = ''; return; }
+    if (host.dataset.built === '1') { host.hidden = false; return; }
+
+    host.textContent = '';
+    host.appendChild(txt('h2', 'today-section-title', t('home.firstRunTitle')));
+    host.appendChild(txt('p', 'first-run-lede', t('home.firstRunLede')));
+    var grid = el('div', 'first-run-grid');
+    [
+      { view: 'plans', n: '1', t: 'home.firstRunPlan', d: 'home.firstRunPlanHint' },
+      { view: 'bible', n: '2', t: 'home.firstRunBible', d: 'home.firstRunBibleHint' },
+      { view: 'tips',  n: '3', t: 'home.firstRunTips', d: 'home.firstRunTipsHint' }
+    ].forEach(function (step) {
+      var b = el('button', 'first-run-step');
+      b.type = 'button';
+      b.appendChild(txt('span', 'first-run-n', step.n));
+      var body = el('span', 'first-run-body');
+      body.appendChild(txt('span', 'first-run-t', t(step.t)));
+      body.appendChild(txt('span', 'first-run-d', t(step.d)));
+      b.appendChild(body);
+      b.addEventListener('click', function () { showView(step.view); });
+      grid.appendChild(b);
+    });
+    host.appendChild(grid);
+    host.dataset.built = '1';
+    host.hidden = false;
+  }
+
   function renderProgressUI() {
     var p = loadProgress();
     document.querySelectorAll('.js-streak-count').forEach(function (n) { n.textContent = String(p.streak); });
+    renderFirstRun();
     renderWalkWeek();
     renderWalkEncourage();
     renderExploreApoloTag();
