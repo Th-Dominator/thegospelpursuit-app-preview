@@ -399,6 +399,60 @@ body {
 .status { font-size: 13px; color: var(--ink-muted); min-height: 18px; margin-top: 12px; }
 .status.is-error { color: #A3352A; }
 
+/* search by word or topic (Search scripture tab) */
+.search-word-block {
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+.search-sub-heading {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+}
+.verse-search-count {
+  margin: 16px 0 10px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.verse-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.verse-search-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.verse-search-item:hover { border-color: var(--gold); transform: translateX(2px); }
+@media (prefers-reduced-motion: reduce) { .verse-search-item { transition: none; } .verse-search-item:hover { transform: none; } }
+.verse-search-ref {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--gold-dark);
+}
+.verse-search-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.verse-search-more {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
 /* language picker */
 .language-grid {
   display: grid;

@@ -595,6 +595,19 @@
         <p id="search-ref" class="result-ref"></p>
       </div>
       <p id="search-status" class="status"></p>
+
+      <!-- search by word or topic: find every verse that mentions a word -->
+      <div class="search-word-block">
+        <h2 class="search-sub-heading" data-i18n="search.wordHeading">Search by word or topic</h2>
+        <p class="view-lede" data-i18n="search.wordLede">Looking for a theme rather than a reference? Find every verse that mentions a word — like love, forgiveness, or faith. Results are drawn from the World English Bible; tap any verse to open it in the reader.</p>
+        <form id="verse-search-form" class="tool-form">
+          <input id="verse-search-query" type="text" autocomplete="off" data-i18n-placeholder="search.wordPlaceholder" placeholder="love, forgiveness, faith…" required>
+          <button type="submit" data-i18n="search.wordSubmit">Search</button>
+        </form>
+        <p id="verse-search-count" class="verse-search-count" hidden></p>
+        <div id="verse-search-results" class="verse-search-results" hidden></div>
+        <p id="verse-search-status" class="status" role="status" aria-live="polite"></p>
+      </div>
     </section>
 
     <!-- CROSS-REFERENCES -->

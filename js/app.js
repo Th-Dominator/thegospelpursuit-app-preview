@@ -7,7 +7,7 @@
      "report a problem" a reader chooses to send. That turns silent breakage into
      something the team can actually see, without shipping anyone's data to an
      ad/telemetry vendor. Purely additive: capped, best-effort, never throws. */
-  var APP_VERSION = 'tgp-cache-v25';
+  var APP_VERSION = 'tgp-cache-v26';
   var ERRLOG_KEY = 'tgp.errlog';
   var ERRLOG_MAX = 15;
   function logAppError(kind, message, extra) {
@@ -6480,6 +6480,60 @@
         openBookChapters(best.book.name);
       }
     }, true);
+  })();
+
+  /* Search by word or topic. The app doesn't bundle the whole Bible locally and
+     the licensed API key is server-side, so this runs against bolls.life's
+     keyless, CORS-open search over the World English Bible (public domain, the
+     same host the interlinear already uses). bolls numbers the Protestant canon
+     1-66 (Genesis..Revelation) with apocrypha at 67+, so we filter to <=66 and
+     name each hit from BIBLE_BOOKS. Every result opens in the reader. */
+  (function wireVerseWordSearch() {
+    var form = document.getElementById('verse-search-form');
+    var input = document.getElementById('verse-search-query');
+    var results = document.getElementById('verse-search-results');
+    var countEl = document.getElementById('verse-search-count');
+    var statusEl = document.getElementById('verse-search-status');
+    if (!form || !input) return;
+
+    var CANON = [];
+    BIBLE_BOOKS.forEach(function (g) { g.books.forEach(function (b) { CANON.push(b); }); });
+    function canonName(n) { var b = CANON[n - 1]; return b ? b.name : null; }
+    function stripTags(s) { return String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(); }
+
+    var MAX = 40;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var q = input.value.trim();
+      if (!q) return;
+      results.hidden = true; results.textContent = '';
+      countEl.hidden = true;
+      setStatus(statusEl, t('search.wordBusy'), false);
+      fetch('https://bolls.life/v2/find/WEB?search=' + encodeURIComponent(q) + '&limit=200&page=1')
+        .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+        .then(function (j) {
+          var arr = (j && j.results) || (Array.isArray(j) ? j : []);
+          var canon = arr.filter(function (v) { return v.book >= 1 && v.book <= 66; });
+          setStatus(statusEl, '', false);
+          countEl.hidden = false;
+          if (!canon.length) { countEl.textContent = t('search.wordNone', { q: q }); return; }
+          countEl.textContent = t('search.wordCount', { n: canon.length, q: q });
+          results.textContent = '';
+          canon.slice(0, MAX).forEach(function (v) {
+            var name = canonName(v.book);
+            if (!name) return;
+            var card = el('button', 'verse-search-item');
+            card.type = 'button';
+            card.appendChild(txt('span', 'verse-search-ref', name + ' ' + v.chapter + ':' + v.verse));
+            card.appendChild(txt('span', 'verse-search-text', stripTags(v.text)));
+            card.addEventListener('click', function () { openReaderAt(name, v.chapter); });
+            results.appendChild(card);
+          });
+          if (canon.length > MAX) results.appendChild(txt('p', 'verse-search-more', t('search.wordMore', { n: MAX })));
+          results.hidden = false;
+        })
+        .catch(function () { setStatus(statusEl, t('search.wordError'), true); });
+    });
   })();
 
   wireForm({
