@@ -408,6 +408,8 @@ var TRANSLATIONS = {
     'settings.eyebrow': 'settings',
     'settings.title': 'Settings',
     'settings.lede': 'Set your language once, then tune how each part of the app works for you.',
+    'settings.badgesHeading': 'Badges',
+    'settings.badgesHint': 'The milestones you’ve earned as you read, pray, and grow.',
     'settings.languageHeading': 'Language',
     'settings.languageHint': 'The app — and everything it writes for you, from devotionals to apologetics — will use this language.',
     'settings.bibleHeading': 'The Bible',

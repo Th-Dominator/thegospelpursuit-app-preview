@@ -7,7 +7,7 @@
      "report a problem" a reader chooses to send. That turns silent breakage into
      something the team can actually see, without shipping anyone's data to an
      ad/telemetry vendor. Purely additive: capped, best-effort, never throws. */
-  var APP_VERSION = 'tgp-cache-v24';
+  var APP_VERSION = 'tgp-cache-v25';
   var ERRLOG_KEY = 'tgp.errlog';
   var ERRLOG_MAX = 15;
   function logAppError(kind, message, extra) {
@@ -447,7 +447,7 @@
     window.scrollTo(0, 0);
   }
 
-  document.querySelectorAll('.nav-link, .feature-card, .explore-card, .dash-badges-link, .footer-link, .soon-back').forEach(function (el) {
+  document.querySelectorAll('.nav-link, .feature-card, .explore-card, .dash-badges-link, .footer-link, .soon-back, .settings-link-btn, .badges-back').forEach(function (el) {
     el.addEventListener('click', function () {
       if (el.dataset.view) showView(el.dataset.view);
     });

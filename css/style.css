@@ -475,6 +475,46 @@ body {
   color: var(--ink-soft);
 }
 
+/* a settings row that opens another view (e.g. Badges) */
+.settings-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 420px;
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.settings-link-btn:hover { border-color: var(--gold); transform: translateX(2px); }
+@media (prefers-reduced-motion: reduce) { .settings-link-btn { transition: none; } .settings-link-btn:hover { transform: none; } }
+.settings-link-btn-icon { font-size: 22px; flex: none; line-height: 1; }
+.settings-link-btn-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.settings-link-btn-title { font-weight: 600; color: var(--ink); }
+.settings-link-btn-sub { font-size: 13px; color: var(--ink-muted); }
+.settings-link-btn-arrow { color: var(--gold); font-size: 18px; flex: none; }
+
+/* a back link at the top of a view that now lives under Settings */
+.subview-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0 14px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+.subview-back:hover { color: var(--gold-dark); }
+
 /* on/off preference rows */
 .settings-toggle {
   display: flex;

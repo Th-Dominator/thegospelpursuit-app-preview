@@ -148,10 +148,6 @@
         <span class="nav-icon" aria-hidden="true">✿</span>
         <span class="nav-text" data-i18n="nav.tips">New believers</span>
       </button>
-      <button class="nav-link" data-view="badges">
-        <span class="nav-icon" aria-hidden="true">🏅</span>
-        <span class="nav-text" data-i18n="nav.badges">Badges</span>
-      </button>
       <button class="nav-link" data-view="progress">
         <span class="nav-icon" aria-hidden="true">📊</span>
         <span class="nav-text" data-i18n="nav.progress">Reading progress</span>
@@ -412,6 +408,9 @@
 
     <!-- BADGES -->
     <section id="view-badges" class="view">
+      <button type="button" class="badges-back subview-back" data-view="settings">
+        <span aria-hidden="true">←</span> <span data-i18n="settings.title">Settings</span>
+      </button>
       <p class="eyebrow" data-i18n="badges.eyebrow">your walk</p>
       <h1 class="view-title" data-i18n="badges.title">Badges</h1>
       <p class="view-lede" data-i18n="badges.lede">Every badge you can earn — by reading, keeping a streak, finishing books, and working through plans. Locked badges show how to earn them.</p>
@@ -968,6 +967,20 @@
       <p class="eyebrow" data-i18n="settings.eyebrow">settings</p>
       <h1 class="view-title" data-i18n="settings.title">Settings</h1>
       <p class="view-lede" data-i18n="settings.lede">Set your language once, then tune how each part of the app works for you.</p>
+
+      <!-- badges (opens the full badge collection; moved here from the main nav) -->
+      <section class="settings-group">
+        <h2 class="settings-heading" data-i18n="settings.badgesHeading">Badges</h2>
+        <p class="settings-hint" data-i18n="settings.badgesHint">The milestones you’ve earned as you read, pray, and grow.</p>
+        <button type="button" class="settings-link-btn" data-view="badges">
+          <span class="settings-link-btn-icon" aria-hidden="true">🏅</span>
+          <span class="settings-link-btn-text">
+            <span class="settings-link-btn-title" data-i18n="nav.badges">Badges</span>
+            <span class="settings-link-btn-sub js-badge-summary"></span>
+          </span>
+          <span class="settings-link-btn-arrow" aria-hidden="true">→</span>
+        </button>
+      </section>
 
       <!-- language -->
       <section class="settings-group">
