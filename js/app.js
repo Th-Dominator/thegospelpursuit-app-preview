@@ -7,7 +7,7 @@
      "report a problem" a reader chooses to send. That turns silent breakage into
      something the team can actually see, without shipping anyone's data to an
      ad/telemetry vendor. Purely additive: capped, best-effort, never throws. */
-  var APP_VERSION = 'tgp-cache-v20';
+  var APP_VERSION = 'tgp-cache-v21';
   var ERRLOG_KEY = 'tgp.errlog';
   var ERRLOG_MAX = 15;
   function logAppError(kind, message, extra) {
@@ -5829,7 +5829,7 @@
       { t: '40-language interface', done: true },
       { t: 'Settings — one group per feature', done: true },
       { t: 'Daily reading reminders (web push)', done: true },
-      { t: 'Responsive & accessibility QA pass', done: false, note: 'Sweep every view on phone sizes; keyboard & screen-reader check.' }
+      { t: 'Responsive & accessibility QA pass', done: false, note: 'A skip-to-content link now ships; still to do — sweep every view on phone sizes and a full keyboard & screen-reader check.' }
     ]},
     { cat: 'Backend (n8n)', items: [
       { t: 'Core Claude workflows & credential', done: true },
@@ -5908,7 +5908,7 @@
     { t: 'Finish the release-readiness pages',
       d: 'About + privacy, error capture and AI-vs-reviewed labels have shipped. Remaining: a consolidated artwork-credits page, and hiding the Beta/Admin tabs from the public build.' },
     { t: 'Accessibility & 40-language QA',
-      d: 'Add a skip-to-content link, run a keyboard/screen-reader sweep on phone sizes, and spot-check scripture and generated text per language. (<html lang> already updates on language change.)' }
+      d: 'Skip-to-content link done; still run a keyboard/screen-reader sweep on phone sizes, and spot-check scripture and generated text per language. (<html lang> already updates on language change.)' }
   ];
 
   function renderAudit(panel) {

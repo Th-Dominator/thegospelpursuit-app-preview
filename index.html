@@ -74,6 +74,9 @@
 <!-- APP SHELL -->
 <div id="app-shell" class="app-shell" hidden>
 
+  <!-- keyboard users can jump straight past the nav to the reading area -->
+  <a class="skip-link" href="#main-content" data-i18n="a11y.skip">Skip to content</a>
+
   <!-- narrow screens get a bar with a menu button; the sidebar slides in over the page -->
   <div class="topbar">
     <button id="sidebar-toggle" class="sidebar-toggle" aria-controls="sidebar" aria-expanded="false" data-i18n-aria="app.menu" aria-label="Menu">
@@ -262,7 +265,7 @@
   <div id="toast-stack" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
 
   <div class="app-main">
-  <main class="wrap">
+  <main id="main-content" class="wrap" tabindex="-1">
 
     <!-- HOME / TODAY -->
     <section id="view-home" class="view is-active today-view">

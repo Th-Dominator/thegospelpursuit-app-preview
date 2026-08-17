@@ -494,6 +494,7 @@ var TRANSLATIONS = {
     'bible.aiNote': 'AI-assisted study note — a helpful guide, but weigh it against the text itself.',
     'bible.reviewedNote': 'Reviewed overview, drawn from a study Bible.',
     'bible.originalIntro': 'New to this? Below is the verse in its original Hebrew or Greek. Tap or hover any highlighted word to see what it means — no prior knowledge needed.',
+    'a11y.skip': 'Skip to content',
 
     /* ---- verse context: the ten sections of the study ---- */
     'ctx.immediate': 'Immediate context',
