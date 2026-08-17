@@ -4876,6 +4876,15 @@ body.xref-fs-open { overflow: hidden; }
 .report-thanks-verse span { font-style: italic; font-size: 15px; color: var(--ink); }
 .report-thanks-verse cite { font-style: normal; font-size: 13px; color: var(--gold-dark); }
 
+/* optional "email me a copy" control */
+.report-copy { margin: 10px 0 4px; display: flex; flex-direction: column; gap: 6px; }
+.report-copy-toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.report-copy #report-copy-email {
+  width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); font-family: var(--font-body); font-size: 14px;
+}
+.report-copy-note { margin: 0; font-size: 12px; color: var(--ink-soft); }
+
 /* how the report is signed: anonymous, or first name + last initial */
 .report-identity {
   margin: 12px 0 4px; padding: 12px 14px; border: 1px solid var(--border);

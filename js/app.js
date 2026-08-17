@@ -7407,12 +7407,28 @@
     var signedNote = document.getElementById('report-signedin');
     var thanksEl = document.getElementById('report-thanks');
     var thanksCloseBtn = document.getElementById('report-thanks-close');
+    var copyChk = document.getElementById('report-copy');
+    var copyEmailEl = document.getElementById('report-copy-email');
     if (!modal || !openBtn) return;
+
+    // "email me a copy": reveal the address field when ticked, prefilling the
+    // signed-in email as a convenience. Available to anonymous reporters too —
+    // the address is used only to send the copy, never stored with the report.
+    function syncCopy() {
+      var on = !!(copyChk && copyChk.checked);
+      if (copyEmailEl) {
+        copyEmailEl.hidden = !on;
+        if (on && !copyEmailEl.value) copyEmailEl.value = signedInEmail() || '';
+        if (on) setTimeout(function () { copyEmailEl.focus(); }, 30);
+      }
+    }
+    if (copyChk) copyChk.addEventListener('change', syncCopy);
 
     // the form's own parts, hidden while the thank-you message is showing
     var formParts = [
       modal.querySelector('.report-lede'), ctxEl, textEl,
-      modal.querySelector('.report-identity'), sendBtn, statusEl
+      modal.querySelector('.report-identity'),
+      modal.querySelector('.report-copy'), sendBtn, statusEl
     ];
     function showForm(show) {
       formParts.forEach(function (el) {
@@ -7450,6 +7466,8 @@
       if (firstEl && !firstEl.value) firstEl.value = who.first || '';
       if (initialEl && !initialEl.value) initialEl.value = (who.last || '').charAt(0).toUpperCase();
       syncIdentity();
+      if (copyChk) copyChk.checked = false;
+      syncCopy();
       setStatus(statusEl, '', false);
       showForm(true);           // reset to the form in case a thank-you is still showing
       modal.hidden = false; scrim.hidden = false;
@@ -7482,10 +7500,21 @@
         email = signedInEmail();
       }
 
+      // optional copy-to address (independent of anonymity); validate if ticked
+      var copyEmail = '';
+      if (copyChk && copyChk.checked) {
+        copyEmail = (copyEmailEl && copyEmailEl.value.trim()) || '';
+        if (copyEmail.indexOf('@') < 1 || copyEmail.indexOf('.') < 0) {
+          setStatus(statusEl, t('report.needEmail'), true);
+          if (copyEmailEl) copyEmailEl.focus();
+          return;
+        }
+      }
+
       setStatus(statusEl, t('report.sending'), false);
       adminReport({
         message: msg, context: c.context, page: c.page,
-        reporterName: reporterName, email: email, deviceId: deviceId()
+        reporterName: reporterName, email: email, copyEmail: copyEmail, deviceId: deviceId()
       }).then(function (r) {
         if (r && r.ok) {
           textEl.value = '';

@@ -229,6 +229,18 @@
       <p id="report-signedin" class="report-signedin" hidden data-i18n="report.signedInNote">You're signed in, so we can email you a reply. Anonymous reports get no email.</p>
     </fieldset>
 
+    <!-- optional: email the reporter a copy of the acknowledgement, regardless of
+         whether they reported anonymously. The address is used only to send the
+         copy; it is never stored with the report. -->
+    <div class="report-copy">
+      <label class="report-copy-toggle">
+        <input type="checkbox" id="report-copy">
+        <span data-i18n="report.copyMe">Email me a copy of this report</span>
+      </label>
+      <input type="email" id="report-copy-email" class="report-input" hidden autocomplete="email" maxlength="200" data-i18n-placeholder="report.copyEmailPh" placeholder="you@example.com">
+      <p class="report-copy-note" data-i18n="report.copyNote">Used only to send you this copy — it isn’t stored with your report.</p>
+    </div>
+
     <button type="button" id="report-send" class="report-send" data-i18n="report.send">Send report</button>
     <p id="report-status" class="status" role="status" aria-live="polite"></p>
 

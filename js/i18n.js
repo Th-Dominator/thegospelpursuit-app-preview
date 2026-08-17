@@ -139,6 +139,10 @@ var TRANSLATIONS = {
     'report.ackVerse': '“Whoever heeds life-giving correction will be at home among the wise.”',
     'report.ackVerseRef': 'Proverbs 15:31-32',
     'report.ackDone': 'Close',
+    'report.copyMe': 'Email me a copy of this report',
+    'report.copyEmailPh': 'you@example.com',
+    'report.copyNote': 'Used only to send you this copy — it isn’t stored with your report.',
+    'report.needEmail': 'Please enter a valid email, or untick “email me a copy”.',
 
     'admin.eyebrow': 'owner only',
     'admin.title': 'Admin',

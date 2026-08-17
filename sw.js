@@ -8,7 +8,7 @@
 
    Lives at the site root so its scope covers the whole app. */
 
-var CACHE = 'tgp-cache-v15';
+var CACHE = 'tgp-cache-v16';
 
 /* The app's own code changes on every deploy, so it must be served
    network-first (freshest wins online, cache is the offline fallback) — never
