@@ -490,6 +490,10 @@ var TRANSLATIONS = {
     'bible.contextHint': 'Context, language, cross-references, and how it points to Christ',
     'bible.contextBusy': 'Studying this verse…',
 
+    /* ---- provenance labels: is this note human-reviewed or AI-drafted? ---- */
+    'bible.aiNote': 'AI-assisted study note — a helpful guide, but weigh it against the text itself.',
+    'bible.reviewedNote': 'Reviewed overview, drawn from a study Bible.',
+
     /* ---- verse context: the ten sections of the study ---- */
     'ctx.immediate': 'Immediate context',
     'ctx.historical': 'Historical context',

@@ -1089,6 +1089,23 @@
     return node;
   }
 
+  /* Provenance labels. A new believer can't tell grounded content from machine-
+     drafted content on their own, so we say which is which: study notes that come
+     from the AI backend get an honest "AI-assisted" footnote; a human-reviewed
+     curated overview gets a "reviewed" mark instead. Appended as the last child
+     of a study panel, only on the success path (never on busy/error states). */
+  function studyProvenance(reviewed) {
+    var note = el('p', 'study-provenance' + (reviewed ? ' is-reviewed' : ' is-ai'));
+    note.setAttribute('role', 'note');
+    note.appendChild(txt('span', 'study-provenance-mark', reviewed ? '✓' : '✦'));
+    note.appendChild(txt('span', 'study-provenance-text',
+      t(reviewed ? 'bible.reviewedNote' : 'bible.aiNote')));
+    return note;
+  }
+  function appendProvenance(body, reviewed) {
+    if (body) body.appendChild(studyProvenance(reviewed));
+  }
+
   /* Public-domain versions (kjv/web/bbe) come from bible-api.com; the "api:"
      ids are licensed versions served through API.Bible, which returns the
      copyright line the reader then shows. The empty id lets the server pick
@@ -3069,13 +3086,14 @@
         var scope = bibleState.book.name + ' ' + bibleState.chapter;
         body.textContent = '';
         var rich = renderChapterOverview(data);
-        if (rich) { body.appendChild(rich); injectAdminWorld(body, scope); return; }
+        if (rich) { body.appendChild(rich); injectAdminWorld(body, scope); appendProvenance(body, false); return; }
         // fall back to the older overview / points-to-Christ / background layout
         renderInsight(body, [
           { key: 'bible.overview', text: data && data.overview },
           { key: 'bible.pointsToChrist', text: data && data.christ },
           { key: 'bible.background', text: data && data.history }
         ], 'bible.guideUnavailable');
+        appendProvenance(body, false);
       })
       .catch(function (err) {
         chapterGuideKey = null; // allow a retry on the next open
@@ -3166,7 +3184,7 @@
     body.textContent = '';
     if (curated) {
       var seed = renderBookOverview(curated);
-      if (seed) { body.appendChild(seed); injectAdminWorld(body, key); }
+      if (seed) { body.appendChild(seed); injectAdminWorld(body, key); appendProvenance(body, true); }
       else body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
     } else {
       body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
@@ -3176,13 +3194,14 @@
       .then(function (data) {
         if (bookGuideKey !== key) return;
         var rich = renderBookOverview(withCuratedBook(data));
-        if (rich) { body.textContent = ''; body.appendChild(rich); injectAdminWorld(body, key); return; }
+        if (rich) { body.textContent = ''; body.appendChild(rich); injectAdminWorld(body, key); appendProvenance(body, !!curated); return; }
         if (curated) return; // keep the curated overview already on screen
         renderInsight(body, [
           { key: 'bible.bookAbout', text: data && data.overview },
           { key: 'bible.pointsToChrist', text: data && data.christ },
           { key: 'bible.bookBackground', text: data && data.history }
         ], 'bible.bookUnavailable');
+        appendProvenance(body, false);
       })
       .catch(function (err) {
         if (bookGuideKey !== key) return;
@@ -3750,7 +3769,8 @@
         if (focusKeys.context !== key) return;
         var node = renderVerseContext(data);
         body.textContent = '';
-        body.appendChild(node || txt('p', 'verse-panel-note', t('bible.sectionUnavailable')));
+        if (node) { body.appendChild(node); appendProvenance(body, false); }
+        else body.appendChild(txt('p', 'verse-panel-note', t('bible.sectionUnavailable')));
       })
       .catch(function (err) {
         if (focusKeys.context !== key) return;
@@ -3771,12 +3791,13 @@
       .then(function (data) {
         if (focusKeys.chapter !== key) return;
         var rich = renderChapterOverview(data);
-        if (rich) { body.textContent = ''; body.appendChild(rich); return; }
+        if (rich) { body.textContent = ''; body.appendChild(rich); appendProvenance(body, false); return; }
         renderInsight(body, [
           { key: 'bible.overview', text: data && data.overview },
           { key: 'bible.pointsToChrist', text: data && data.christ },
           { key: 'bible.background', text: data && data.history }
         ], 'bible.guideUnavailable');
+        appendProvenance(body, false);
       })
       .catch(function (err) {
         if (focusKeys.chapter !== key) return;
@@ -3797,7 +3818,7 @@
     body.textContent = '';
     if (curated) {
       var seed = renderBookOverview(curated);
-      if (seed) body.appendChild(seed);
+      if (seed) { body.appendChild(seed); appendProvenance(body, true); }
       else body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
     } else {
       body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
@@ -3806,13 +3827,14 @@
       .then(function (data) {
         if (focusKeys.book !== key) return;
         var rich = renderBookOverview(withCuratedBook(data));
-        if (rich) { body.textContent = ''; body.appendChild(rich); return; }
+        if (rich) { body.textContent = ''; body.appendChild(rich); appendProvenance(body, !!curated); return; }
         if (curated) return; // keep the curated overview already on screen
         renderInsight(body, [
           { key: 'bible.bookAbout', text: data && data.overview },
           { key: 'bible.pointsToChrist', text: data && data.christ },
           { key: 'bible.bookBackground', text: data && data.history }
         ], 'bible.bookUnavailable');
+        appendProvenance(body, false);
       })
       .catch(function (err) {
         if (focusKeys.book !== key) return;
