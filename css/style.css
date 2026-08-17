@@ -937,6 +937,70 @@ body {
   font-size: 13px;
   color: var(--ink-muted);
   border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+}
+.site-footer-name { margin: 0; }
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin-left: auto;
+}
+.footer-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border);
+}
+.footer-link:hover { color: var(--ink); text-decoration-color: var(--gold); }
+
+/* ---------- About / Privacy / Credits ---------- */
+.about-section {
+  margin: 28px 0 0;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--border);
+  max-width: 68ch;
+}
+.about-h {
+  font-size: 20px;
+  margin: 0 0 12px;
+  color: var(--ink);
+}
+.about-list {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  line-height: 1.55;
+}
+.about-list li { color: var(--ink); }
+.about-list li::marker { color: var(--gold); }
+.about-src {
+  font-variant: small-caps;
+  letter-spacing: 0.02em;
+  color: var(--ink-muted);
+}
+.about-fine {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+.about-copyright {
+  margin: 32px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--ink-muted);
+  max-width: 68ch;
 }
 
 /* ---------- right-to-left (Arabic, Urdu, Persian, Hebrew) ---------- */

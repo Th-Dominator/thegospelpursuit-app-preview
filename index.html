@@ -1116,10 +1116,60 @@
       <p id="settings-status" class="status" role="status" aria-live="polite"></p>
     </section>
 
+    <!-- ABOUT / PRIVACY / CREDITS -->
+    <section id="view-about" class="view about-view">
+      <p class="eyebrow">about</p>
+      <h1 class="view-title">The Gospel Pursuit</h1>
+      <p class="view-lede">A study Bible for people meeting scripture for the first time — and for those who want to go deeper. Read any book chapter by chapter, understand what a passage means, follow a plan, and grow a daily habit. This app is in <strong>beta</strong>: some study notes are still being refined, and your feedback shapes what comes next.</p>
+
+      <div class="about-section">
+        <h2 class="about-h">A note on our study notes</h2>
+        <p>We want you to trust what you read here, so we tell you where it comes from:</p>
+        <ul class="about-list">
+          <li><strong>Original-language tools</strong> — the Hebrew and Greek behind a verse, and the word-by-word meanings — are drawn from real, established texts and lexicons. You can lean on them.</li>
+          <li><strong>Context &amp; meaning, chapter overviews, and book overviews</strong> are <em>AI-assisted study aids</em>. They're a helpful guide, but they can be imperfect — always weigh them against the text of scripture itself. Notes carrying a green “Reviewed” mark have been checked by a person against a study Bible.</li>
+          <li>Found something that reads wrong? Please use the <strong>Report</strong> button in the app — corrections to biblical accuracy and theological context are exactly what we most want to hear.</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h2 class="about-h">Your privacy</h2>
+        <p>The short version: your study stays yours, and we don't sell your data.</p>
+        <ul class="about-list">
+          <li><strong>On your device.</strong> Your reading progress, notes, highlights, saved verses, plans and settings are stored locally in your browser. They stay on your device unless you choose to sign in.</li>
+          <li><strong>Optional account.</strong> If you sign in, we use a third-party sign-in provider (Clerk) to identify you and sync that same study data across your devices. Signing in is never required to use the app.</li>
+          <li><strong>Study content.</strong> When you open a passage or a study note, the app asks our server for it; the server uses AI to prepare overviews and context. We don't attach these requests to advertising profiles.</li>
+          <li><strong>Reminders.</strong> Daily reading reminders (web push) are opt-in and can be turned off at any time in your browser or device settings.</li>
+          <li><strong>No ad tracking.</strong> We don't run third-party advertising trackers.</li>
+        </ul>
+        <p class="about-fine">Questions about your data, or want it removed? Reach us through the in-app Report button.</p>
+      </div>
+
+      <div class="about-section">
+        <h2 class="about-h">Scripture &amp; data credits</h2>
+        <p>This app stands on the work of many others, gratefully credited here:</p>
+        <ul class="about-list">
+          <li><strong>Bible text.</strong> Public-domain versions (KJV, WEB, BBE) via <span class="about-src">bible-api.com</span>; additional licensed translations via <span class="about-src">API.Bible</span>.</li>
+          <li><strong>Original languages.</strong> Hebrew Old Testament from the <span class="about-src">Westminster Leningrad Codex</span>; Greek New Testament from <span class="about-src">Tischendorf</span>; word-level numbering via <span class="about-src">bolls.life</span>.</li>
+          <li><strong>Study parallels.</strong> American Standard Version (1901, public domain) and the Aramaic <span class="about-src">Targum Onkelos</span>, served through API.Bible.</li>
+          <li><strong>Word meanings.</strong> Strong's Hebrew and Greek lexicon (public domain).</li>
+          <li><strong>Cross-references.</strong> Derived from the <span class="about-src">openbible.info</span> dataset, used under <span class="about-src">CC&nbsp;BY</span>.</li>
+          <li><strong>Study notes.</strong> Prepared with AI (Claude) through our own backend.</li>
+        </ul>
+      </div>
+
+      <p class="about-copyright">The Gospel Pursuit · beta · Scripture quotations from public-domain and licensed sources as credited above.</p>
+    </section>
+
   </main>
 
   <footer class="site-footer wrap">
-    <p>The Gospel Pursuit</p>
+    <p class="site-footer-name">The Gospel Pursuit</p>
+    <nav class="site-footer-links" aria-label="About this app">
+      <button type="button" class="footer-link" data-view="about">About</button>
+      <button type="button" class="footer-link" data-view="about">Privacy</button>
+      <button type="button" class="footer-link" data-view="about">Credits</button>
+    </nav>
   </footer>
   </div>
 </div>

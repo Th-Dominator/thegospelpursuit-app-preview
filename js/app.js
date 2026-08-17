@@ -390,7 +390,7 @@
     window.scrollTo(0, 0);
   }
 
-  document.querySelectorAll('.nav-link, .feature-card, .explore-card, .dash-badges-link').forEach(function (el) {
+  document.querySelectorAll('.nav-link, .feature-card, .explore-card, .dash-badges-link, .footer-link').forEach(function (el) {
     el.addEventListener('click', function () {
       if (el.dataset.view) showView(el.dataset.view);
     });
