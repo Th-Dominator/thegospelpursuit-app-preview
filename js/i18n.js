@@ -200,6 +200,9 @@ var TRANSLATIONS = {
     'admin.defChildrenPh': 'e.g. Isaac, Ishmael',
     'admin.defPhotos': 'Photos',
     'admin.defPhotosPh': 'Image URLs, one per line',
+    'admin.defBooksHeading': 'Authorship (shown only for the Books of the Bible group)',
+    'admin.defAuthor': 'Author',
+    'admin.defAuthorPh': 'Who wrote it — e.g. Moses (traditional)',
     'admin.mapTitle': 'Maps',
     'admin.mapHint': 'Add a map image shown in a chapter or book’s Background & world.',
     'admin.mapName': 'Title',
@@ -906,6 +909,8 @@ var TRANSLATIONS = {
     'definitions.adminMotherPh': 'Mother',
     'definitions.adminSiblingsPh': 'Siblings',
     'definitions.adminChildrenPh': 'Children',
+    'definitions.adminBooksHeading': 'For books of the Bible (optional)',
+    'definitions.adminAuthorPh': 'Author — who wrote it (e.g. Moses)',
     'definitions.adminPhotosPh': 'Photo URLs — one per line',
     'definitions.adminSave': 'Save definition',
     'definitions.adminSaved': 'Saved “{term}”.',
@@ -922,6 +927,8 @@ var TRANSLATIONS = {
     'definitions.siblingsLabel': 'Siblings',
     'definitions.childrenLabel': 'Children',
     'definitions.lookupPerson': 'Look up {name}',
+    'definitions.authorshipHeading': 'Authorship',
+    'definitions.authorLabel': 'Author',
 
     /* ---- messianic prophecy tab ---- */
     'messianic.eyebrow': 'messianic prophecy',

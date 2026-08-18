@@ -718,7 +718,8 @@
           term: it.term || it.scope || '', def: it.definition || it.def || '', cat: it.group || 'vocab',
           pron: it.pron || '', meaning: it.meaning || '', photos: normPhotos(it.photos),
           firstApp: it.firstApp || '', father: it.father || '', mother: it.mother || '',
-          siblings: it.siblings || '', children: it.children || ''
+          siblings: it.siblings || '', children: it.children || '',
+          author: it.author || ''
         };
       }).filter(function (d) { return d.term && (d.def || d.meaning); });
       globalDefsLoaded = true;
@@ -6920,6 +6921,15 @@
         container.appendChild(gen);
       }
     }
+    if (rec.cat === 'books' && rec.author && String(rec.author).trim()) {
+      var auth = el('div', 'def-authorship');
+      auth.appendChild(txt('h4', 'def-authorship-head', t('definitions.authorshipHeading')));
+      var adl = el('dl', 'def-gen-list');
+      adl.appendChild(txt('dt', 'def-gen-term', t('definitions.authorLabel')));
+      adl.appendChild(txt('dd', 'def-gen-desc', cleanAIText(String(rec.author).trim())));
+      auth.appendChild(adl);
+      container.appendChild(auth);
+    }
   }
 
   /* Family names in a People entry become buttons: tapping one opens that
@@ -7146,6 +7156,8 @@
     var mother = document.getElementById('def-admin-mother');
     var siblings = document.getElementById('def-admin-siblings');
     var children = document.getElementById('def-admin-children');
+    var books = document.getElementById('def-admin-books');
+    var author = document.getElementById('def-admin-author');
     var status = document.getElementById('def-admin-status');
     // populate the group dropdown from the same category list the browser uses
     if (cat && !cat.dataset.built) {
@@ -7156,8 +7168,11 @@
         cat.appendChild(o);
       });
     }
-    // the family fields only make sense for People
-    function syncPeople() { if (people) people.hidden = (cat.value !== 'people'); }
+    // the family fields only make sense for People; the author field for Books
+    function syncPeople() {
+      if (people) people.hidden = (cat.value !== 'people');
+      if (books) books.hidden = (cat.value !== 'books');
+    }
     if (cat) cat.addEventListener('change', syncPeople);
     syncPeople();
     // load a stored record back into the form for editing (used by the list's Edit button)
@@ -7167,6 +7182,7 @@
       photos.value = normPhotos(rec.photos).join('\n');
       firstApp.value = rec.firstApp || ''; father.value = rec.father || ''; mother.value = rec.mother || '';
       siblings.value = rec.siblings || ''; children.value = rec.children || '';
+      author.value = rec.author || '';
       syncPeople();
       var det = document.getElementById('definitions-admin');
       if (det) det.open = true;
@@ -7186,6 +7202,9 @@
         rec.siblings = siblings.value.trim();
         rec.children = children.value.trim();
       }
+      if (cVal === 'books') {
+        rec.author = author.value.trim();
+      }
       var defs = loadCustomDefs();
       // replace an existing entry with the same term, else add
       var lower = tVal.toLowerCase();
@@ -7194,7 +7213,7 @@
       if (existing >= 0) defs[existing] = rec;
       else defs.push(rec);
       saveCustomDefs(defs);
-      [term, def, pron, meaning, photos, firstApp, father, mother, siblings, children].forEach(function (n) { if (n) n.value = ''; });
+      [term, def, pron, meaning, photos, firstApp, father, mother, siblings, children, author].forEach(function (n) { if (n) n.value = ''; });
       setStatus(status, t('definitions.adminSaved', { term: tVal }), false);
       renderDefAdmin();
       renderCommonTerms();
@@ -7321,9 +7340,20 @@
     people.appendChild(fieldRow('admin.defSiblings', siblings));
     people.appendChild(fieldRow('admin.defChildren', children));
     card.appendChild(people);
-    function syncPeople() { people.hidden = (group.value !== 'people'); }
-    group.addEventListener('change', syncPeople);
-    syncPeople();
+
+    // authorship field, shown only for the Books of the Bible group
+    var books = el('div', 'admin-people');
+    books.appendChild(txt('p', 'admin-people-head', t('admin.defBooksHeading')));
+    var author = textInput('admin.defAuthorPh');
+    books.appendChild(fieldRow('admin.defAuthor', author));
+    card.appendChild(books);
+
+    function syncGroupFields() {
+      people.hidden = (group.value !== 'people');
+      books.hidden = (group.value !== 'books');
+    }
+    group.addEventListener('change', syncGroupFields);
+    syncGroupFields();
 
     var status = txt('p', 'status', '');
     var list = el('div', 'admin-list');
@@ -7333,7 +7363,8 @@
       photos.value = normPhotos(it.photos).join('\n');
       firstApp.value = it.firstApp || ''; father.value = it.father || ''; mother.value = it.mother || '';
       siblings.value = it.siblings || ''; children.value = it.children || '';
-      syncPeople();
+      author.value = it.author || '';
+      syncGroupFields();
     }
     var save = txt('button', 'admin-save', t('admin.publish')); save.type = 'button';
     save.addEventListener('click', function () {
@@ -7347,6 +7378,9 @@
         fields.mother = mother.value.trim();
         fields.siblings = siblings.value.trim();
         fields.children = children.value.trim();
+      }
+      if (group.value === 'books') {
+        fields.author = author.value.trim();
       }
       adminUpsertByScope('definition', tv, fields).then(function (r) {
         if (r && r.ok) {

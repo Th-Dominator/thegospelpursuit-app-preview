@@ -4921,6 +4921,18 @@ body.xref-fs-open { overflow: hidden; }
   gap: 4px 14px;
   margin: 0;
 }
+.def-authorship {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.def-authorship-head {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
 .def-gen-term { font-size: 13px; font-weight: 600; color: var(--gold-dark); }
 .def-gen-desc { margin: 0; font-size: 13px; color: var(--ink-soft); }
 /* a clickable family name: opens that person's own definition */
