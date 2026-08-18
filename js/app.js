@@ -6825,7 +6825,8 @@
     { key: 'places', labelKey: 'definitions.catPlaces', terms: [] },
     { key: 'items', labelKey: 'definitions.catItems', terms: [] },
     { key: 'actions', labelKey: 'definitions.catActions', terms: [] },
-    { key: 'vocab', labelKey: 'definitions.catVocab', terms: [] }
+    { key: 'vocab', labelKey: 'definitions.catVocab', terms: [] },
+    { key: 'books', labelKey: 'definitions.catBooks', terms: [] }
   ];
   var CATEGORY_KEYS = TERM_CATEGORIES.map(function (c) { return c.key; });
   function byName(a, b) { return a.localeCompare(b); }

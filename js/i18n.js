@@ -889,6 +889,7 @@ var TRANSLATIONS = {
     'definitions.catItems': 'Historical Items',
     'definitions.catActions': 'Actions',
     'definitions.catVocab': 'Vocabulary',
+    'definitions.catBooks': 'Books of the Bible',
     'definitions.catEmpty': 'Nothing in this group yet.',
     'definitions.adminCat': 'Group',
     'definitions.pickLetter': 'Jump to a letter',
