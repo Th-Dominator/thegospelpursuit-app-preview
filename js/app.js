@@ -434,9 +434,9 @@
     if (name === 'definitions') {
       renderCommonTerms(); renderDefAdmin();
       loadGlobalDefs().then(function () { renderCommonTerms(); });
-      // the bundled public-domain dictionary (~6k entries) loads on demand
-      renderDictionaryBrowser(); // shows a loading state until the data arrives
-      loadPdDict().then(function () { renderDictionaryBrowser(); });
+      // the bundled public-domain dictionary (~6k entries) loads on demand, then
+      // its terms fold into the grouped browser under their categories
+      loadPdDict().then(function () { renderCommonTerms(); });
     }
     if (name === 'admin') renderAdminView();
     if (name === 'devotional') renderMyDevotionals();
@@ -6839,87 +6839,9 @@
     return e ? pdRecord(e) : null;
   }
 
-  /* A searchable A–Z browser over the whole bundled dictionary. Rendered into
-     #definitions-dictionary when the tab opens (and again once the data loads).
-     Results are built only on interaction, so the DOM never holds all ~6k at
-     once. */
-  function renderDictionaryBrowser() {
-    var wrap = document.getElementById('definitions-dictionary');
-    if (!wrap) return;
-    wrap.textContent = '';
-
-    var head = el('div', 'pd-dict-head');
-    head.appendChild(txt('h3', 'pd-dict-title', 'Bible Dictionary'));
-    if (!PD_DICT.loaded) {
-      head.appendChild(txt('p', 'pd-dict-note', 'Loading…'));
-      wrap.appendChild(head);
-      return;
-    }
-    head.appendChild(txt('p', 'pd-dict-note',
-      PD_DICT.list.length.toLocaleString() + ' entries · public domain · works offline'));
-    wrap.appendChild(head);
-
-    // search box
-    var search = el('input', 'pd-dict-search');
-    search.type = 'text'; search.setAttribute('autocomplete', 'off');
-    search.placeholder = 'Search the dictionary…';
-    search.setAttribute('aria-label', 'Search the Bible dictionary');
-    wrap.appendChild(search);
-
-    // A–Z bar
-    var azbar = el('div', 'pd-dict-az');
-    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    letters.forEach(function (L) {
-      var b = txt('button', 'pd-dict-letter', L); b.type = 'button';
-      b.addEventListener('click', function () { search.value = ''; showList(termsByLetter(L), L); });
-      azbar.appendChild(b);
-    });
-    wrap.appendChild(azbar);
-
-    var results = el('div', 'pd-dict-results');
-    wrap.appendChild(results);
-
-    wrap.appendChild(txt('p', 'pd-dict-credit',
-      'Entries: Easton’s (1897) & Smith’s (1863) Bible dictionaries, public domain; ' +
-      'name meanings from Hitchcock’s (1869). Compiled dataset: neuu-org/bible-dictionary-dataset (CC BY 4.0).'));
-
-    function termsByLetter(L) {
-      var lc = L.toLowerCase();
-      return PD_DICT.list.filter(function (e) { return e.t.charAt(0).toLowerCase() === lc; });
-    }
-    // prefix matches first, then substring matches; capped so the DOM stays light
-    function findMatches(q) {
-      var ql = q.toLowerCase();
-      var pre = [], sub = [];
-      for (var i = 0; i < PD_DICT.list.length; i++) {
-        var e = PD_DICT.list[i], tl = e.t.toLowerCase();
-        if (tl.indexOf(ql) === 0) pre.push(e);
-        else if (tl.indexOf(ql) > 0) sub.push(e);
-        if (pre.length >= 60) break;
-      }
-      return pre.concat(sub).slice(0, 60);
-    }
-    function showList(items, heading) {
-      results.textContent = '';
-      if (heading) results.appendChild(txt('p', 'pd-dict-results-head', heading + ' — ' + items.length));
-      if (!items.length) { results.appendChild(txt('p', 'pd-dict-empty', 'No matches.')); return; }
-      var row = el('div', 'pd-dict-chips');
-      items.forEach(function (e) {
-        var b = txt('button', 'pd-dict-chip', e.t); b.type = 'button';
-        b.addEventListener('click', function () { submitDefinition(e.t); });
-        row.appendChild(b);
-      });
-      results.appendChild(row);
-    }
-
-    var searchTimer = null;
-    search.addEventListener('input', function () {
-      var q = search.value.trim();
-      if (searchTimer) clearTimeout(searchTimer);
-      if (q.length < 2) { results.textContent = ''; return; }
-      searchTimer = setTimeout(function () { showList(findMatches(q), null); }, 90);
-    });
-  }
+  /* The bundled dictionary is browsed through the same grouped A–Z browser as
+     the owner's own entries (see renderCommonTerms), so its terms appear under
+     People / Places / Items / Vocabulary / Books just like curated ones. */
 
   /* Typing a term and pressing Define resolves instantly from the on-device
      dictionary (custom / global / public-domain) when we have it — no backend
@@ -7113,12 +7035,28 @@
   // to that group (custom entries with an unknown/old group fall under Vocabulary)
   function categorizedTerms() {
     var byCat = {};
-    TERM_CATEGORIES.forEach(function (c) { byCat[c.key] = c.terms.slice(); });
-    allCustomDefs().forEach(function (d) {
-      var cat = (d.cat && byCat[d.cat]) ? d.cat : 'vocab';
-      var exists = byCat[cat].some(function (t0) { return t0.toLowerCase() === d.term.toLowerCase(); });
-      if (!exists) byCat[cat].push(d.term);
+    var seen = {};   // lowercased term -> 1, for O(1) de-duplication across groups
+    TERM_CATEGORIES.forEach(function (c) {
+      byCat[c.key] = c.terms.slice();
+      c.terms.forEach(function (t0) { seen[t0.toLowerCase()] = 1; });
     });
+    // owner's own entries (device custom + globally published) come first and win
+    allCustomDefs().forEach(function (d) {
+      var key = d.term.toLowerCase();
+      if (seen[key]) return;
+      var cat = (d.cat && byCat[d.cat]) ? d.cat : 'vocab';
+      byCat[cat].push(d.term); seen[key] = 1;
+    });
+    // the bundled public-domain dictionary, sorted into the same groups; only
+    // where the owner hasn't already defined that term
+    if (PD_DICT.loaded && PD_DICT.list.length) {
+      PD_DICT.list.forEach(function (e) {
+        var key = e.t.toLowerCase();
+        if (seen[key]) return;
+        var cat = byCat[e.c] ? e.c : 'vocab';
+        byCat[cat].push(e.t); seen[key] = 1;
+      });
+    }
     return TERM_CATEGORIES.map(function (c) {
       return { key: c.key, label: t(c.labelKey), terms: byCat[c.key].slice().sort(byName) };
     });
@@ -7141,8 +7079,11 @@
     document.getElementById('definitions-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   }
 
-  // A-Z browser: a group dropdown (People / Places & Maps / Historical Items /
-  // Vocabulary) and a letter dropdown, over per-group A-Z chip sections.
+  // A-Z browser: a search box, a group dropdown (People / Places / Items /
+  // Vocabulary / Books) and a letter dropdown, over per-group A-Z chip sections.
+  // Owner entries and the bundled public-domain dictionary share this browser.
+  // With a large set (the dictionary loaded), chips build lazily per visible
+  // letter so the DOM never holds all ~6k at once.
   function renderCommonTerms() {
     var wrap = document.getElementById('definitions-common');
     if (!wrap) return;
@@ -7150,21 +7091,50 @@
     wrap.appendChild(txt('p', 'definitions-common-label', t('definitions.commonHeading')));
 
     var cats = categorizedTerms();
+    var total = cats.reduce(function (n, c) { return n + c.terms.length; }, 0);
+    var LARGE = total > 400; // beyond this we browse letter-by-letter, not all at once
+
+    // owner-authored terms (device custom + published global) get the ★ marker;
+    // bundled public-domain terms do not
+    var ownerKeys = {};
+    allCustomDefs().forEach(function (d) { ownerKeys[d.term.toLowerCase()] = 1; });
+    function makeChip(term) {
+      var b = txt('button', 'definitions-chip', term); b.type = 'button';
+      if (ownerKeys[term.toLowerCase()]) b.classList.add('is-custom');
+      b.addEventListener('click', function () { submitDefinition(term); });
+      return b;
+    }
+
+    if (total) wrap.appendChild(txt('p', 'definitions-count',
+      total.toLocaleString() + ' terms'));
+
+    // search across every group — the fast path for the big dictionary
+    var search = el('input', 'definitions-search');
+    search.type = 'text'; search.setAttribute('autocomplete', 'off');
+    search.placeholder = 'Search all terms…';
+    search.setAttribute('aria-label', 'Search all terms');
+    wrap.appendChild(search);
+    var searchResults = el('div', 'definitions-search-results');
+    searchResults.hidden = true;
+    wrap.appendChild(searchResults);
 
     // two dropdowns: which group, and which letter within it
     var picker = el('div', 'definitions-picker');
-
     var catSel = el('select', 'definitions-select');
     catSel.setAttribute('aria-label', t('definitions.pickCategory'));
     var allCat = el('option'); allCat.value = ''; allCat.textContent = t('definitions.allCategories'); catSel.appendChild(allCat);
     cats.forEach(function (c) {
-      var o = el('option'); o.value = c.key; o.textContent = c.label; catSel.appendChild(o);
+      var o = el('option'); o.value = c.key;
+      o.textContent = c.label + (c.terms.length ? ' (' + c.terms.length + ')' : '');
+      catSel.appendChild(o);
     });
     picker.appendChild(catSel);
 
     var letterSel = el('select', 'definitions-select');
     letterSel.setAttribute('aria-label', t('definitions.pickLetter'));
-    var allL = el('option'); allL.value = ''; allL.textContent = t('definitions.allLetters'); letterSel.appendChild(allL);
+    // with a small set we offer "All letters"; with the dictionary loaded we
+    // always browse one letter at a time to keep the DOM light
+    if (!LARGE) { var allL = el('option'); allL.value = ''; allL.textContent = t('definitions.allLetters'); letterSel.appendChild(allL); }
     var lettersSet = {};
     cats.forEach(function (c) {
       c.terms.forEach(function (term) {
@@ -7173,13 +7143,14 @@
         lettersSet[ch] = 1;
       });
     });
-    Object.keys(lettersSet).sort().forEach(function (L) {
+    var letterKeys = Object.keys(lettersSet).sort();
+    letterKeys.forEach(function (L) {
       var o = el('option'); o.value = L; o.textContent = L; letterSel.appendChild(o);
     });
     picker.appendChild(letterSel);
     wrap.appendChild(picker);
 
-    // one section per group, each holding A-Z letter subgroups of chips
+    // one section per group; each letter subgroup's chips are built lazily
     var groupsWrap = el('div', 'definitions-groups');
     cats.forEach(function (c) {
       var catSec = el('div', 'definitions-category');
@@ -7204,21 +7175,24 @@
         sec.dataset.cat = c.key;
         sec.appendChild(txt('h4', 'definitions-letter-head', L));
         var row = el('div', 'definitions-chips');
-        groups[L].forEach(function (term) {
-          var b = txt('button', 'definitions-chip', term);
-          b.type = 'button';
-          if (customDefFor(term)) b.classList.add('is-custom');
-          b.addEventListener('click', function () { submitDefinition(term); });
-          row.appendChild(b);
-        });
         sec.appendChild(row);
+        sec._terms = groups[L];   // deferred: chips built on first reveal
+        sec._row = row;
         catSec.appendChild(sec);
       });
       groupsWrap.appendChild(catSec);
     });
     wrap.appendChild(groupsWrap);
 
-    // apply both dropdowns together; hide a group entirely if nothing shows
+    function buildGroup(sec) {
+      if (sec.dataset.built) return;
+      sec.dataset.built = '1';
+      var frag = document.createDocumentFragment();
+      sec._terms.forEach(function (term) { frag.appendChild(makeChip(term)); });
+      sec._row.appendChild(frag);
+    }
+
+    // apply both dropdowns together; build a group's chips the first time it shows
     function applyFilter() {
       var pc = catSel.value, pl = letterSel.value;
       groupsWrap.querySelectorAll('.definitions-category').forEach(function (cs) {
@@ -7226,14 +7200,53 @@
         var anyVisible = false;
         cs.querySelectorAll('.definitions-letter-group').forEach(function (g) {
           var show = catMatch && (!pl || g.dataset.letter === pl);
+          if (show) { buildGroup(g); anyVisible = true; }
           g.hidden = !show;
-          if (show) anyVisible = true;
         });
         cs.hidden = !catMatch || !anyVisible;
       });
     }
     catSel.addEventListener('change', applyFilter);
     letterSel.addEventListener('change', applyFilter);
+    // default to the first letter when the set is large, so we never build all at once
+    if (LARGE && letterKeys.length) letterSel.value = (letterKeys.indexOf('A') >= 0) ? 'A' : letterKeys[0];
+
+    // live search over every term, sorted, prefix matches first (capped)
+    var allTermsSorted = null;
+    function ensureAllTerms() {
+      if (allTermsSorted) return allTermsSorted;
+      var arr = [];
+      cats.forEach(function (c) { c.terms.forEach(function (tm) { arr.push(tm); }); });
+      arr.sort(byName);
+      allTermsSorted = arr; return arr;
+    }
+    function runSearch(q) {
+      var ql = q.toLowerCase(), arr = ensureAllTerms(), pre = [], sub = [];
+      for (var i = 0; i < arr.length; i++) {
+        var idx = arr[i].toLowerCase().indexOf(ql);
+        if (idx === 0) pre.push(arr[i]);
+        else if (idx > 0) sub.push(arr[i]);
+        if (pre.length >= 80) break;
+      }
+      var items = pre.concat(sub).slice(0, 80);
+      searchResults.textContent = '';
+      if (!items.length) { searchResults.appendChild(txt('p', 'definitions-cat-empty', 'No matches.')); return; }
+      var row = el('div', 'definitions-chips');
+      items.forEach(function (tm) { row.appendChild(makeChip(tm)); });
+      searchResults.appendChild(row);
+    }
+    var searchTimer = null;
+    search.addEventListener('input', function () {
+      var q = search.value.trim();
+      if (searchTimer) clearTimeout(searchTimer);
+      var searching = q.length >= 2;
+      picker.hidden = searching;
+      groupsWrap.hidden = searching;
+      searchResults.hidden = !searching;
+      if (!searching) { searchResults.textContent = ''; return; }
+      searchTimer = setTimeout(function () { runSearch(q); }, 90);
+    });
+
     applyFilter();
   }
 
