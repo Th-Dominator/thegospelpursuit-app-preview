@@ -431,7 +431,13 @@
     if (name === 'apologetics') { apoloStage = null; renderApologetics(); }
     // the timeline and definitions build their static content on first view
     if (name === 'timeline') { renderDetailedTimeline(); renderBibleTimeline(); }
-    if (name === 'definitions') { renderCommonTerms(); renderDefAdmin(); loadGlobalDefs().then(function () { renderCommonTerms(); }); }
+    if (name === 'definitions') {
+      renderCommonTerms(); renderDefAdmin();
+      loadGlobalDefs().then(function () { renderCommonTerms(); });
+      // the bundled public-domain dictionary (~6k entries) loads on demand
+      renderDictionaryBrowser(); // shows a loading state until the data arrives
+      loadPdDict().then(function () { renderDictionaryBrowser(); });
+    }
     if (name === 'admin') renderAdminView();
     if (name === 'devotional') renderMyDevotionals();
     if (name === 'progress') renderReadingProgress();
@@ -6799,6 +6805,145 @@
     });
   })();
 
+  /* ---------- bundled public-domain dictionary ----------
+     ~6,000 entries from Easton's (1897) + Smith's (1863) Bible dictionaries,
+     with name-meanings from Hitchcock's (1869). All public domain. Shipped as a
+     static asset (data/pd-dictionary.json), fetched the first time the
+     Definitions tab opens and cached by the service worker for offline use.
+     Every term resolves instantly on-device — no backend call, no cost — while
+     the owner's own custom/global entries still take precedence (customDefFor). */
+  var PD_DICT = { loaded: false, loading: null, byTerm: null, list: [] };
+  function loadPdDict() {
+    if (PD_DICT.loaded) return Promise.resolve(PD_DICT);
+    if (PD_DICT.loading) return PD_DICT.loading;
+    PD_DICT.loading = fetch('data/pd-dictionary.json')
+      .then(function (r) { return r && r.ok ? r.json() : null; })
+      .then(function (j) {
+        var entries = (j && Array.isArray(j.entries)) ? j.entries : [];
+        PD_DICT.list = entries;
+        PD_DICT.byTerm = {};
+        entries.forEach(function (e) { if (e && e.t) PD_DICT.byTerm[e.t.toLowerCase()] = e; });
+        PD_DICT.loaded = true;
+        return PD_DICT;
+      })
+      .catch(function () { PD_DICT.list = []; PD_DICT.byTerm = {}; PD_DICT.loaded = true; return PD_DICT; });
+    return PD_DICT.loading;
+  }
+  // map a compact bundled entry {t,c,d,m} onto the record shape renderDefinitionInto expects
+  function pdRecord(e) {
+    return { term: e.t, cat: e.c || 'vocab', def: e.d || '', meaning: e.m || '', pron: '', photos: [] };
+  }
+  function pdDefFor(term) {
+    if (!PD_DICT.byTerm) return null;
+    var e = PD_DICT.byTerm[String(term).toLowerCase()];
+    return e ? pdRecord(e) : null;
+  }
+
+  /* A searchable A–Z browser over the whole bundled dictionary. Rendered into
+     #definitions-dictionary when the tab opens (and again once the data loads).
+     Results are built only on interaction, so the DOM never holds all ~6k at
+     once. */
+  function renderDictionaryBrowser() {
+    var wrap = document.getElementById('definitions-dictionary');
+    if (!wrap) return;
+    wrap.textContent = '';
+
+    var head = el('div', 'pd-dict-head');
+    head.appendChild(txt('h3', 'pd-dict-title', 'Bible Dictionary'));
+    if (!PD_DICT.loaded) {
+      head.appendChild(txt('p', 'pd-dict-note', 'Loading…'));
+      wrap.appendChild(head);
+      return;
+    }
+    head.appendChild(txt('p', 'pd-dict-note',
+      PD_DICT.list.length.toLocaleString() + ' entries · public domain · works offline'));
+    wrap.appendChild(head);
+
+    // search box
+    var search = el('input', 'pd-dict-search');
+    search.type = 'text'; search.setAttribute('autocomplete', 'off');
+    search.placeholder = 'Search the dictionary…';
+    search.setAttribute('aria-label', 'Search the Bible dictionary');
+    wrap.appendChild(search);
+
+    // A–Z bar
+    var azbar = el('div', 'pd-dict-az');
+    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    letters.forEach(function (L) {
+      var b = txt('button', 'pd-dict-letter', L); b.type = 'button';
+      b.addEventListener('click', function () { search.value = ''; showList(termsByLetter(L), L); });
+      azbar.appendChild(b);
+    });
+    wrap.appendChild(azbar);
+
+    var results = el('div', 'pd-dict-results');
+    wrap.appendChild(results);
+
+    wrap.appendChild(txt('p', 'pd-dict-credit',
+      'Entries: Easton’s (1897) & Smith’s (1863) Bible dictionaries, public domain; ' +
+      'name meanings from Hitchcock’s (1869). Compiled dataset: neuu-org/bible-dictionary-dataset (CC BY 4.0).'));
+
+    function termsByLetter(L) {
+      var lc = L.toLowerCase();
+      return PD_DICT.list.filter(function (e) { return e.t.charAt(0).toLowerCase() === lc; });
+    }
+    // prefix matches first, then substring matches; capped so the DOM stays light
+    function findMatches(q) {
+      var ql = q.toLowerCase();
+      var pre = [], sub = [];
+      for (var i = 0; i < PD_DICT.list.length; i++) {
+        var e = PD_DICT.list[i], tl = e.t.toLowerCase();
+        if (tl.indexOf(ql) === 0) pre.push(e);
+        else if (tl.indexOf(ql) > 0) sub.push(e);
+        if (pre.length >= 60) break;
+      }
+      return pre.concat(sub).slice(0, 60);
+    }
+    function showList(items, heading) {
+      results.textContent = '';
+      if (heading) results.appendChild(txt('p', 'pd-dict-results-head', heading + ' — ' + items.length));
+      if (!items.length) { results.appendChild(txt('p', 'pd-dict-empty', 'No matches.')); return; }
+      var row = el('div', 'pd-dict-chips');
+      items.forEach(function (e) {
+        var b = txt('button', 'pd-dict-chip', e.t); b.type = 'button';
+        b.addEventListener('click', function () { submitDefinition(e.t); });
+        row.appendChild(b);
+      });
+      results.appendChild(row);
+    }
+
+    var searchTimer = null;
+    search.addEventListener('input', function () {
+      var q = search.value.trim();
+      if (searchTimer) clearTimeout(searchTimer);
+      if (q.length < 2) { results.textContent = ''; return; }
+      searchTimer = setTimeout(function () { showList(findMatches(q), null); }, 90);
+    });
+  }
+
+  /* Typing a term and pressing Define resolves instantly from the on-device
+     dictionary (custom / global / public-domain) when we have it — no backend
+     call. Captured on document so it runs before the form's own submit handler
+     (which would otherwise hit the network). Falls through to the AI lookup for
+     anything not in the dictionary. */
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form || form.id !== 'definitions-form') return;
+    var input = document.getElementById('definitions-term');
+    var term = input && input.value ? input.value.trim() : '';
+    if (!term) return;
+    var rec = customDefFor(term);
+    if (!rec) return; // not on device — let the normal AI lookup proceed
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    var result = document.getElementById('definitions-result');
+    var status = document.getElementById('definitions-status');
+    renderDefinitionInto(result, rec);
+    result.hidden = false;
+    if (status) setStatus(status, '', false);
+    result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, true);
+
   /* ---------- definitions ---------- */
   wireForm({
     formId: 'definitions-form',
@@ -6850,10 +6995,13 @@
   }
 
   // returns the full stored record (term, cat, def, pron, meaning, photos, genealogy) or null
+  // Order of precedence: on-device custom, then owner-published global, then the
+  // bundled public-domain dictionary — so the owner's own entries always win.
   function customDefFor(term) {
     var key = String(term).toLowerCase();
     var found = allCustomDefs().filter(function (d) { return d.term.toLowerCase() === key; });
-    return found.length ? found[found.length - 1] : null;
+    if (found.length) return found[found.length - 1];
+    return pdDefFor(term);
   }
 
   /* Render a structured custom/global definition into a container: an optional

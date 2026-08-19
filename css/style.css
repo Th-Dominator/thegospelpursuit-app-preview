@@ -4207,6 +4207,60 @@ button.verse-num:hover { text-decoration: underline; }
 }
 .definitions-chip:hover { border-color: var(--gold); background: var(--gold-tint); }
 
+/* ---- bundled public-domain dictionary browser ---- */
+.definitions-dictionary {
+  margin: 4px 0 20px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.pd-dict-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.pd-dict-title { margin: 0; font-size: 16px; }
+.pd-dict-note { margin: 0; font-size: 12px; color: var(--ink-muted); }
+.pd-dict-search {
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.pd-dict-search:focus { outline: none; border-color: var(--gold); }
+.pd-dict-az { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.pd-dict-letter {
+  min-width: 28px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.pd-dict-letter:hover { border-color: var(--gold); background: var(--gold-tint); }
+.pd-dict-results-head { margin: 0 0 8px; font-size: 12px; color: var(--ink-muted); }
+.pd-dict-empty { margin: 4px 0; font-size: 13px; color: var(--ink-muted); }
+.pd-dict-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pd-dict-chip {
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.pd-dict-chip:hover { border-color: var(--gold); background: var(--gold-tint); }
+.pd-dict-credit { margin: 14px 0 0; font-size: 11px; line-height: 1.5; color: var(--ink-muted); }
+
 /* ============================================================
    Whole-Bible timeline view
    ============================================================ */
