@@ -6829,9 +6829,16 @@
       .catch(function () { PD_DICT.list = []; PD_DICT.byTerm = {}; PD_DICT.loaded = true; return PD_DICT; });
     return PD_DICT.loading;
   }
-  // map a compact bundled entry {t,c,d,m} onto the record shape renderDefinitionInto expects
+  // map a compact bundled entry onto the record shape renderDefinitionInto expects.
+  // Enriched entries also carry pron, first appearance, genealogy, and an ai flag.
   function pdRecord(e) {
-    return { term: e.t, cat: e.c || 'vocab', def: e.d || '', meaning: e.m || '', pron: '', photos: [] };
+    return {
+      term: e.t, cat: e.c || 'vocab', def: e.d || '', meaning: e.m || '',
+      pron: e.pron || '', photos: Array.isArray(e.photos) ? e.photos : [],
+      firstApp: e.firstApp || '', father: e.father || '', mother: e.mother || '',
+      siblings: e.siblings || '', children: e.children || '', author: e.author || '',
+      ai: !!e.ai, rev: !!e.rev
+    };
   }
   function pdDefFor(term) {
     if (!PD_DICT.byTerm) return null;
@@ -6922,7 +6929,11 @@
   function customDefFor(term) {
     var key = String(term).toLowerCase();
     var found = allCustomDefs().filter(function (d) { return d.term.toLowerCase() === key; });
-    if (found.length) return found[found.length - 1];
+    if (found.length) {
+      var r = found[found.length - 1];
+      if (r.rev == null && !r.ai) r.rev = 1;   // owner-authored entries are reviewed (✓)
+      return r;
+    }
     return pdDefFor(term);
   }
 
@@ -6931,6 +6942,19 @@
      entries — a family & first-appearance block. */
   function renderDefinitionInto(container, rec) {
     container.textContent = '';
+    // provenance: AI-drafted entries are flagged (✦) until a human reviews them;
+    // owner-authored / reviewed entries carry a ✓
+    if (rec.ai) {
+      var prov = el('p', 'def-provenance');
+      prov.appendChild(txt('span', 'def-prov-badge', '✦'));
+      prov.appendChild(txt('span', 'def-prov-text', 'AI-assisted — not yet reviewed'));
+      container.appendChild(prov);
+    } else if (rec.rev) {
+      var prov2 = el('p', 'def-provenance is-reviewed');
+      prov2.appendChild(txt('span', 'def-prov-badge', '✓'));
+      prov2.appendChild(txt('span', 'def-prov-text', 'Reviewed'));
+      container.appendChild(prov2);
+    }
     if (rec.pron && rec.pron.trim()) {
       var pr = el('p', 'def-pron');
       pr.appendChild(txt('span', 'def-section-label', t('definitions.pronLabel')));

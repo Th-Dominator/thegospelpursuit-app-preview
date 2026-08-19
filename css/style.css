@@ -4222,6 +4222,12 @@ button.verse-num:hover { text-decoration: underline; }
 }
 .definitions-search:focus { outline: none; border-color: var(--gold); }
 .definitions-search-results { margin-bottom: 12px; }
+.def-provenance { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 10px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 11px; color: var(--ink-muted); background: var(--gold-tint); }
+.def-prov-badge { color: var(--gold-dark); font-weight: 700; }
+.def-provenance.is-reviewed { background: rgba(46, 125, 50, 0.10); border-color: rgba(46, 125, 50, 0.30); }
+.def-provenance.is-reviewed .def-prov-badge { color: #2E7D32; }
+:root[data-theme="dark"] .def-provenance.is-reviewed .def-prov-badge,
+:root:not([data-theme="light"]) .def-provenance.is-reviewed .def-prov-badge { color: #7FD187; }
 
 /* ============================================================
    Whole-Bible timeline view
