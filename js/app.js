@@ -6309,8 +6309,28 @@
   function registerSW() {
     if (!('serviceWorker' in navigator)) return Promise.resolve(null);
     if (swReg) return Promise.resolve(swReg);
+
+    // Self-heal a stale build: when an UPDATED worker takes control (after a
+    // deploy), reload once so the page runs the fresh code instead of whatever
+    // was served from cache. This is what unsticks a browser that loaded an old
+    // app.js and stopped responding to things like the plan cards.
+    //   - hadController skips the very first install (null -> worker), where
+    //     there is no old code to replace, so no reload happens on a first visit.
+    //   - the reloading flag guards against a reload loop.
+    var hadController = !!navigator.serviceWorker.controller;
+    var reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadController || reloading) return;
+      reloading = true;
+      window.location.reload();
+    });
+
     return navigator.serviceWorker.register('sw.js').then(
-      function (reg) { swReg = reg; return reg; },
+      function (reg) {
+        swReg = reg;
+        try { reg.update(); } catch (e) { /* force an update check on load */ }
+        return reg;
+      },
       function () { return null; }
     );
   }
