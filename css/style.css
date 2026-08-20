@@ -1552,10 +1552,11 @@ html[lang="my"] .dropcap,
 .drip-feet  { left: 50%; bottom: 22px;  height: 24px; animation-delay: 1.55s; }
 .drop-feet  { left: 50%; bottom: 12px;  animation-delay: 1.85s; }
 
-/* left wound nudged ½in (48px) toward centre: 85px - 48px = 37px */
-.hole-left  { left: calc(50% - 37px); top: 122px; width: 13px; height: 13px; animation-delay: 1.05s; }
-.drip-left  { left: calc(50% - 37px); top: 134px; height: 22px; animation-delay: 1.15s; }
-.drop-left  { left: calc(50% - 37px); top: 158px; animation-delay: 1.45s; }
+/* left wound mirrors the right wound (±72px) so both hands sit symmetrically
+   on the crossbar; the drip and drop hang from the hole at the same offset */
+.hole-left  { left: calc(50% - 72px); top: 122px; width: 13px; height: 13px; animation-delay: 1.05s; }
+.drip-left  { left: calc(50% - 72px); top: 134px; height: 22px; animation-delay: 1.15s; }
+.drop-left  { left: calc(50% - 72px); top: 158px; animation-delay: 1.45s; }
 
 .hole-right { left: calc(50% + 72px); top: 122px; width: 13px; height: 13px; animation-delay: 1.05s; }
 .drip-right { left: calc(50% + 72px); top: 134px; height: 22px; animation-delay: 1.15s; }
