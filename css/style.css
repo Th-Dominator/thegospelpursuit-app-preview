@@ -1124,6 +1124,16 @@ body {
   text-decoration-color: var(--border);
 }
 .footer-link:hover { color: var(--ink); text-decoration-color: var(--gold); }
+/* contact line: email + website domain, shown under the footer on every view */
+.site-footer-contact {
+  flex-basis: 100%;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.site-footer-sep { color: var(--border); }
 
 /* ---------- About / Privacy / Credits ---------- */
 .about-section {
@@ -1542,9 +1552,10 @@ html[lang="my"] .dropcap,
 .drip-feet  { left: 50%; bottom: 22px;  height: 24px; animation-delay: 1.55s; }
 .drop-feet  { left: 50%; bottom: 12px;  animation-delay: 1.85s; }
 
-.hole-left  { left: calc(50% - 85px); top: 122px; width: 13px; height: 13px; animation-delay: 1.05s; }
-.drip-left  { left: calc(50% - 85px); top: 134px; height: 22px; animation-delay: 1.15s; }
-.drop-left  { left: calc(50% - 85px); top: 158px; animation-delay: 1.45s; }
+/* left wound nudged ½in (48px) toward centre: 85px - 48px = 37px */
+.hole-left  { left: calc(50% - 37px); top: 122px; width: 13px; height: 13px; animation-delay: 1.05s; }
+.drip-left  { left: calc(50% - 37px); top: 134px; height: 22px; animation-delay: 1.15s; }
+.drop-left  { left: calc(50% - 37px); top: 158px; animation-delay: 1.45s; }
 
 .hole-right { left: calc(50% + 72px); top: 122px; width: 13px; height: 13px; animation-delay: 1.05s; }
 .drip-right { left: calc(50% + 72px); top: 134px; height: 22px; animation-delay: 1.15s; }
@@ -2142,6 +2153,22 @@ button.verse-num:hover { text-decoration: underline; }
 
 /* the whole-book overview sits above the chapter number grid */
 #book-guide { margin-bottom: 18px; }
+
+/* owner-authored book overview (Admin > Book overviews) */
+.authored-book { display: flex; flex-direction: column; gap: 14px; }
+.authored-head { display: flex; flex-direction: column; gap: 2px; }
+.authored-name { margin: 0; font-family: var(--font-display); font-size: 22px; color: var(--ink); }
+.authored-subtitle { margin: 0; color: var(--ink-soft); font-style: italic; }
+.authored-group {
+  margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border);
+  font-family: var(--font-display); font-size: 17px; color: var(--gold-dark);
+}
+.authored-sec { display: flex; flex-direction: column; gap: 4px; }
+.authored-sec-title { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
+.authored-sec-text { margin: 0; font-size: 15px; line-height: 1.6; color: var(--ink-soft); white-space: pre-line; }
+.authored-fig { margin: 4px 0; display: flex; flex-direction: column; gap: 6px; }
+.authored-fig img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); }
+.authored-fig-cap { font-size: 13px; color: var(--ink-muted); }
 
 /* archaeology & historical evidence: one card per artifact */
 .arch-list { display: flex; flex-direction: column; gap: 16px; }

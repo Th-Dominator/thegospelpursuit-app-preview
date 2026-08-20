@@ -2228,33 +2228,7 @@
      backend-generated study so the trusted wording always wins; the backend
      still supplies the sections the curated entry doesn't cover. English-only,
      so translated interfaces keep the backend's localized text. */
-  var CURATED_BOOK_INSIGHTS = {
-    'Genesis': {
-      name: 'Genesis is the first book of the Bible and the first of the five books of the Law (the Torah). Its English title comes from the Greek Old Testament — the Septuagint — which named the book Genesis.',
-      nameMeaning: '“Beginning.” Genesis concerns the divine origin of all things, whether matter or energy, living or inanimate. It implies that, apart from God, everything can be traced back to a beginning point when God’s purposes and works came into being.',
-      author: 'Genesis is, strictly speaking, an anonymous work, but historical tradition — together with biblical attestation — assigns its authorship to Moses.',
-      authorship: 'Moses’ authorship would not have required him to write the entire book from firsthand knowledge. All of the events in Genesis took place long before Moses was born, which indicates that he must have used sources. He is best understood as an editor/historian who, in addition to receiving God’s direct and supernatural communication, drew together the family histories of Abraham and his descendants — as they existed in the Israelite community in Egypt — into a single text.',
-      date: 'If Moses wrote and compiled Genesis, he must have done so during the Israelites’ wilderness wanderings after the exodus, probably between 1440 and 1400 B.C.',
-      audience: 'Genesis records the creation, the fall into sin, the flood, the call of Abraham, and the early history of the ancestors of Israel. These stories were probably circulated among the Israelites living in Egypt, reminding them of their familial and spiritual heritage and explaining their present situation; they preserved individual accounts that could afford hope to God’s enslaved people, and the promises to Abraham about the future of his descendants would have encouraged them. Later, the Israelites directly involved in the exodus — and the generations after them — read Genesis to understand this part of the great saga of their national origin, for the fulfillment of God’s historical promises to the patriarchs testified to His continuing faithfulness.',
-      cultural: 'Genesis records the birth and early history of humankind. God not only created the physical world but also formed man and woman in His own image and endowed them with the gift of free will. Over time changes took place, including humanity’s fall into sin and the great flood that followed. Tribes, cities, and civilizations rose and declined in a rhythm that has characterized human history ever since. Centuries passed, and at some point God chose to concentrate His particular attention on one individual — from an ordinary, idol-worshipping family — who in turn chose to listen and obey.',
-      genre: 'Genesis presents history in the form of narrative, drawing on a range of literary types to communicate its theological message clearly and effectively. Its three major sections each have a characteristic form: the primeval events (Genesis 1–11) take a narrative form suited to oral transmission; the accounts of the first three patriarchs (Genesis 12–36; 38) trace ancestry; and the Joseph narrative (Genesis 37; 39–50) is built on tension and resolution. Other literary types run through the book as well — genealogies (5:3–32; 11:10–32), appearances of God (17–18; 32:22–30), direct words from God (25:23), blessings (1:28; 9:1; 27:27–29), and tribal sayings (49:3–27).',
-      outline: [
-        'Primeval history: creation, the fall, the flood, and the nations (Genesis 1–11)',
-        'The patriarchs: Abraham, Isaac, and Jacob (Genesis 12–36; 38)',
-        'The Joseph narrative (Genesis 37; 39–50)'
-      ],
-      summary: 'Genesis recounts the beginning of the heavens and the earth and of all created things within them, of God’s covenant relationship with humankind, of sin, of redemption, of the nations, and of God’s chosen people, Israel. In Genesis 1:26–28 God makes clear that He created man and woman to bless them and so that they could exercise dominion on His behalf over all creation. Humanity’s disobedience threatened God’s purpose for humanity in creation, and God responded by calling Abraham (previously known as Abram).',
-      themes: [
-        'Creation',
-        'Sin',
-        'The image of God',
-        'God’s global plan of redemption'
-      ],
-      purpose: 'Genesis was written to give the nation of Israel an explanation of its existence as it stood on the threshold of the conquest of Canaan. Moses’ task, as an inspired prophetic author, was to make clear to his people how and why God had brought them into being — to know what their mission was and how their present situation fulfilled ancient promises. God had revealed to Abraham that he would be granted the land of Canaan (Genesis 12:1,5,7; 13:15), that his descendants would leave that land for a time (15:13), and that they would be delivered from the land of their oppression to return to the land of promise (15:16). This land would be theirs forever (17:8), and through them all the nations of the earth would be blessed (12:2–3; 27:29). Joseph understood this and saw in his own sojourn in Egypt the divine preservation of his people (45:7–8): God had sent him there to save them from physical and spiritual extinction (50:20), and He would remember His promise to Abraham, Isaac, and Jacob and return them to Canaan (50:24). The link with Exodus is clear in the call of Moses to lead his people from Egypt to the land of promise.',
-      storyline: 'The theological message of Genesis reaches beyond the concerns of Israel alone. The book provides Israel’s reason for being and explains the human condition that called forth a covenant people. God’s original and eternal purposes are set out in Genesis 1:26–28: He created men and women in His image to bless them and so that they could exercise dominion over all creation on His behalf — the key themes of biblical theology, God’s blessing and human dominion under God’s reign. The fall of humankind into sin subverted God’s goal, and a process of redemption and of recovery of the original covenant had to be effected. So God chose Abraham, through whose offspring the divine purposes in creation might come to pass; that man and that nation were charged with serving God as the model of a people under His dominion and the vehicle through which a saving relationship could be established between Him and the alienated world of the nations.',
-      christ: 'Israel failed to be the servant people. Yet from the nation rose a remnant — Jesus the Christ — who accomplished in His life and death the redemptive and reigning purposes of God. The church now exists as His body, to serve as Israel was chosen and redeemed to serve. The theology of Genesis is therefore wrapped up in the kingdom purposes of God, who, despite human failure, cannot be hindered in His ultimate objective of displaying His glory through His creation and His dominion.'
-    }
-  };
+  var CURATED_BOOK_INSIGHTS = {}; // Book overviews are now authored in Admin > Book overviews (renderAuthoredBookOverview).
 
   /* Merge a curated entry over the backend study (curated keys win). English
      interface only, so localized backends keep their translated wording. */
@@ -3224,6 +3198,110 @@
      so it refetches when you switch books but not when reopened on the same. */
   var bookGuideKey = null;
 
+  /* ---------- owner-authored book overview ----------
+     The reader-facing book overview is authored entirely in the Admin view
+     (Admin › Book overviews, stored as type 'bookOverview', one per book scope).
+     The old curated + AI-generated overviews were removed; only the owner's own
+     entry is shown. Reads are public, so any visitor sees the published entry. */
+  function authoredSec(title, text) {
+    var v = (text == null ? '' : String(text)).trim();
+    if (!v) return null;
+    var sec = el('div', 'authored-sec');
+    if (title) sec.appendChild(txt('h4', 'authored-sec-title', title));
+    v.split(/\n+/).forEach(function (para) {
+      var p = para.trim(); if (p) sec.appendChild(txt('p', 'authored-sec-text', p));
+    });
+    return sec;
+  }
+  function authoredFig(url, caption) {
+    var u = (url == null ? '' : String(url)).trim();
+    var c = (caption == null ? '' : String(caption)).trim();
+    if (!u && !c) return null;
+    var fig = el('figure', 'authored-fig');
+    if (u) {
+      var img = document.createElement('img');
+      img.src = u; img.alt = c || ''; img.loading = 'lazy';
+      fig.appendChild(img);
+    }
+    if (c) fig.appendChild(txt('figcaption', 'authored-fig-cap', c));
+    return fig;
+  }
+  function authoredGroup(title) { return txt('h3', 'authored-group', title); }
+
+  function renderAuthoredBookOverview(item) {
+    var book = item.scope || item.title || (bibleState.book && bibleState.book.name) || '';
+    var wrap = el('article', 'authored-book');
+    var head = el('header', 'authored-head');
+    head.appendChild(txt('h2', 'authored-name', book));
+    if (item.subtitle) head.appendChild(txt('p', 'authored-subtitle', item.subtitle));
+    wrap.appendChild(head);
+    function add(node) { if (node) wrap.appendChild(node); }
+
+    add(authoredSec('Definition', item.definition));
+    add(authoredSec('Key texts', item.keyTexts));
+    if (item.keyTerm || item.keyTermSummary) {
+      add(authoredSec('Key term', [item.keyTerm, item.keyTermSummary].filter(Boolean).join(' — ')));
+    }
+    add(authoredSec('One-sentence summary', item.oneSentence));
+    add(authoredFig(item.pictureUrl, item.pictureCaption));
+
+    if (item.purpose || item.worldview || item.teachGod || item.teachHumanity || item.teachSalvation) {
+      add(authoredGroup('God’s message in the book'));
+      add(authoredSec('Purpose', item.purpose));
+      add(authoredSec('Christian worldview elements', item.worldview));
+      add(authoredSec('Teachings about God', item.teachGod));
+      add(authoredSec('Teachings about humanity', item.teachHumanity));
+      add(authoredSec('Teachings about salvation', item.teachSalvation));
+    }
+    add(authoredSec('Christ in ' + (book || 'this book'), item.christ));
+
+    if (item.storyWhen || item.storyFits) {
+      add(authoredGroup('God’s story'));
+      add(authoredSec('When the events of this book happened', item.storyWhen));
+      add(authoredSec('How this book fits into God’s story', item.storyFits));
+    }
+
+    if (item.author || item.audience || item.occasion || item.mapUrl) {
+      add(authoredGroup('Original historical setting'));
+      add(authoredSec('Author and date of writing', item.author));
+      add(authoredSec('First audience and destination', item.audience));
+      add(authoredSec('Occasion', item.occasion));
+      add(authoredFig(item.mapUrl, item.mapCaption || 'Map'));
+    }
+
+    if (item.genre || item.themes) {
+      add(authoredGroup('Literary features'));
+      add(authoredSec('Genre and literary style', item.genre));
+      add(authoredSec('Themes', item.themes));
+    }
+
+    if (item.familyTreeUrl || item.familyTree) {
+      add(authoredGroup('Family tree'));
+      add(authoredFig(item.familyTreeUrl, item.familyTreeCaption));
+      add(authoredSec('', item.familyTree));
+    }
+    add(authoredSec('Book features and structure', item.structure));
+    add(authoredFig(item.histPhotoUrl, item.histPhotoCaption || 'Historical photo'));
+    return wrap;
+  }
+
+  /* Load the owner-authored overview for a book scope into a panel body. The
+     isCurrent guard lets the caller cancel a stale async render when the reader
+     has already navigated to a different book. */
+  function renderAuthoredOverviewInto(body, key, isCurrent, after) {
+    if (!body) return;
+    body.textContent = '';
+    body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
+    adminList('bookOverview', key).then(function (items) {
+      if (isCurrent && !isCurrent()) return;
+      var item = (items && items.length) ? items[items.length - 1] : null;
+      body.textContent = '';
+      if (item) body.appendChild(renderAuthoredBookOverview(item));
+      else body.appendChild(txt('p', 'verse-panel-note', 'No overview has been added for this book yet.'));
+      if (after) after();
+    });
+  }
+
   function resetBookGuide() {
     var guide = document.getElementById('book-guide');
     var body = document.getElementById('book-guide-body');
@@ -3239,41 +3317,10 @@
     var key = bibleState.book.name;
     if (bookGuideKey === key) return;
     bookGuideKey = key;
-
-    // If a verified curated overview exists for this book, show it immediately —
-    // no waiting on the slow (~3 min) backend, and it can never be blocked by a
-    // backend timeout or an empty reply. The backend still loads in the
-    // background to fill the sections the curated entry doesn't cover.
-    var curated = curatedBookOnly();
-    body.textContent = '';
-    if (curated) {
-      var seed = renderBookOverview(curated);
-      if (seed) { body.appendChild(seed); injectAdminWorld(body, key); appendProvenance(body, true); }
-      else body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
-    } else {
-      body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
-    }
-
-    requestCached('book-insight', { book: bibleState.book.name })
-      .then(function (data) {
-        if (bookGuideKey !== key) return;
-        var rich = renderBookOverview(withCuratedBook(data));
-        if (rich) { body.textContent = ''; body.appendChild(rich); injectAdminWorld(body, key); appendProvenance(body, !!curated); return; }
-        if (curated) return; // keep the curated overview already on screen
-        renderInsight(body, [
-          { key: 'bible.bookAbout', text: data && data.overview },
-          { key: 'bible.pointsToChrist', text: data && data.christ },
-          { key: 'bible.bookBackground', text: data && data.history }
-        ], 'bible.bookUnavailable');
-        appendProvenance(body, false);
-      })
-      .catch(function (err) {
-        if (bookGuideKey !== key) return;
-        if (curated) return; // the verified overview is already shown; leave it
-        bookGuideKey = null;
-        body.textContent = '';
-        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
-      });
+    // Owner-authored overview only (Admin › Book overviews). The owner's
+    // separately-published maps & archaeology still fold in beneath it.
+    renderAuthoredOverviewInto(body, key, function () { return bookGuideKey === key; },
+      function () { injectAdminWorld(body, key); });
   }
 
   document.getElementById('book-guide').addEventListener('toggle', function () {
@@ -3880,37 +3927,8 @@
     var key = bibleState.book.name;
     if (focusKeys.book === key) return;
     focusKeys.book = key;
-    // Show the verified curated overview instantly if we have one; the backend
-    // still loads in the background to fill the remaining sections.
-    var curated = curatedBookOnly();
-    body.textContent = '';
-    if (curated) {
-      var seed = renderBookOverview(curated);
-      if (seed) { body.appendChild(seed); appendProvenance(body, true); }
-      else body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
-    } else {
-      body.appendChild(txt('p', 'verse-panel-note', t('bible.bookBusy')));
-    }
-    requestCached('book-insight', { book: bibleState.book.name })
-      .then(function (data) {
-        if (focusKeys.book !== key) return;
-        var rich = renderBookOverview(withCuratedBook(data));
-        if (rich) { body.textContent = ''; body.appendChild(rich); appendProvenance(body, !!curated); return; }
-        if (curated) return; // keep the curated overview already on screen
-        renderInsight(body, [
-          { key: 'bible.bookAbout', text: data && data.overview },
-          { key: 'bible.pointsToChrist', text: data && data.christ },
-          { key: 'bible.bookBackground', text: data && data.history }
-        ], 'bible.bookUnavailable');
-        appendProvenance(body, false);
-      })
-      .catch(function (err) {
-        if (focusKeys.book !== key) return;
-        if (curated) return; // the verified overview is already shown; leave it
-        focusKeys.book = null;
-        body.textContent = '';
-        body.appendChild(txt('p', 'verse-panel-note is-error', err.message));
-      });
+    // Owner-authored overview only (Admin › Book overviews).
+    renderAuthoredOverviewInto(body, key, function () { return focusKeys.book === key; }, null);
   }
 
   document.getElementById('verse-focus-original').addEventListener('toggle', function () {
@@ -7761,6 +7779,131 @@
     return card;
   }
 
+  /* Book-overview authoring: the reader-facing overview for each book of the
+     Bible is written here (stored as type 'bookOverview', keyed by book name).
+     Publishing again for the same book overwrites the entry. Rendered on the
+     reader side by renderAuthoredBookOverview. */
+  function buildBookOverviewAdmin() {
+    var card = el('section', 'admin-card');
+    card.appendChild(txt('h2', 'admin-card-title', 'Book overviews'));
+    card.appendChild(txt('p', 'admin-card-hint', 'Write the overview a reader sees when they open a book of the Bible. One entry per book; publishing again overwrites it. Leave any field blank to hide that section.'));
+
+    function row(labelText, control) {
+      var w = el('label', 'admin-field');
+      w.appendChild(txt('span', 'admin-field-label', labelText));
+      w.appendChild(control);
+      return w;
+    }
+    function tin(ph) { var i = el('input', 'admin-input'); i.type = 'text'; if (ph) i.placeholder = ph; return i; }
+    function tar(ph, rows) { var a = el('textarea', 'admin-area'); a.rows = rows || 3; if (ph) a.placeholder = ph; return a; }
+    function head(text) { return txt('p', 'admin-people-head', text); }
+
+    var scope = tin('Book name, e.g. Genesis');
+    var subtitle = tin('Subtitle of the book');
+    var definition = tar('Definition', 3);
+    var keyTexts = tar('One per line — Reference — verse text', 3);
+    var keyTerm = tin('Key term');
+    var keyTermSummary = tar('Key term summary', 2);
+    var oneSentence = tin('One-sentence summary');
+    var pictureUrl = tin('Picture image URL');
+    var pictureCaption = tin('Picture description / caption');
+    var purpose = tar('Purpose', 3);
+    var worldview = tar('Christian worldview elements', 3);
+    var teachGod = tar('Teachings about God', 3);
+    var teachHumanity = tar('Teachings about humanity', 3);
+    var teachSalvation = tar('Teachings about salvation', 3);
+    var christ = tar('Christ in this book', 3);
+    var storyWhen = tar('When the events of this book happened', 2);
+    var storyFits = tar('How this book fits into God’s story', 3);
+    var author = tar('Author and date of writing', 2);
+    var audience = tar('First audience and destination', 2);
+    var occasion = tar('Occasion', 2);
+    var mapUrl = tin('Map image URL');
+    var mapCaption = tin('Map caption');
+    var genre = tar('Genre and literary style', 2);
+    var themes = tar('Themes', 2);
+    var familyTreeUrl = tin('Family tree image URL');
+    var familyTreeCaption = tin('Family tree caption');
+    var familyTree = tar('Family tree notes', 2);
+    var structure = tar('Book features and structure', 3);
+    var histPhotoUrl = tin('Historical photo image URL');
+    var histPhotoCaption = tin('Historical photo caption');
+
+    card.appendChild(row('Name of book', scope));
+    card.appendChild(row('Subtitle', subtitle));
+    card.appendChild(row('Definition', definition));
+    card.appendChild(row('Key texts (verse number + verse)', keyTexts));
+    card.appendChild(row('Key term', keyTerm));
+    card.appendChild(row('Key term summary', keyTermSummary));
+    card.appendChild(row('One-sentence summary', oneSentence));
+    card.appendChild(row('Picture image URL', pictureUrl));
+    card.appendChild(row('Picture description', pictureCaption));
+    card.appendChild(head('God’s message in the book'));
+    card.appendChild(row('Purpose', purpose));
+    card.appendChild(row('Christian worldview elements', worldview));
+    card.appendChild(row('Teachings about God', teachGod));
+    card.appendChild(row('Teachings about humanity', teachHumanity));
+    card.appendChild(row('Teachings about salvation', teachSalvation));
+    card.appendChild(row('Christ in this book', christ));
+    card.appendChild(head('God’s story'));
+    card.appendChild(row('When the events happened', storyWhen));
+    card.appendChild(row('How it fits into God’s story', storyFits));
+    card.appendChild(head('Original historical setting'));
+    card.appendChild(row('Author and date of writing', author));
+    card.appendChild(row('First audience and destination', audience));
+    card.appendChild(row('Occasion', occasion));
+    card.appendChild(row('Map image URL', mapUrl));
+    card.appendChild(row('Map caption', mapCaption));
+    card.appendChild(head('Literary features'));
+    card.appendChild(row('Genre and literary style', genre));
+    card.appendChild(row('Themes', themes));
+    card.appendChild(head('Family tree'));
+    card.appendChild(row('Family tree image URL', familyTreeUrl));
+    card.appendChild(row('Family tree caption', familyTreeCaption));
+    card.appendChild(row('Family tree notes', familyTree));
+    card.appendChild(row('Book features and structure', structure));
+    card.appendChild(head('Historical photo'));
+    card.appendChild(row('Historical photo image URL', histPhotoUrl));
+    card.appendChild(row('Historical photo caption', histPhotoCaption));
+
+    var fieldsMap = {
+      subtitle: subtitle, definition: definition, keyTexts: keyTexts, keyTerm: keyTerm,
+      keyTermSummary: keyTermSummary, oneSentence: oneSentence, pictureUrl: pictureUrl,
+      pictureCaption: pictureCaption, purpose: purpose, worldview: worldview, teachGod: teachGod,
+      teachHumanity: teachHumanity, teachSalvation: teachSalvation, christ: christ,
+      storyWhen: storyWhen, storyFits: storyFits, author: author, audience: audience,
+      occasion: occasion, mapUrl: mapUrl, mapCaption: mapCaption, genre: genre, themes: themes,
+      familyTreeUrl: familyTreeUrl, familyTreeCaption: familyTreeCaption, familyTree: familyTree,
+      structure: structure, histPhotoUrl: histPhotoUrl, histPhotoCaption: histPhotoCaption
+    };
+    var status = txt('p', 'status', '');
+    var list = el('div', 'admin-list');
+    function loadInto(it) {
+      scope.value = it.scope || '';
+      Object.keys(fieldsMap).forEach(function (k) { fieldsMap[k].value = it[k] || ''; });
+    }
+    var save = txt('button', 'admin-save', t('admin.publish')); save.type = 'button';
+    save.addEventListener('click', function () {
+      var sv = scope.value.trim();
+      if (!sv) { setStatus(status, 'Enter the book name first.', true); return; }
+      setStatus(status, t('admin.saving'), false);
+      var fields = { title: sv };
+      Object.keys(fieldsMap).forEach(function (k) { fields[k] = fieldsMap[k].value.trim(); });
+      adminUpsertByScope('bookOverview', sv, fields).then(function (r) {
+        if (r && r.ok) {
+          setStatus(status, t('admin.published', { name: sv }), false);
+          loadInto({});
+          adminListInto(list, 'bookOverview', loadInto);
+        } else { setStatus(status, t('admin.failed'), true); }
+      });
+    });
+    card.appendChild(save); card.appendChild(status);
+    card.appendChild(txt('p', 'admin-list-hint', t('admin.editHint')));
+    card.appendChild(list);
+    adminListInto(list, 'bookOverview', loadInto);
+    return card;
+  }
+
   function renderAdminView() {
     var root = document.getElementById('admin-root');
     if (!root) return;
@@ -7769,6 +7912,7 @@
     revealAdminNav();
     root.appendChild(buildAdminToolbar());
     root.appendChild(buildBroadcastAdmin());
+    root.appendChild(buildBookOverviewAdmin());
     root.appendChild(buildDefinitionAdmin());
     root.appendChild(buildMapAdmin());
     root.appendChild(buildArchAdmin());
